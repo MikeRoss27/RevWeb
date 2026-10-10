@@ -1,5 +1,11 @@
 # webrev
 
+```text
+╭─╮
+│◠│  webrev
+╰─╯  web reconnaissance toolkit · authorized targets only
+```
+
 A web reconnaissance and analysis toolkit for **authorized** security testing — a
 CLI + TUI that performs static and dynamic analysis of web applications: it
 crawls in scope, extracts endpoints, parameters, routes, GraphQL operations,

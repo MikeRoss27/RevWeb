@@ -8,6 +8,7 @@
 
 //! `webrev` CLI entry point.
 
+mod banner;
 mod cli;
 mod commands;
 
@@ -17,6 +18,11 @@ use cli::Command;
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let parsed = cli::Cli::parse();
+    // Brand the active, non-interactive scans; keep `report` silent so its
+    // stdout stays pipe-clean, and let the TUI show its own branded header.
+    if matches!(parsed.command, Command::Static(_) | Command::Dynamic(_)) {
+        banner::print(parsed.no_banner);
+    }
     // The TUI owns the terminal, so only initialise stderr logging for the
     // non-interactive subcommands.
     if !matches!(parsed.command, Command::Tui(_)) {

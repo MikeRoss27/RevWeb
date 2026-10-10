@@ -51,7 +51,9 @@ fn render_detail(frame: &mut Frame, area: Rect, finding: &Finding) {
         Line::from(""),
         Line::from("Esc / Enter to close").dim(),
     ];
-    let block = Block::bordered().title(" Detail ").title_style(Style::new().bold());
+    let block = Block::bordered()
+        .border_style(Style::new().fg(PRIMARY))
+        .title(Span::from(" ◠ detail ").fg(PRIMARY).add_modifier(Modifier::BOLD));
     frame.render_widget(Clear, popup);
     frame.render_widget(Paragraph::new(lines).block(block).wrap(Wrap { trim: false }), popup);
 }
@@ -67,14 +69,34 @@ fn centered_rect(area: Rect, width: u16, height: u16) -> Rect {
     v
 }
 
+/// Brand palette, shared across the UI.
+const PRIMARY: Color = Color::Cyan;
+const ACCENT: Color = Color::Magenta;
+
 fn render_header(frame: &mut Frame, area: Rect, app: &App) {
+    // Branded title: logo mark + wordmark + mission, with the version pinned
+    // to the right edge.
+    let brand = Line::from(vec![
+        Span::from(" ◠ ").fg(PRIMARY).add_modifier(Modifier::BOLD),
+        Span::from("webrev").fg(PRIMARY).add_modifier(Modifier::BOLD),
+        Span::from("  ·  ").dim(),
+        Span::from(app.mission_name.clone()),
+        Span::from(" "),
+    ]);
+    let version = Line::from(Span::from(format!(" v{} ", env!("CARGO_PKG_VERSION"))).dim())
+        .right_aligned();
+    let block = Block::bordered()
+        .border_style(Style::new().fg(PRIMARY).add_modifier(Modifier::DIM))
+        .title(brand)
+        .title_top(version);
     let tabs = Tabs::new(Tab::ALL.map(Tab::title))
         .select(app.tab.index())
-        .block(Block::bordered().title(Span::from(format!(" webrev — {} ", app.mission_name)).bold()))
+        .block(block)
+        .divider(Span::from("·").dim())
         .highlight_style(
             Style::new()
                 .fg(Color::Black)
-                .bg(Color::Cyan)
+                .bg(ACCENT)
                 .add_modifier(Modifier::BOLD),
         );
     frame.render_widget(tabs, area);
@@ -162,11 +184,12 @@ fn render_footer(frame: &mut Frame, area: Rect, app: &App) {
             Span::from("  (Enter apply · Esc clear)").dim(),
         ])
     } else {
-        let indicator = if app.scanning { "scanning" } else { "ready" };
-        Line::from(vec![
-            Span::from(format!(" [{indicator}] ")).bold(),
-            Span::from(app.status.clone()),
-        ])
+        let indicator = if app.scanning {
+            Span::from(" ● scanning ").fg(ACCENT).add_modifier(Modifier::BOLD)
+        } else {
+            Span::from(" ○ ready ").fg(PRIMARY).add_modifier(Modifier::BOLD)
+        };
+        Line::from(vec![indicator, Span::from(app.status.clone())])
     };
     let help = Line::from(
         "Tab/←→ tabs · ↑↓ jk scroll · / filter · Enter detail · s static · d dynamic · r report · q quit",

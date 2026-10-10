@@ -6,10 +6,20 @@ use std::path::PathBuf;
 
 /// `webrev` — a web reconnaissance and analysis toolkit.
 #[derive(Parser)]
-#[command(name = "webrev", version, about = "web reconnaissance & analysis toolkit")]
+#[command(
+    name = "webrev",
+    version,
+    about = "webrev · web reconnaissance toolkit",
+    long_about = "webrev — map a web application's attack surface from static and \
+                  dynamic analysis.\n\nUse only against targets you are explicitly \
+                  authorized to test."
+)]
 pub struct Cli {
     #[command(subcommand)]
     pub command: Command,
+    /// Suppress the startup banner.
+    #[arg(long, global = true)]
+    pub no_banner: bool,
 }
 
 #[derive(Subcommand)]
