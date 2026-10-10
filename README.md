@@ -1,12 +1,12 @@
 <p align="center">
-  <img src="docs/assets/hero.svg" alt="webrev — web reconnaissance, read backwards" width="100%">
+  <img src="docs/assets/hero.svg" alt="webrev: web recon, no theater" width="100%">
 </p>
 
 <p align="center">
-  <a href="https://github.com/MikeRoss27/WebRev/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/MikeRoss27/WebRev/ci.yml?branch=main&style=flat-square&label=ci&labelColor=0A0A0A&color=C6FF3D"></a>
-  <img alt="Rust 1.82+" src="https://img.shields.io/badge/rust-1.82%2B-C6FF3D?style=flat-square&labelColor=0A0A0A">
-  <img alt="Platforms" src="https://img.shields.io/badge/platform-linux%20%C2%B7%20windows-EDEDE6?style=flat-square&labelColor=0A0A0A">
-  <img alt="License MIT" src="https://img.shields.io/badge/license-MIT-EDEDE6?style=flat-square&labelColor=0A0A0A">
+  <a href="https://github.com/MikeRoss27/WebRev/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/MikeRoss27/WebRev/ci.yml?branch=main&style=flat-square&label=ci&labelColor=211C1C&color=E5653F"></a>
+  <img alt="Rust 1.82+" src="https://img.shields.io/badge/rust-1.82%2B-E5653F?style=flat-square&labelColor=211C1C">
+  <img alt="Platforms" src="https://img.shields.io/badge/platform-linux%20%C2%B7%20windows-FAF4E8?style=flat-square&labelColor=211C1C">
+  <img alt="License MIT" src="https://img.shields.io/badge/license-MIT-FAF4E8?style=flat-square&labelColor=211C1C">
 </p>
 
 <p align="center">
@@ -150,8 +150,14 @@ cargo clippy --workspace --all-targets -- -D warnings
 ```console
 $ webrev scan --seed https://app.example.com/
 
-   <_   webrev 0.1.0
-        web reconnaissance toolkit · authorized targets only
+  █████████████████
+  █████████████████                   ██
+  ████                ▄▄    ▄▄  ▄▄▄▄  ██▄▄▄  ▄▄ ▄▄▄  ▄▄▄▄  ▄▄    ▄▄
+  ████     ▄▄▄▄▄▄▄▄   ██ ▄▄ ██ ██▄▄██ ██  ██ ██▀    ██▄▄██ ▀█▄  ▄█▀
+  ████     ████████   ██▄██▄██ ██  ▄▄ ██  ██ ██     ██  ▄▄  ▀█▄▄█▀
+  ████     ▀▀▀▀████    ▀▀  ▀▀   ▀▀▀▀  ▀▀▀▀▀  ▀▀      ▀▀▀▀     ▀▀
+  ████         ████   web reconnaissance toolkit · v0.1.0
+  ████         ████   authorized targets only
 ```
 
 ```bash
@@ -219,11 +225,15 @@ store. A Cargo workspace keeps the layers honest:
 
 ## Brand
 
-Logo, icons and diagrams live in [docs/assets/](docs/assets/): outlined SVGs with
-no font dependency. The mark is `<_`, set in
-[Martian Mono](https://github.com/evilmartians/mono) (OFL): *reverse*, and the
-prompt waiting for the next command. Palette: void `#0A0A0A`, bone `#EDEDE6`,
-acid `#C6FF3D`, alert `#FF5A36`.
+Logo, icons and diagrams live in [docs/assets/](docs/assets/): authored SVGs, text
+outlined, no font dependency. The symbol is a blocky geometric "shifted tool",
+set with [Inter](https://rsms.me/inter/) (OFL) for the wordmark and
+[JetBrains Mono](https://www.jetbrains.com/lp/mono/) (OFL) for labels. Palette:
+orange `#E5653F`, ink `#211C1C`, cream `#FAF4E8`. Orange is the one signal color,
+used for the mark, the active tab and live state. The terminal banner and the
+TUI empty state are drawn in half-block characters from
+[`crates/webrev-tui/src/brand.rs`](crates/webrev-tui/src/brand.rs), which also
+holds the palette.
 
 ## License
 

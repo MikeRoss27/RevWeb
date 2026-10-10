@@ -17,6 +17,7 @@
 //! and as a thin binary of its own.
 
 pub mod app;
+pub mod brand;
 pub mod events;
 pub mod ui;
 

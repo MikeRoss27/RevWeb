@@ -1,8 +1,17 @@
 // crates/webrev-cli/src/cli.rs
 //! Command-line surface (clap derive + `WEBREV_` environment variables).
 
+use clap::builder::styling::{Color, RgbColor, Style, Styles};
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use std::path::PathBuf;
+
+/// `--help` colors: orange headings, cream literals, stone placeholders.
+/// clap drops them automatically for pipes and `NO_COLOR`.
+const STYLES: Styles = Styles::styled()
+    .header(Style::new().bold().fg_color(Some(Color::Rgb(RgbColor(229, 101, 63)))))
+    .usage(Style::new().bold().fg_color(Some(Color::Rgb(RgbColor(229, 101, 63)))))
+    .literal(Style::new().bold().fg_color(Some(Color::Rgb(RgbColor(250, 244, 232)))))
+    .placeholder(Style::new().fg_color(Some(Color::Rgb(RgbColor(163, 154, 146)))));
 
 /// Worked examples, shown at the bottom of `webrev --help`.
 const EXAMPLES: &str = "\
@@ -34,6 +43,7 @@ EXAMPLES:
 #[command(
     name = "webrev",
     version,
+    styles = STYLES,
     about = "webrev · web reconnaissance toolkit",
     long_about = "webrev — map a web application's attack surface from static and \
                   dynamic analysis.\n\nUse only against targets you are explicitly \

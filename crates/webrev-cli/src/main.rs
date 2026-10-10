@@ -17,6 +17,16 @@ use cli::Command;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    // Bare `webrev` and any `--help` are answered by clap before `parse`
+    // returns, so brand them up front (still stderr-only, tty-only).
+    let args: Vec<String> = std::env::args().skip(1).collect();
+    let asks_for_help = args.is_empty()
+        || args.first().is_some_and(|a| a == "help")
+        || args.iter().any(|a| a == "-h" || a == "--help");
+    if asks_for_help {
+        banner::print(args.iter().any(|a| a == "--no-banner"));
+    }
+
     let parsed = cli::Cli::parse();
     // Brand the active, non-interactive scans; keep `report` silent so its
     // stdout stays pipe-clean, and let the TUI show its own branded header.

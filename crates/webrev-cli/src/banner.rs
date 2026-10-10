@@ -1,44 +1,65 @@
 // crates/webrev-cli/src/banner.rs
 //! The webrev startup banner.
 //!
-//! Printed to **stderr** (so it never pollutes a `report` piped on stdout),
-//! only when stderr is a terminal, and honouring `NO_COLOR`. Suppressed with
-//! the global `--no-banner` flag.
+//! The art and palette live in [`webrev_tui::brand`]; this module only maps
+//! each [`Tone`] onto ANSI escapes. Printed to **stderr** (so it never
+//! pollutes a `report` piped on stdout), only when stderr is a terminal, and
+//! honouring `NO_COLOR`. Suppressed with the global `--no-banner` flag.
 
 use std::io::{IsTerminal, Write};
+use webrev_tui::brand::{self, Rgb, Tone};
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
-/// One-line description of the tool, reused by `--help` and the TUI.
+/// One-line description of the tool, reused by `--help` and the banner.
 pub const TAGLINE: &str = "web reconnaissance toolkit";
 
-// Brand palette (docs/assets) — kept here so the whole CLI brand lives in one
-// place. Truecolor when the terminal advertises it, else the closest xterm-256
-// entries (acid ≈ 191, bone ≈ 255).
 const RESET: &str = "\x1b[0m";
 const BOLD: &str = "\x1b[1m";
 const DIM: &str = "\x1b[2m";
 
-struct Palette {
-    acid_fg: &'static str,
-    acid_bg: &'static str,
-    void_fg: &'static str,
-    bone_fg: &'static str,
+/// Does the terminal advertise 24-bit color? Otherwise fall back to the
+/// closest xterm-256 entries (orange ≈ 202, cream ≈ 230).
+fn truecolor() -> bool {
+    std::env::var("COLORTERM")
+        .is_ok_and(|v| v.eq_ignore_ascii_case("truecolor") || v.eq_ignore_ascii_case("24bit"))
 }
 
-const TRUECOLOR: Palette = Palette {
-    acid_fg: "\x1b[38;2;198;255;61m",
-    acid_bg: "\x1b[48;2;198;255;61m",
-    void_fg: "\x1b[38;2;10;10;10m",
-    bone_fg: "\x1b[38;2;237;237;230m",
-};
+fn fg(rgb: Rgb, xterm256: u8, truecolor: bool) -> String {
+    if truecolor {
+        format!("\x1b[38;2;{};{};{}m", rgb.0, rgb.1, rgb.2)
+    } else {
+        format!("\x1b[38;5;{xterm256}m")
+    }
+}
 
-const XTERM_256: Palette = Palette {
-    acid_fg: "\x1b[38;5;191m",
-    acid_bg: "\x1b[48;5;191m",
-    void_fg: "\x1b[38;5;232m",
-    bone_fg: "\x1b[38;5;255m",
-};
+/// ANSI prefix for a tone.
+fn escape(tone: Tone, truecolor: bool) -> String {
+    match tone {
+        Tone::Orange => format!("{BOLD}{}", fg(brand::ORANGE, 202, truecolor)),
+        Tone::Cream => format!("{BOLD}{}", fg(brand::CREAM, 230, truecolor)),
+        Tone::Dim => DIM.to_owned(),
+    }
+}
+
+/// Render the banner to a string (colored or plain).
+fn render(color: bool, truecolor: bool) -> String {
+    let mut out = String::new();
+    for row in brand::banner(TAGLINE, VERSION) {
+        out.push_str("  ");
+        for (tone, text) in row {
+            if color {
+                out.push_str(&escape(tone, truecolor));
+                out.push_str(&text);
+                out.push_str(RESET);
+            } else {
+                out.push_str(&text);
+            }
+        }
+        out.push('\n');
+    }
+    out
+}
 
 /// Print the banner unless suppressed, the stream is redirected, or we can't.
 pub fn print(suppressed: bool) {
@@ -47,30 +68,33 @@ pub fn print(suppressed: bool) {
         return;
     }
     let color = std::env::var_os("NO_COLOR").is_none();
-    let truecolor = std::env::var("COLORTERM")
-        .is_ok_and(|v| v.eq_ignore_ascii_case("truecolor") || v.eq_ignore_ascii_case("24bit"));
-    let p = if truecolor { &TRUECOLOR } else { &XTERM_256 };
-    let paint = |text: &str, codes: &str| {
-        if color {
-            format!("{codes}{text}{RESET}")
-        } else {
-            text.to_owned()
-        }
-    };
+    let _ = writeln!(err, "\n{}", render(color, truecolor()));
+}
 
-    // The mark: `<_` reversed out of an acid badge.
-    let badge = paint(" <_ ", &format!("{BOLD}{}{}", p.acid_bg, p.void_fg));
-    let line1 = format!(
-        "  {badge}  {} {}",
-        paint("webrev", &format!("{BOLD}{}", p.bone_fg)),
-        paint(VERSION, DIM),
-    );
-    let line2 = format!(
-        "        {} {} {}",
-        paint(TAGLINE, DIM),
-        paint("·", DIM),
-        paint("authorized targets only", p.acid_fg),
-    );
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-    let _ = writeln!(err, "\n{line1}\n{line2}\n");
+    #[test]
+    fn plain_banner_has_no_escape_codes() {
+        let s = render(false, true);
+        assert!(!s.contains('\x1b'));
+        assert!(s.contains("authorized targets only"));
+        assert_eq!(s.lines().count(), 8);
+    }
+
+    #[test]
+    fn colored_banner_closes_every_escape() {
+        let s = render(true, true);
+        assert!(s.contains("\x1b[38;2;229;101;63m"), "orange truecolor");
+        assert!(s.contains(RESET));
+        assert!(s.trim_end().ends_with(RESET));
+    }
+
+    #[test]
+    fn falls_back_to_256_colors() {
+        let s = render(true, false);
+        assert!(s.contains("\x1b[38;5;202m"));
+        assert!(!s.contains("38;2;"));
+    }
 }

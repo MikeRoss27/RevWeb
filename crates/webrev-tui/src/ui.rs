@@ -3,7 +3,8 @@
 //! status panel), and a footer with the live status line and key help.
 
 use crate::app::{App, Tab};
-use ratatui::layout::{Constraint, Flex, Layout, Rect};
+use crate::brand::{self, Rgb};
+use ratatui::layout::{Alignment, Constraint, Flex, Layout, Rect};
 use ratatui::style::{Color, Modifier, Style, Stylize};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Clear, List, ListItem, Paragraph, Tabs, Wrap};
@@ -126,12 +127,19 @@ fn centered_rect(area: Rect, width: u16, height: u16) -> Rect {
     v
 }
 
-/// Brand palette, shared across the UI (see docs/assets). Acid is the one
-/// signal color: keep it for the mark, the active tab, and live state.
-const PRIMARY: Color = Color::Rgb(198, 255, 61); // acid  #C6FF3D
-const ACCENT: Color = Color::Rgb(237, 237, 230); // bone  #EDEDE6
-const ALERT: Color = Color::Rgb(255, 90, 54); // alert #FF5A36
-const VOID: Color = Color::Rgb(10, 10, 10); // void  #0A0A0A
+const fn rgb(c: Rgb) -> Color {
+    Color::Rgb(c.0, c.1, c.2)
+}
+
+/// Brand palette, shared across the UI (values live in [`crate::brand`]).
+/// Orange is the one signal color: the mark, the active tab, live state and
+/// severity; the rest is cream on ink with sand/mint/clay for log levels.
+const PRIMARY: Color = rgb(brand::ORANGE);
+const ACCENT: Color = rgb(brand::CREAM);
+const WARN: Color = rgb(brand::SAND);
+const VOID: Color = rgb(brand::INK);
+const OK: Color = rgb(brand::MINT);
+const ERR: Color = rgb(brand::CLAY);
 
 fn render_header(frame: &mut Frame, area: Rect, app: &App) {
     // Branded title: the `<_` badge + wordmark + mission, with the version
@@ -186,6 +194,11 @@ fn render_body(frame: &mut Frame, area: Rect, app: &mut App) {
             app.filter
         )
     };
+    if visible.is_empty() && app.tab != Tab::Logs {
+        let filtered = !app.filter.is_empty();
+        render_empty(frame, area, title, app.scanning, filtered);
+        return;
+    }
     let items: Vec<ListItem> = visible
         .iter()
         .map(|line| styled_item(app.tab, line))
@@ -197,6 +210,36 @@ fn render_body(frame: &mut Frame, area: Rect, app: &mut App) {
     frame.render_stateful_widget(list, area, &mut app.list_state);
 }
 
+/// Empty-state panel: the symbol in brand orange over a one-line status and a
+/// hint, instead of a blank bordered list. The art is dropped when it won't fit.
+fn render_empty(frame: &mut Frame, area: Rect, title: String, scanning: bool, filtered: bool) {
+    let block = Block::bordered().title(title);
+    let inner = block.inner(area);
+    frame.render_widget(block, area);
+
+    let (headline, hint) = if filtered {
+        ("no match for this filter", "Esc clears it")
+    } else if scanning {
+        ("scanning…", "results stream in as they are found")
+    } else {
+        ("nothing here yet", "press s to start a static scan · ? for keys")
+    };
+    let mut lines: Vec<Line<'static>> = Vec::new();
+    let art_rows = u16::try_from(brand::GLYPH.len()).unwrap_or(u16::MAX);
+    if inner.height >= art_rows + 4 {
+        lines.extend(brand::GLYPH.iter().map(|row| Line::from(Span::from(*row).fg(PRIMARY))));
+        lines.push(Line::from(""));
+    }
+    lines.push(Line::from(Span::from(headline).bold().fg(ACCENT)));
+    lines.push(Line::from(Span::from(hint).dim()));
+
+    let height = u16::try_from(lines.len()).unwrap_or(u16::MAX).min(inner.height);
+    let [row] = Layout::vertical([Constraint::Length(height)])
+        .flex(Flex::Center)
+        .areas(inner);
+    frame.render_widget(Paragraph::new(lines).alignment(Alignment::Center), row);
+}
+
 /// Colour log lines by log level, and record lines (Endpoints/Findings) by the
 /// severity tag that leads each one.
 fn styled_item(tab: Tab, line: &str) -> ListItem<'static> {
@@ -204,11 +247,11 @@ fn styled_item(tab: Tab, line: &str) -> ListItem<'static> {
     let span = match tab {
         Tab::Logs => {
             if line.contains("ERROR") {
-                owned.red()
+                owned.fg(ERR)
             } else if line.starts_with("[secret]") {
-                owned.yellow()
+                owned.fg(WARN)
             } else if line.contains("completed") {
-                owned.green()
+                owned.fg(OK)
             } else {
                 owned.dim()
             }
@@ -222,9 +265,10 @@ fn styled_item(tab: Tab, line: &str) -> ListItem<'static> {
 /// Style a record line by its leading severity tag (`CRIT`/`HIGH`/…).
 fn severity_styled(line: String) -> Span<'static> {
     match line.split(' ').next().unwrap_or("") {
-        "CRIT" => line.fg(ALERT).bold(),
-        "HIGH" => line.fg(ALERT),
-        "MED" => line.yellow(),
+        // Critical is the one reversed-out row: ink on orange, like the active tab.
+        "CRIT" => line.fg(VOID).bg(PRIMARY).bold(),
+        "HIGH" => line.fg(PRIMARY).bold(),
+        "MED" => line.fg(WARN),
         "LOW" => line.fg(ACCENT),
         _ => line.dim(), // INFO
     }
