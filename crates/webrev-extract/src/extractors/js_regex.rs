@@ -45,6 +45,32 @@ impl JsRegexExtractor {
     }
 }
 
+/// Hosts whose URLs are XML namespaces / specifications, never reachable
+/// application endpoints (e.g. `xmlns="http://www.w3.org/2000/svg"`). These
+/// are the dominant false positives from the broad absolute-URL catch-all.
+const NON_ENDPOINT_HOSTS: &[&str] = &[
+    "www.w3.org",
+    "w3.org",
+    "schema.org",
+    "www.schema.org",
+    "purl.org",
+    "xmlns.com",
+    "ns.adobe.com",
+    "gmpg.org",
+    "ogp.me",
+    "creativecommons.org",
+    "www.apache.org",
+];
+
+/// True for absolute URLs that are namespace/spec references, not endpoints.
+fn is_non_endpoint_url(url: &str) -> bool {
+    let host = url
+        .split_once("://")
+        .and_then(|(_, rest)| rest.split(['/', '?', '#']).next())
+        .unwrap_or("");
+    NON_ENDPOINT_HOSTS.contains(&host)
+}
+
 impl Default for JsRegexExtractor {
     fn default() -> Self {
         Self::new()
@@ -84,9 +110,10 @@ impl Extractor for JsRegexExtractor {
             Self::push(&mut endpoints, &cap[1], Method::Unknown);
         }
         for cap in self.absolute.captures_iter(body) {
-            // Skip websocket URLs already captured above to avoid duplicate work;
-            // the pipeline dedups anyway, but this keeps provenance clean.
-            if !cap[1].starts_with("ws") {
+            // Skip websocket URLs already captured above to avoid duplicate work
+            // (the pipeline dedups anyway, but this keeps provenance clean), and
+            // drop XML-namespace / specification URIs that are not endpoints.
+            if !cap[1].starts_with("ws") && !is_non_endpoint_url(&cap[1]) {
                 Self::push(&mut endpoints, &cap[1], Method::Unknown);
             }
         }
@@ -139,5 +166,20 @@ mod tests {
         assert!(found
             .iter()
             .any(|f| f.value.starts_with("POST ") && f.value.contains("/v1/login")));
+    }
+
+    #[test]
+    fn drops_namespace_and_spec_uris() {
+        let js = r#"
+            const svg = "http://www.w3.org/2000/svg";
+            const ld = "https://schema.org/Organization";
+            const real = "https://api.example.com/v1/users";
+        "#;
+        let urls: Vec<String> = run(js).into_iter().filter_map(|f| f.url).collect();
+        assert!(urls.iter().any(|u| u == "https://api.example.com/v1/users"));
+        assert!(
+            !urls.iter().any(|u| u.contains("w3.org") || u.contains("schema.org")),
+            "namespace/spec URIs must not be reported as endpoints"
+        );
     }
 }

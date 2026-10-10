@@ -85,7 +85,7 @@ async fn pipeline_extracts_and_stores_fixture_findings() {
     for secret in &secrets {
         assert!(secret.value.starts_with("fp:"), "secret must be a fingerprint");
         assert!(
-            !secret.value.contains("AKIAIOSFODNN7EXAMPLE"),
+            !secret.value.contains("AKIAZ4XB7NMPQR2STUVW"),
             "plaintext secret must never be persisted"
         );
     }

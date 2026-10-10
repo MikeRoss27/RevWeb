@@ -13,7 +13,7 @@
         await axios.post("https://api.fixture.test/v1/login", creds);
         const ws = "wss://fixture.test/live";
         // A credential-shaped token the secret extractor must fingerprint.
-        const awsKey = "AKIAIOSFODNN7EXAMPLE";
+        const awsKey = "AKIAZ4XB7NMPQR2STUVW";
         // Technology, GraphQL, and SPA-route signals for the new extractors.
         const sb = createClient("https://xyzcompany.supabase.co", awsKey);
         const Q = gql`query CurrentUser { me { id } }`;

@@ -48,7 +48,13 @@ fn normalize_segment(segment: &str) -> &str {
     if is_uuid(segment) {
         "{uuid}"
     } else if segment.chars().all(|c| c.is_ascii_digit()) {
-        "{id}"
+        // A 4-digit year (1900–2099) is far more often a date path segment
+        // (`/blog/2024/post`, `/2000/svg`) than a collapsible resource id.
+        if is_year_like(segment) {
+            segment
+        } else {
+            "{id}"
+        }
     } else if is_hex(segment) && segment.len() >= 16 {
         "{hash}"
     } else if segment.len() >= 24 && is_token_like(segment) {
@@ -56,6 +62,10 @@ fn normalize_segment(segment: &str) -> &str {
     } else {
         segment
     }
+}
+
+fn is_year_like(s: &str) -> bool {
+    s.len() == 4 && s.parse::<u32>().is_ok_and(|n| (1900..=2099).contains(&n))
 }
 
 fn is_uuid(s: &str) -> bool {
@@ -113,5 +123,15 @@ mod tests {
     #[test]
     fn keeps_stable_segments() {
         assert_eq!(normalize_url("/api/v1/login"), "/api/v1/login");
+    }
+
+    #[test]
+    fn keeps_year_like_segments() {
+        // Years are dates, not resource ids.
+        assert_eq!(normalize_url("http://www.w3.org/2000/svg"), "http://www.w3.org/2000/svg");
+        assert_eq!(normalize_url("/blog/2024/launch"), "/blog/2024/launch");
+        // Non-year numerics still collapse.
+        assert_eq!(normalize_url("/users/123"), "/users/{id}");
+        assert_eq!(normalize_url("/items/12345"), "/items/{id}");
     }
 }

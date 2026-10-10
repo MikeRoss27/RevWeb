@@ -17,6 +17,28 @@ use webrev_core::{
 /// Shannon-entropy threshold (bits/char) above which a token looks random.
 const ENTROPY_MIN: f64 = 3.8;
 
+/// Minimum number of *distinct* characters an entropy candidate must have.
+/// Real credentials draw from a wide alphabet; repetitive strings do not.
+const ENTROPY_MIN_DISTINCT: usize = 12;
+
+/// How many bytes before a match to scan for a secret-ish keyword when
+/// deciding whether an entropy-only hit deserves a confidence bump.
+const CONTEXT_WINDOW: usize = 48;
+
+/// Lowercased substrings that mark a value as a dummy/placeholder rather than a
+/// live credential. Industry scanners allowlist these to cut false positives
+/// (e.g. AWS's own `AKIAIOSFODNN7EXAMPLE` doc key).
+const PLACEHOLDER_MARKERS: &[&str] = &[
+    "example", "placeholder", "changeme", "dummy", "your_", "your-", "yourkey",
+    "sample", "redacted", "insert_", "replace_", "lorem", "foobar", "xxxx",
+    "notreal", "<secret", "<token", "000000", "123456",
+];
+
+/// Secret-ish keywords used for the entropy-pass context check.
+const SECRET_KEYWORDS: &[&str] = &[
+    "key", "secret", "token", "password", "passwd", "auth", "cred", "bearer",
+];
+
 /// Regex-based secret scanner, with an entropy fallback for unknown shapes.
 pub struct SecretExtractor {
     key: SessionKey,
@@ -53,6 +75,72 @@ fn is_mixed(s: &str) -> bool {
     s.bytes().any(|b| b.is_ascii_alphabetic()) && s.bytes().any(|b| b.is_ascii_digit())
 }
 
+/// Count of distinct byte values in `s`.
+fn distinct_chars(s: &str) -> usize {
+    let mut seen = [false; 256];
+    let mut n = 0usize;
+    for b in s.bytes() {
+        if !seen[b as usize] {
+            seen[b as usize] = true;
+            n += 1;
+        }
+    }
+    n
+}
+
+/// Every byte identical (`"aaaa…"`).
+fn is_single_repeated(s: &str) -> bool {
+    let mut bytes = s.bytes();
+    match bytes.next() {
+        Some(first) => bytes.all(|b| b == first),
+        None => false,
+    }
+}
+
+/// Whole string ascends or descends by one byte value (`"abcdef"`, `"9876"`).
+fn is_sequential(s: &str) -> bool {
+    let b = s.as_bytes();
+    if b.len() < 4 {
+        return false;
+    }
+    let asc = b.windows(2).all(|w| w[1] == w[0].wrapping_add(1));
+    let desc = b.windows(2).all(|w| w[0] == w[1].wrapping_add(1));
+    asc || desc
+}
+
+/// Hex of a common digest length (md5/sha1/sha256): almost always an asset,
+/// chunk, or content hash in built front-end code, not a credential.
+fn is_hex_digest(s: &str) -> bool {
+    matches!(s.len(), 32 | 40 | 64) && s.bytes().all(|b| b.is_ascii_hexdigit())
+}
+
+/// A Subresource Integrity hash (`sha256-…` / `sha384-…` / `sha512-…`).
+fn is_sri_hash(s: &str) -> bool {
+    s.starts_with("sha256-") || s.starts_with("sha384-") || s.starts_with("sha512-")
+}
+
+fn looks_like_placeholder(value: &str) -> bool {
+    let lower = value.to_ascii_lowercase();
+    PLACEHOLDER_MARKERS.iter().any(|m| lower.contains(m))
+}
+
+/// False positives common to *every* candidate, regardless of how it matched:
+/// placeholders, trivially-structured strings, and SRI integrity hashes.
+fn is_common_false_positive(value: &str) -> bool {
+    looks_like_placeholder(value)
+        || is_single_repeated(value)
+        || is_sequential(value)
+        || is_sri_hash(value)
+}
+
+/// Is there a secret-ish keyword in the `CONTEXT_WINDOW` bytes preceding `at`?
+/// Used to promote an entropy-only hit from low to medium confidence.
+fn near_secret_keyword(body: &str, at: usize) -> bool {
+    let start = at.saturating_sub(CONTEXT_WINDOW);
+    let window = String::from_utf8_lossy(&body.as_bytes()[start..at]).to_ascii_lowercase();
+    SECRET_KEYWORDS.iter().any(|k| window.contains(k))
+}
+
 impl SecretExtractor {
     /// Build the scanner with a fresh per-run fingerprint key.
     ///
@@ -75,6 +163,18 @@ impl SecretExtractor {
             (compile(r"(AIza[0-9A-Za-z\-_]{35})"), Confidence::High),
             // Slack token
             (compile(r"(xox[baprs]-[0-9A-Za-z-]{10,})"), Confidence::High),
+            // GitHub personal access / OAuth / app / refresh token
+            (compile(r"(gh[pousr]_[A-Za-z0-9]{36,})"), Confidence::High),
+            // GitLab personal access token
+            (compile(r"(glpat-[0-9A-Za-z_\-]{20})"), Confidence::High),
+            // Stripe live secret / restricted key
+            (compile(r"((?:sk|rk)_live_[0-9A-Za-z]{24,})"), Confidence::High),
+            // OpenAI / Anthropic-style project key
+            (compile(r"(sk-(?:proj-)?[A-Za-z0-9_\-]{20,})"), Confidence::High),
+            // SendGrid key
+            (compile(r"(SG\.[A-Za-z0-9_\-]{22}\.[A-Za-z0-9_\-]{43})"), Confidence::High),
+            // npm automation token
+            (compile(r"(npm_[A-Za-z0-9]{36})"), Confidence::High),
             // PEM private key header
             (
                 compile(r"(-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----)"),
@@ -139,23 +239,41 @@ impl Extractor for SecretExtractor {
             }
         };
 
-        // Pass 1: known credential shapes.
+        // Pass 1: known credential shapes. Even a shape match is dropped when
+        // the value is an obvious placeholder/dummy (e.g. the AWS doc key).
         for (regex, confidence) in &self.patterns {
             for cap in regex.captures_iter(&input.body) {
                 if let Some(secret) = cap.get(1).or_else(|| cap.get(0)) {
+                    if is_common_false_positive(secret.as_str()) {
+                        continue;
+                    }
                     push(secret.as_str(), *confidence, &mut findings);
                 }
             }
         }
 
-        // Pass 2: high-entropy tokens that match no known shape (low confidence
-        // because this is heuristic and can flag benign hashes).
+        // Pass 2: high-entropy tokens that match no known shape. This is the
+        // noisiest path, so it is gated hardest: we drop placeholders, SRI and
+        // digest hashes, low-alphabet strings, and anything below the entropy
+        // floor. A hit sitting next to a secret-ish keyword is promoted from
+        // low to medium confidence (context-aware triage).
         for cap in self.entropy_candidate.captures_iter(&input.body) {
             if let Some(token) = cap.get(1) {
-                let token = token.as_str();
-                if is_mixed(token) && shannon_entropy(token) >= ENTROPY_MIN {
-                    push(token, Confidence::Low, &mut findings);
+                let value = token.as_str();
+                if is_common_false_positive(value)
+                    || is_hex_digest(value)
+                    || !is_mixed(value)
+                    || distinct_chars(value) < ENTROPY_MIN_DISTINCT
+                    || shannon_entropy(value) < ENTROPY_MIN
+                {
+                    continue;
                 }
+                let confidence = if near_secret_keyword(&input.body, token.start()) {
+                    Confidence::Medium
+                } else {
+                    Confidence::Low
+                };
+                push(value, confidence, &mut findings);
             }
         }
 
@@ -185,7 +303,9 @@ mod tests {
 
     #[test]
     fn fingerprints_never_leak_plaintext() {
-        let secret = "AKIAIOSFODNN7EXAMPLE";
+        // A real-shaped AWS key id (not the `…EXAMPLE` doc key, which is now
+        // filtered as a placeholder).
+        let secret = "AKIAZ4XB7NMPQR2STUVW";
         let found = run(&format!("const k = '{secret}';"));
         assert!(!found.is_empty());
         for f in &found {
@@ -198,8 +318,48 @@ mod tests {
 
     #[test]
     fn detects_assignment_and_dedups_within_file() {
-        let found = run(r#"apiKey="abcdef0123456789"; apiKey="abcdef0123456789";"#);
+        let found = run(r#"apiKey="A1b2C3d4E5f6G7h8"; apiKey="A1b2C3d4E5f6G7h8";"#);
         // Same secret twice => one fingerprint.
         assert_eq!(found.len(), 1);
+    }
+
+    #[test]
+    fn drops_placeholder_and_example_values() {
+        // AWS's own documentation key id, and a generic dummy assignment.
+        let found = run(r#"const a = "AKIAIOSFODNN7EXAMPLE"; const t = "token=your_api_key_here";"#);
+        assert!(found.is_empty(), "placeholder/example values must not be reported");
+    }
+
+    #[test]
+    fn drops_sri_and_digest_hashes() {
+        // A 40-char SHA-1 asset hash and an SRI integrity value: both benign.
+        let sha1 = "a".repeat(10) + "b1c2d3e4f5" + "0011223344" + "aabbccddee"; // 40 hex
+        let js = format!(
+            r#"var h = "{sha1}"; var i = "sha384-oqVuAfXRKap7fdgcCY5uykM6+R9GqQ8K/uxy9rx7HNQlGYl1kPzQho1wx4JwY8w";"#
+        );
+        let found = run(&js);
+        assert!(found.is_empty(), "digest and SRI hashes must be filtered");
+    }
+
+    #[test]
+    fn keeps_high_entropy_token_and_bumps_on_context() {
+        let token = "Rj8Kpz2Wqf4Lm9Xv7Tb3Nc6Hy1Qs5Ad"; // 32 mixed, high entropy
+        // Near a keyword → medium; isolated → low.
+        let with_ctx = run(&format!(r#"const apiSecret = "{token}";"#));
+        assert_eq!(with_ctx.len(), 1);
+        assert_eq!(with_ctx[0].confidence, Confidence::Medium);
+
+        let no_ctx = run(&format!(r#"["{token}"]"#));
+        assert_eq!(no_ctx.len(), 1);
+        assert_eq!(no_ctx[0].confidence, Confidence::Low);
+    }
+
+    #[test]
+    fn detects_github_and_stripe_shapes() {
+        let gh = format!("ghp_{}", "A1b2C3d4E5".repeat(4)); // ghp_ + 40
+        let sk = format!("sk_live_{}", "A1b2C3d4E5f6".repeat(2)); // 24
+        let found = run(&format!(r#"const g="{gh}"; const s="{sk}";"#));
+        assert_eq!(found.len(), 2);
+        assert!(found.iter().all(|f| f.confidence == Confidence::High));
     }
 }
