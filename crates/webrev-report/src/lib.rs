@@ -10,8 +10,10 @@
 //! [`Finding`](webrev_core::Finding)s and [`Endpoint`](webrev_core::Endpoint)s,
 //! so this crate depends only on the domain model and `serde`.
 
+pub mod format;
 pub mod json;
 pub mod summary;
 
+pub use format::{RenderOptions, ReportFormat, ScopeFilter};
 pub use json::SessionReport;
 pub use summary::Summary;

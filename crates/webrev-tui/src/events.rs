@@ -19,6 +19,10 @@ pub enum Action {
     StartStatic,
     StartDynamic,
     ExportReport,
+    /// Enter filter-input mode.
+    Filter,
+    /// Open/close the detail overlay for the selected item.
+    ToggleDetail,
 }
 
 /// Map a key event to an [`Action`].
@@ -35,6 +39,8 @@ pub fn map_key(key: KeyEvent) -> Action {
         KeyCode::Char('s') => Action::StartStatic,
         KeyCode::Char('d') => Action::StartDynamic,
         KeyCode::Char('r') => Action::ExportReport,
+        KeyCode::Char('/') => Action::Filter,
+        KeyCode::Enter => Action::ToggleDetail,
         _ => Action::None,
     }
 }

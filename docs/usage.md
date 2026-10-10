@@ -13,7 +13,8 @@ All scanning subcommands (`static`, `dynamic`, `tui`) share the same options.
 
 | Flag | Default | Description |
 | --- | --- | --- |
-| `--seed <URL>` | *(required)* | Seed URL to analyze. Repeatable. |
+| `--seed <URL>` | stdin | Seed URL to analyze. Repeatable. If omitted, seeds are read from stdin (one URL per line; `#` comments and blanks ignored). |
+| `--stdin` | off | Also read seeds from stdin, merging them with any `--seed` values. |
 | `--scope <HOST>` | seeds' hosts | In-scope host suffix. Repeatable. If omitted, derived from the seeds. |
 | `--exclude <HOST>` | — | Out-of-scope host suffix. Repeatable. |
 | `--name <NAME>` | `webrev-mission` | Mission name (env `WEBREV_NAME`). |
@@ -40,7 +41,13 @@ include list denies everything.
 | --- | --- | --- |
 | `--session <UUID>` | latest scan | Session to export. Defaults to the most recent one in the DB. |
 | `--db <PATH>` | `webrev.db` | SQLite database path (env `WEBREV_DB`). |
-| `--output <PATH>` | stdout | Write the JSON report to a file instead of printing it. |
+| `--output <PATH>` | stdout | Write the report to a file instead of printing it. |
+| `--format <FMT>` | `json` | `json` (full document), `jsonl` (one finding per line), `urls` (bare endpoint URLs, one per line), or `csv` (findings table). |
+| `--scope <SEL>` | `all` | Restrict endpoint output: `all`, `internal` (in-scope target), or `external` (third-party). |
+| `--min-confidence <LVL>` | `low` | Drop findings below `low` / `medium` / `high`. |
+
+Informational messages go to stderr and the data to stdout, so every format
+pipes cleanly (a closed pipe such as `| head` exits without error).
 
 ## Subcommands
 
@@ -52,6 +59,9 @@ the `report` command to run next.
 
 ```bash
 webrev static --seed https://app.example.com/ --max-depth 2 --max-pages 200
+
+# Compose with a recon pipeline — seeds come from stdin, one URL per line
+subfinder -d example.com | httpx -silent | webrev static --scope example.com
 ```
 
 ### `dynamic`
@@ -75,10 +85,15 @@ Launches the interactive terminal UI and auto-starts a static scan. Keys:
 | `Shift-Tab` / `←` | Previous tab |
 | `↑` / `k`, `↓` / `j` | Scroll the active list |
 | `g` / `Home`, `G` / `End` | Jump to top / bottom (bottom re-enables follow) |
+| `/` | Filter the active list (type to narrow, `Enter` apply, `Esc` clear) |
+| `Enter` | Open/close the detail overlay for the selected endpoint/finding |
 | `s` | Start a static scan |
 | `d` | Start a dynamic scan |
 | `r` | Export the JSON report |
 | `q` / `Esc` | Quit |
+
+The Endpoints tab tags each entry `int` / `ext` (in-scope vs third-party) and
+dims the external ones; the Status tab breaks endpoints down by scope.
 
 ### `report`
 
@@ -86,8 +101,14 @@ Exports a stored session as JSON (summary counters, endpoints, and all
 findings). With no `--session`, it uses the most recent scan.
 
 ```bash
-webrev report                      # prints the latest session as JSON
-webrev report --output report.json # writes it to a file
+webrev report                       # prints the latest session as JSON
+webrev report --output report.json  # writes it to a file
+
+# Feed just the in-scope endpoint URLs into another tool
+webrev report --format urls --scope internal | ffuf -u FUZZ -w -
+
+# Only the high-confidence findings, as a spreadsheet
+webrev report --format csv --min-confidence high --output findings.csv
 ```
 
 ## Environment variables

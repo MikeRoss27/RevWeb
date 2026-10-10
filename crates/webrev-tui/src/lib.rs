@@ -181,7 +181,7 @@ async fn event_loop(
         report_path: options.report_path,
     };
 
-    let mut app = App::new(mission.name.clone());
+    let mut app = App::new(mission.name.clone(), mission.scope.clone());
     let (ui_tx, mut ui_rx) = mpsc::unbounded_channel::<UiEvent>();
     // Async terminal input — the idiomatic ratatui pattern, no blocking thread.
     let mut term_events = EventStream::new();
@@ -197,7 +197,11 @@ async fn event_loop(
             Some(event) = ui_rx.recv() => app.apply(event),
             maybe = term_events.next() => match maybe {
                 Some(Ok(Event::Key(key))) if key.kind == KeyEventKind::Press => {
-                    handle_action(map_key(key), &mut app, &controller, &ui_tx).await;
+                    if app.filtering {
+                        handle_filter_key(key, &mut app);
+                    } else {
+                        handle_action(map_key(key), &mut app, &controller, &ui_tx).await;
+                    }
                 }
                 // Resize and other events just trigger a redraw next iteration.
                 Some(Ok(_)) => {}
@@ -214,6 +218,19 @@ async fn event_loop(
     Ok(())
 }
 
+/// While the filter line is open, keys edit the filter string instead of
+/// triggering actions. Enter confirms (keeps the filter), Esc cancels (clears).
+fn handle_filter_key(key: crossterm::event::KeyEvent, app: &mut App) {
+    use crossterm::event::KeyCode;
+    match key.code {
+        KeyCode::Esc => app.filter_cancel(),
+        KeyCode::Enter => app.filter_confirm(),
+        KeyCode::Backspace => app.filter_backspace(),
+        KeyCode::Char(c) => app.filter_push(c),
+        _ => {}
+    }
+}
+
 /// Apply a decoded key action to the app and controller.
 async fn handle_action(
     action: Action,
@@ -223,9 +240,15 @@ async fn handle_action(
 ) {
     match action {
         Action::Quit => {
-            controller.cancel.cancel();
-            app.should_quit = true;
+            // Esc/q first dismisses an open detail overlay, then quits.
+            if app.show_detail {
+                app.show_detail = false;
+            } else {
+                controller.cancel.cancel();
+                app.should_quit = true;
+            }
         }
+        Action::ToggleDetail => app.toggle_detail(),
         Action::NextTab => app.select_tab(app.tab.next()),
         Action::PrevTab => app.select_tab(app.tab.prev()),
         Action::ScrollUp => app.scroll_up(),
@@ -247,6 +270,7 @@ async fn handle_action(
             };
             app.apply(UiEvent::Status(status));
         }
+        Action::Filter => app.begin_filter(),
         Action::None => {}
     }
 }

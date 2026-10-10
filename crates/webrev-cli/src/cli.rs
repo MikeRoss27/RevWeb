@@ -1,7 +1,7 @@
 // crates/webrev-cli/src/cli.rs
 //! Command-line surface (clap derive + `WEBREV_` environment variables).
 
-use clap::{Args, Parser, Subcommand};
+use clap::{Args, Parser, Subcommand, ValueEnum};
 use std::path::PathBuf;
 
 /// `webrev` — a web reconnaissance and analysis toolkit.
@@ -27,9 +27,14 @@ pub enum Command {
 /// Arguments shared by the scanning subcommands.
 #[derive(Args)]
 pub struct ScanArgs {
-    /// Seed URL to analyze (repeatable).
-    #[arg(long = "seed", value_name = "URL", required = true)]
+    /// Seed URL to analyze (repeatable). When omitted, seeds are read from
+    /// stdin (one URL per line), so `webrev` composes with other tools:
+    /// `subfinder -d x.com | httpx | webrev static`.
+    #[arg(long = "seed", value_name = "URL")]
     pub seeds: Vec<String>,
+    /// Read seed URLs from stdin even if `--seed` was also given (merge both).
+    #[arg(long)]
+    pub stdin: bool,
     /// In-scope host suffix (repeatable). Defaults to the seeds' hosts.
     #[arg(long = "scope", value_name = "HOST")]
     pub scope: Vec<String>,
@@ -77,6 +82,38 @@ pub struct ScanArgs {
     pub report: PathBuf,
 }
 
+/// Output serialization for `report`.
+#[derive(Copy, Clone, Debug, PartialEq, Eq, ValueEnum)]
+pub enum Format {
+    /// Full pretty JSON document (default).
+    Json,
+    /// One finding per line (JSON Lines) — stream into jq.
+    Jsonl,
+    /// Bare endpoint URLs, one per line — pipe into ffuf/httpx/nuclei.
+    Urls,
+    /// Findings as a CSV table.
+    Csv,
+}
+
+/// Endpoint scope selector for `report`.
+#[derive(Copy, Clone, Debug, PartialEq, Eq, ValueEnum)]
+pub enum ScopeSel {
+    /// Both internal and external.
+    All,
+    /// Only in-scope (target) endpoints.
+    Internal,
+    /// Only third-party endpoints.
+    External,
+}
+
+/// Minimum confidence selector for `report`.
+#[derive(Copy, Clone, Debug, PartialEq, Eq, ValueEnum)]
+pub enum ConfidenceSel {
+    Low,
+    Medium,
+    High,
+}
+
 /// Arguments for the `report` subcommand.
 #[derive(Args)]
 pub struct ReportArgs {
@@ -89,4 +126,13 @@ pub struct ReportArgs {
     /// Output file; prints to stdout when omitted.
     #[arg(long)]
     pub output: Option<PathBuf>,
+    /// Output format.
+    #[arg(long, value_enum, default_value_t = Format::Json)]
+    pub format: Format,
+    /// Restrict endpoint output to a scope.
+    #[arg(long, value_enum, default_value_t = ScopeSel::All)]
+    pub scope: ScopeSel,
+    /// Drop findings below this confidence.
+    #[arg(long = "min-confidence", value_enum, default_value_t = ConfidenceSel::Low)]
+    pub min_confidence: ConfidenceSel,
 }

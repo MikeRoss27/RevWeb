@@ -11,7 +11,7 @@ use webrev_core::{Endpoint, FindingKind, Method};
 use webrev_storage::{SqliteStorage, Storage};
 
 pub async fn run(args: ScanArgs) -> anyhow::Result<()> {
-    let (mission, opsec) = build_mission(&args);
+    let (mission, opsec) = build_mission(&args)?;
     let storage: Arc<dyn Storage> = Arc::new(SqliteStorage::connect(&args.db).await?);
     storage.create_session(&mission).await?;
     println!("mission '{}' — dynamic scan", mission.name);

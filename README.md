@@ -31,7 +31,13 @@ drives a headless Chromium to capture live traffic.
 - **Authenticated scans** — cookies / headers / bearer token applied to both the
   HTTP client and the browser.
 - **Live TUI** — four tabs (Endpoints / Findings / Logs / Status) streaming
-  pipeline events, with a JSON report export.
+  pipeline events, with live `/` filtering, internal/external endpoint tagging,
+  and a JSON report export.
+- **Pipeline-native** — seeds can be read from stdin
+  (`subfinder -d x.com | httpx | webrev static`), and `report` emits `json`,
+  `jsonl`, `urls` (pipe into ffuf/httpx/nuclei), or `csv`, with scope and
+  confidence filters; data goes to stdout, chatter to stderr, and a closed pipe
+  exits cleanly.
 
 ## Install / build
 
