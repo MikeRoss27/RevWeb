@@ -47,13 +47,36 @@ drives a headless Chromium to capture live traffic.
 
 ## Install / build
 
-Requires a recent stable Rust toolchain (edition 2021, Rust ≥ 1.82). Dynamic
-analysis additionally needs a local Chrome/Chromium.
+Requires a recent stable Rust toolchain (edition 2021, Rust ≥ 1.82) and a C
+compiler — SQLite and the TLS backend (rustls/ring) are built from source, so
+no system OpenSSL or libsqlite3 is needed. Dynamic analysis additionally needs a
+local Chrome/Chromium.
 
 ```bash
 cargo build --release          # binaries: target/release/webrev and webrev-tui
 cargo test --workspace         # 50+ tests (browser tests are #[ignore])
 cargo clippy --workspace --all-targets -- -D warnings
+```
+
+### Linux / Arch Linux
+
+Fully supported. The HTTP stack uses rustls (no OpenSSL) and SQLite is bundled,
+so the only build requirement beyond Rust is a C toolchain.
+
+```bash
+# Arch Linux
+sudo pacman -S --needed rustup base-devel   # Rust + gcc (base-devel)
+sudo pacman -S chromium                      # only for `webrev dynamic` / TUI `d`
+
+# Debian/Ubuntu equivalents: build-essential + chromium (or chromium-browser)
+```
+
+Chromium is auto-detected on `PATH` (`chromium`, `chromium-browser`,
+`google-chrome-stable`, …). For a Flatpak/Snap or non-standard install, point
+webrev at the binary with the `CHROME` environment variable:
+
+```bash
+CHROME=/usr/bin/chromium webrev dynamic --seed https://app.example.com/
 ```
 
 ## Quick start

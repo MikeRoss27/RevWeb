@@ -76,6 +76,10 @@ Chrome/Chromium.
 webrev dynamic --seed https://app.example.com/ --duration-secs 10 --cookie "session=…"
 ```
 
+Chromium is auto-detected on `PATH`. For a non-standard install (Flatpak/Snap,
+custom path), set `CHROME=/path/to/chromium`. On Arch Linux, `pacman -S chromium`
+is detected out of the box.
+
 ### `tui`
 
 Launches the interactive terminal UI and auto-starts a static scan. Keys:
