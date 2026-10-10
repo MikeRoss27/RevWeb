@@ -23,7 +23,8 @@ CREATE TABLE IF NOT EXISTS endpoints (
     session_id TEXT NOT NULL,
     url        TEXT NOT NULL,
     method     TEXT NOT NULL,
-    source     TEXT NOT NULL
+    source     TEXT NOT NULL,
+    scope      TEXT NOT NULL DEFAULT 'internal'
 );
 
 -- Secrets are stored ONLY as non-reversible fingerprints (see

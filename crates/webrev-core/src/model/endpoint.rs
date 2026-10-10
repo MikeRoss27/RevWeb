@@ -82,12 +82,46 @@ impl fmt::Display for Source {
     }
 }
 
+/// Whether an endpoint belongs to the target application (`Internal`) or is a
+/// reference to a third-party host outside the mission scope (`External`).
+///
+/// This splits the recon-relevant attack surface from the noise of CDN,
+/// analytics, social, and spec URLs, without discarding the latter.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+pub enum EndpointScope {
+    /// Same-origin or in-scope host: part of the target's surface.
+    Internal,
+    /// Out-of-scope host: a third-party reference.
+    External,
+}
+
+impl EndpointScope {
+    /// Short stable slug for persistence and JSON/TUI labels.
+    #[must_use]
+    pub fn slug(self) -> &'static str {
+        match self {
+            Self::Internal => "internal",
+            Self::External => "external",
+        }
+    }
+}
+
+impl fmt::Display for EndpointScope {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(self.slug())
+    }
+}
+
 /// A concrete request target discovered during analysis.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub struct Endpoint {
     pub url: String,
     pub method: Method,
     pub source: Source,
+    /// Internal (in-scope) vs external (third-party). Extractors cannot know
+    /// the scope, so this defaults to [`EndpointScope::Internal`] and is set
+    /// authoritatively by the store stage via [`Endpoint::with_scope`].
+    pub scope: EndpointScope,
 }
 
 impl Endpoint {
@@ -97,6 +131,14 @@ impl Endpoint {
             url: url.into(),
             method,
             source,
+            scope: EndpointScope::Internal,
         }
+    }
+
+    /// Set the in/out-of-scope classification (builder style).
+    #[must_use]
+    pub fn with_scope(mut self, scope: EndpointScope) -> Self {
+        self.scope = scope;
+        self
     }
 }

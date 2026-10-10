@@ -3,7 +3,7 @@
 
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
-use webrev_core::Finding;
+use webrev_core::{Endpoint, Finding};
 
 /// Counters grouped by finding kind and by confidence, plus a grand total.
 /// `BTreeMap` keeps the JSON output deterministically ordered.
@@ -12,6 +12,8 @@ pub struct Summary {
     pub total: usize,
     pub by_kind: BTreeMap<String, usize>,
     pub by_confidence: BTreeMap<String, usize>,
+    /// Unique endpoints split by internal (in-scope) vs external (third-party).
+    pub endpoints_by_scope: BTreeMap<String, usize>,
 }
 
 impl Summary {
@@ -33,6 +35,16 @@ impl Summary {
                 .or_insert(0) += 1;
         }
         summary
+    }
+
+    /// Record the internal/external split of the session's unique endpoints.
+    pub fn set_endpoint_scopes(&mut self, endpoints: &[Endpoint]) {
+        for endpoint in endpoints {
+            *self
+                .endpoints_by_scope
+                .entry(endpoint.scope.slug().to_owned())
+                .or_insert(0) += 1;
+        }
     }
 }
 

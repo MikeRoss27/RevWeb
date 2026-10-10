@@ -20,7 +20,8 @@ impl SessionReport {
     /// Assemble a report from a mission and its persisted data.
     #[must_use]
     pub fn build(mission: Mission, findings: Vec<Finding>, endpoints: Vec<Endpoint>) -> Self {
-        let summary = Summary::from_findings(&findings);
+        let mut summary = Summary::from_findings(&findings);
+        summary.set_endpoint_scopes(&endpoints);
         Self {
             tool_version: env!("CARGO_PKG_VERSION").to_owned(),
             mission,

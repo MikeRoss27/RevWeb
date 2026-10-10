@@ -85,9 +85,13 @@ impl Stage for StoreStage {
                         .map_or(Method::Unknown, Method::parse);
                     let raw = finding.url.clone().unwrap_or_else(|| finding.value.clone());
                     let normalized = normalize_url(&raw);
+                    // Classify against the mission scope on the raw (host-bearing)
+                    // URL before normalization strips nothing host-relevant.
+                    let endpoint_scope = ctx.mission.scope.classify(&raw);
                     if seen_endpoints.insert(format!("{method} {normalized}")) {
                         let endpoint =
-                            Endpoint::new(normalized, method, finding.provenance.source);
+                            Endpoint::new(normalized, method, finding.provenance.source)
+                                .with_scope(endpoint_scope);
                         if let Err(e) =
                             ctx.storage.insert_endpoint(ctx.session_id, &endpoint).await
                         {

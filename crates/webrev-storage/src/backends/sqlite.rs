@@ -10,8 +10,8 @@ use std::fmt::Display;
 use std::path::Path;
 use uuid::Uuid;
 use webrev_core::{
-    Confidence, Endpoint, Finding, FindingKind, Method, Mission, Provenance, Result, SessionId,
-    Source, WebrevError,
+    Confidence, Endpoint, EndpointScope, Finding, FindingKind, Method, Mission, Provenance, Result,
+    SessionId, Source, WebrevError,
 };
 
 /// Embedded schema, applied (idempotently) on every connect.
@@ -42,6 +42,18 @@ impl SqliteStorage {
             .execute(&pool)
             .await
             .map_err(storage_err)?;
+        // Idempotent column add for databases created before `endpoints.scope`
+        // existed. SQLite has no `ADD COLUMN IF NOT EXISTS`, so we run it
+        // unconditionally and swallow the "duplicate column" error on DBs that
+        // already have it (including freshly-created ones).
+        if let Err(e) = sqlx::query("ALTER TABLE endpoints ADD COLUMN scope TEXT NOT NULL DEFAULT 'internal'")
+            .execute(&pool)
+            .await
+        {
+            if !e.to_string().contains("duplicate column name") {
+                return Err(storage_err(e));
+            }
+        }
         Ok(Self { pool })
     }
 }
@@ -87,6 +99,14 @@ fn parse_source(s: &str) -> Result<Source> {
     })
 }
 
+fn parse_endpoint_scope(s: &str) -> Result<EndpointScope> {
+    Ok(match s {
+        "internal" => EndpointScope::Internal,
+        "external" => EndpointScope::External,
+        other => return Err(WebrevError::Storage(format!("unknown endpoint scope {other:?}"))),
+    })
+}
+
 #[async_trait]
 impl Storage for SqliteStorage {
     async fn create_session(&self, mission: &Mission) -> Result<()> {
@@ -120,11 +140,14 @@ impl Storage for SqliteStorage {
     }
 
     async fn insert_endpoint(&self, session: SessionId, endpoint: &Endpoint) -> Result<()> {
-        sqlx::query("INSERT INTO endpoints (session_id, url, method, source) VALUES (?, ?, ?, ?)")
+        sqlx::query(
+            "INSERT INTO endpoints (session_id, url, method, source, scope) VALUES (?, ?, ?, ?, ?)",
+        )
             .bind(session.to_string())
             .bind(&endpoint.url)
             .bind(endpoint.method.to_string())
             .bind(endpoint.source.to_string())
+            .bind(endpoint.scope.slug())
             .execute(&self.pool)
             .await
             .map_err(storage_err)?;
@@ -188,19 +211,22 @@ impl Storage for SqliteStorage {
     }
 
     async fn endpoints_by_session(&self, session: SessionId) -> Result<Vec<Endpoint>> {
-        let rows =
-            sqlx::query("SELECT url, method, source FROM endpoints WHERE session_id = ? ORDER BY rowid")
-                .bind(session.to_string())
-                .fetch_all(&self.pool)
-                .await
-                .map_err(storage_err)?;
+        let rows = sqlx::query(
+            "SELECT url, method, source, scope FROM endpoints WHERE session_id = ? ORDER BY rowid",
+        )
+        .bind(session.to_string())
+        .fetch_all(&self.pool)
+        .await
+        .map_err(storage_err)?;
 
         rows.into_iter()
             .map(|row| {
                 let url: String = row.try_get("url").map_err(storage_err)?;
                 let method: String = row.try_get("method").map_err(storage_err)?;
                 let source: String = row.try_get("source").map_err(storage_err)?;
-                Ok(Endpoint::new(url, Method::parse(&method), parse_source(&source)?))
+                let scope: String = row.try_get("scope").map_err(storage_err)?;
+                Ok(Endpoint::new(url, Method::parse(&method), parse_source(&source)?)
+                    .with_scope(parse_endpoint_scope(&scope)?))
             })
             .collect()
     }

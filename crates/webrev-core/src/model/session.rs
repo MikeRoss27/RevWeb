@@ -2,6 +2,7 @@
 //! Mission / session identity and scoping rules.
 
 use crate::error::WebrevError;
+use crate::model::endpoint::EndpointScope;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use uuid::Uuid;
@@ -97,6 +98,20 @@ impl Scope {
         }
         self.include.iter().any(|p| Self::host_matches(host, p))
     }
+
+    /// Classify an endpoint URL as internal (in-scope) or external.
+    ///
+    /// Relative URLs (no `scheme://host`) are same-origin by definition and are
+    /// always [`EndpointScope::Internal`]; absolute URLs are internal iff the
+    /// scope [`allows`](Self::allows) them.
+    #[must_use]
+    pub fn classify(&self, url: &str) -> EndpointScope {
+        if url.contains("://") && !self.allows(url) {
+            EndpointScope::External
+        } else {
+            EndpointScope::Internal
+        }
+    }
 }
 
 /// A full analysis mission: identity, human name, scope, and seed URLs.
@@ -147,5 +162,22 @@ mod tests {
         );
         assert_eq!(Scope::host_of("not a url"), Some("not a url"));
         assert_eq!(Scope::host_of("https:///nohost"), None);
+    }
+
+    #[test]
+    fn classify_internal_vs_external() {
+        let scope = Scope::new(vec!["example.com".into()], vec![]);
+        // Relative URLs are same-origin => internal.
+        assert_eq!(scope.classify("/api/users"), EndpointScope::Internal);
+        // In-scope absolute host => internal.
+        assert_eq!(
+            scope.classify("https://api.example.com/v1"),
+            EndpointScope::Internal
+        );
+        // Out-of-scope absolute host => external.
+        assert_eq!(
+            scope.classify("https://cdn.jsdelivr.net/x.js"),
+            EndpointScope::External
+        );
     }
 }
