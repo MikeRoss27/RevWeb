@@ -1,0 +1,28 @@
+# crates/webrev-pipeline/Cargo.toml
+[package]
+name = "webrev-pipeline"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[dependencies]
+webrev-core.workspace = true
+webrev-extract.workspace = true
+webrev-storage.workspace = true
+tokio.workspace = true
+tokio-util.workspace = true
+async-trait.workspace = true
+reqwest.workspace = true
+regex.workspace = true
+rand.workspace = true
+rand_distr.workspace = true
+tracing.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+base64.workspace = true
+futures.workspace = true
+
+[dev-dependencies]
+tokio = { workspace = true }

@@ -1,0 +1,26 @@
+# crates/webrev-cli/Cargo.toml
+[package]
+name = "webrev-cli"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[[bin]]
+name = "webrev"
+path = "src/main.rs"
+
+[dependencies]
+webrev-core.workspace = true
+webrev-extract.workspace = true
+webrev-storage.workspace = true
+webrev-pipeline.workspace = true
+webrev-browser.workspace = true
+webrev-report.workspace = true
+webrev-tui.workspace = true
+anyhow.workspace = true
+clap.workspace = true
+tokio.workspace = true
+tokio-util.workspace = true
+tracing-subscriber.workspace = true

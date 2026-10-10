@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<!-- crates/webrev-pipeline/tests/fixtures/sample.html -->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>webrev fixture</title>
+    <script src="/static/app.js"></script>
+    <script src="/static/vendor.js"></script>
+    <script>
+      // Inline script with endpoints the JS extractors should find.
+      async function boot() {
+        const me = await fetch("/api/v1/me");
+        await axios.post("https://api.fixture.test/v1/login", creds);
+        const ws = "wss://fixture.test/live";
+        // A credential-shaped token the secret extractor must fingerprint.
+        const awsKey = "AKIAIOSFODNN7EXAMPLE";
+        // Technology, GraphQL, and SPA-route signals for the new extractors.
+        const sb = createClient("https://xyzcompany.supabase.co", awsKey);
+        const Q = gql`query CurrentUser { me { id } }`;
+        const routes = [{ path: "/dashboard" }, { path: "/users/:id" }];
+      }
+      //# sourceMappingURL=app.js.map
+    </script>
+  </head>
+  <body>
+    <a href="/dashboard">Dashboard</a>
+    <a href="#top">skip</a>
+    <form action="/api/v1/session" method="post"></form>
+    <script src="/static/analytics.js"></script>
+  </body>
+</html>

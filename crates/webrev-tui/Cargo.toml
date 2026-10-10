@@ -1,0 +1,32 @@
+# crates/webrev-tui/Cargo.toml
+[package]
+name = "webrev-tui"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[lib]
+name = "webrev_tui"
+path = "src/lib.rs"
+
+[[bin]]
+name = "webrev-tui"
+path = "src/main.rs"
+
+[dependencies]
+webrev-core.workspace = true
+webrev-extract.workspace = true
+webrev-storage.workspace = true
+webrev-pipeline.workspace = true
+webrev-browser.workspace = true
+webrev-report.workspace = true
+anyhow.workspace = true
+tokio.workspace = true
+tokio-util.workspace = true
+ratatui.workspace = true
+# `event-stream` enables the async `EventStream` input used by the event loop.
+crossterm = { workspace = true, features = ["event-stream"] }
+futures.workspace = true
+clap.workspace = true

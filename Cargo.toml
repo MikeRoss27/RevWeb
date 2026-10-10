@@ -1,0 +1,92 @@
+# Cargo.toml
+[workspace]
+resolver = "2"
+members = [
+    "crates/webrev-core",
+    "crates/webrev-extract",
+    "crates/webrev-storage",
+    "crates/webrev-pipeline",
+    "crates/webrev-browser",
+    "crates/webrev-report",
+    "crates/webrev-tui",
+    "crates/webrev-cli",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.82"
+license = "MIT"
+authors = ["webrev contributors"]
+
+[workspace.dependencies]
+# --- internal crates ---
+webrev-core = { path = "crates/webrev-core" }
+webrev-extract = { path = "crates/webrev-extract" }
+webrev-storage = { path = "crates/webrev-storage" }
+webrev-pipeline = { path = "crates/webrev-pipeline" }
+webrev-browser = { path = "crates/webrev-browser" }
+webrev-report = { path = "crates/webrev-report" }
+webrev-tui = { path = "crates/webrev-tui" }
+
+# --- error handling ---
+thiserror = "2.0"
+anyhow = "1.0"
+
+# --- serde / data ---
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+uuid = { version = "1.11", features = ["v4", "serde"] }
+hex = "0.4"
+base64 = "0.22"
+
+# --- async runtime ---
+tokio = { version = "1.43", features = ["rt-multi-thread", "macros", "sync", "time", "signal"] }
+tokio-util = { version = "0.7", features = ["rt"] }
+async-trait = "0.1"
+futures = "0.3"
+
+# --- extraction ---
+regex = "1.11"
+lol_html = "3.0"
+# swc_core bundles swc_common / ecma_ast / ecma_parser / ecma_visit at
+# internally-aligned versions behind feature flags, which sidesteps the
+# notoriously fragile cross-crate version matching of the standalone swc crates.
+swc_core = { version = "82.0", features = ["ecma_parser", "ecma_ast", "ecma_visit", "common"] }
+
+# --- network ---
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "gzip", "brotli", "json"] }
+
+# --- browser ---
+# 0.9 runs on tokio by default (the old async-std/tokio runtime feature flags
+# were removed). `bytes` is its default feature.
+chromiumoxide = "0.9"
+
+# --- storage ---
+# No `macros` feature: we use the runtime query API so the crate builds with no
+# DATABASE_URL and no compile-time schema.
+sqlx = { version = "0.8", default-features = false, features = ["runtime-tokio", "sqlite"] }
+
+# --- crypto (secret fingerprints) ---
+hmac = "0.12"
+sha2 = "0.10"
+
+# --- randomness (jitter / fingerprint seeds) ---
+rand = "0.8"
+rand_distr = "0.4"
+
+# --- cli / tui ---
+clap = { version = "4.5", features = ["derive", "env"] }
+ratatui = "0.30"
+crossterm = "0.29"
+
+# --- observability ---
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
+
+# --- test support ---
+tempfile = "3.14"
+
+[profile.release]
+lto = "thin"
+strip = true
