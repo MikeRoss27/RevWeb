@@ -74,7 +74,7 @@ fn render_help(frame: &mut Frame, area: Rect) {
     let popup = centered_rect(area, 60, height);
     let block = Block::bordered()
         .border_style(Style::new().fg(PRIMARY))
-        .title(Span::from(" ◠ keys ").fg(PRIMARY).add_modifier(Modifier::BOLD));
+        .title(Span::from(" <_ keys ").fg(PRIMARY).add_modifier(Modifier::BOLD));
     frame.render_widget(Clear, popup);
     frame.render_widget(Paragraph::new(lines).block(block).wrap(Wrap { trim: false }), popup);
 }
@@ -110,7 +110,7 @@ fn render_detail(frame: &mut Frame, area: Rect, finding: &Finding) {
     let popup = centered_rect(area, 72, height);
     let block = Block::bordered()
         .border_style(Style::new().fg(PRIMARY))
-        .title(Span::from(" ◠ detail ").fg(PRIMARY).add_modifier(Modifier::BOLD));
+        .title(Span::from(" <_ detail ").fg(PRIMARY).add_modifier(Modifier::BOLD));
     frame.render_widget(Clear, popup);
     frame.render_widget(Paragraph::new(lines).block(block).wrap(Wrap { trim: false }), popup);
 }
@@ -126,16 +126,20 @@ fn centered_rect(area: Rect, width: u16, height: u16) -> Rect {
     v
 }
 
-/// Brand palette, shared across the UI.
-const PRIMARY: Color = Color::Cyan;
-const ACCENT: Color = Color::Magenta;
+/// Brand palette, shared across the UI (see docs/assets). Acid is the one
+/// signal color: keep it for the mark, the active tab, and live state.
+const PRIMARY: Color = Color::Rgb(198, 255, 61); // acid  #C6FF3D
+const ACCENT: Color = Color::Rgb(237, 237, 230); // bone  #EDEDE6
+const ALERT: Color = Color::Rgb(255, 90, 54); // alert #FF5A36
+const VOID: Color = Color::Rgb(10, 10, 10); // void  #0A0A0A
 
 fn render_header(frame: &mut Frame, area: Rect, app: &App) {
-    // Branded title: logo mark + wordmark + mission, with the version pinned
-    // to the right edge.
+    // Branded title: the `<_` badge + wordmark + mission, with the version
+    // pinned to the right edge.
     let brand = Line::from(vec![
-        Span::from(" ◠ ").fg(PRIMARY).add_modifier(Modifier::BOLD),
-        Span::from("webrev").fg(PRIMARY).add_modifier(Modifier::BOLD),
+        Span::from(" "),
+        Span::from(" <_ ").fg(VOID).bg(PRIMARY).add_modifier(Modifier::BOLD),
+        Span::from(" webrev").fg(ACCENT).add_modifier(Modifier::BOLD),
         Span::from("  ·  ").dim(),
         Span::from(app.mission_name.clone()),
         Span::from(" "),
@@ -143,7 +147,7 @@ fn render_header(frame: &mut Frame, area: Rect, app: &App) {
     let version = Line::from(Span::from(format!(" v{} ", env!("CARGO_PKG_VERSION"))).dim())
         .right_aligned();
     let block = Block::bordered()
-        .border_style(Style::new().fg(PRIMARY).add_modifier(Modifier::DIM))
+        .border_style(Style::new().add_modifier(Modifier::DIM))
         .title(brand)
         .title_top(version);
     let tabs = Tabs::new(Tab::ALL.map(Tab::title))
@@ -152,8 +156,8 @@ fn render_header(frame: &mut Frame, area: Rect, app: &App) {
         .divider(Span::from("·").dim())
         .highlight_style(
             Style::new()
-                .fg(Color::Black)
-                .bg(ACCENT)
+                .fg(VOID)
+                .bg(PRIMARY)
                 .add_modifier(Modifier::BOLD),
         );
     frame.render_widget(tabs, area);
@@ -218,10 +222,10 @@ fn styled_item(tab: Tab, line: &str) -> ListItem<'static> {
 /// Style a record line by its leading severity tag (`CRIT`/`HIGH`/…).
 fn severity_styled(line: String) -> Span<'static> {
     match line.split(' ').next().unwrap_or("") {
-        "CRIT" => line.red().bold(),
-        "HIGH" => line.red(),
+        "CRIT" => line.fg(ALERT).bold(),
+        "HIGH" => line.fg(ALERT),
         "MED" => line.yellow(),
-        "LOW" => line.fg(PRIMARY),
+        "LOW" => line.fg(ACCENT),
         _ => line.dim(), // INFO
     }
 }
@@ -251,16 +255,16 @@ fn render_footer(frame: &mut Frame, area: Rect, app: &App) {
     // While filtering, the top line becomes the filter input prompt.
     let top = if app.filtering {
         Line::from(vec![
-            Span::from(" filter: ").bold().cyan(),
+            Span::from(" filter: ").bold().fg(PRIMARY),
             Span::from(app.filter.clone()),
-            Span::from("▏").cyan(),
+            Span::from("▏").fg(PRIMARY),
             Span::from("  (Enter apply · Esc clear)").dim(),
         ])
     } else {
         let indicator = if app.scanning {
-            Span::from(" ● scanning ").fg(ACCENT).add_modifier(Modifier::BOLD)
+            Span::from(" ● scanning ").fg(PRIMARY).add_modifier(Modifier::BOLD)
         } else {
-            Span::from(" ○ ready ").fg(PRIMARY).add_modifier(Modifier::BOLD)
+            Span::from(" ○ ready ").fg(ACCENT).add_modifier(Modifier::BOLD)
         };
         Line::from(vec![indicator, Span::from(app.status.clone())])
     };

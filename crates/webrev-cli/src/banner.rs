@@ -12,12 +12,33 @@ const VERSION: &str = env!("CARGO_PKG_VERSION");
 /// One-line description of the tool, reused by `--help` and the TUI.
 pub const TAGLINE: &str = "web reconnaissance toolkit";
 
-// Minimal ANSI palette — kept here so the whole CLI brand lives in one place.
+// Brand palette (docs/assets) — kept here so the whole CLI brand lives in one
+// place. Truecolor when the terminal advertises it, else the closest xterm-256
+// entries (acid ≈ 191, bone ≈ 255).
 const RESET: &str = "\x1b[0m";
 const BOLD: &str = "\x1b[1m";
 const DIM: &str = "\x1b[2m";
-const CYAN: &str = "\x1b[36m";
-const YELLOW: &str = "\x1b[33m";
+
+struct Palette {
+    acid_fg: &'static str,
+    acid_bg: &'static str,
+    void_fg: &'static str,
+    bone_fg: &'static str,
+}
+
+const TRUECOLOR: Palette = Palette {
+    acid_fg: "\x1b[38;2;198;255;61m",
+    acid_bg: "\x1b[48;2;198;255;61m",
+    void_fg: "\x1b[38;2;10;10;10m",
+    bone_fg: "\x1b[38;2;237;237;230m",
+};
+
+const XTERM_256: Palette = Palette {
+    acid_fg: "\x1b[38;5;191m",
+    acid_bg: "\x1b[48;5;191m",
+    void_fg: "\x1b[38;5;232m",
+    bone_fg: "\x1b[38;5;255m",
+};
 
 /// Print the banner unless suppressed, the stream is redirected, or we can't.
 pub fn print(suppressed: bool) {
@@ -26,6 +47,9 @@ pub fn print(suppressed: bool) {
         return;
     }
     let color = std::env::var_os("NO_COLOR").is_none();
+    let truecolor = std::env::var("COLORTERM")
+        .is_ok_and(|v| v.eq_ignore_ascii_case("truecolor") || v.eq_ignore_ascii_case("24bit"));
+    let p = if truecolor { &TRUECOLOR } else { &XTERM_256 };
     let paint = |text: &str, codes: &str| {
         if color {
             format!("{codes}{text}{RESET}")
@@ -34,21 +58,19 @@ pub fn print(suppressed: bool) {
         }
     };
 
-    let mark = |glyph: &str| paint(glyph, CYAN);
-    let line1 = format!("  {}", mark("╭─╮"));
-    let line2 = format!(
-        "  {}  {}  {}",
-        mark("│◠│"),
-        paint("webrev", &format!("{BOLD}{CYAN}")),
-        paint(&format!("v{VERSION}"), DIM),
+    // The mark: `<_` reversed out of an acid badge.
+    let badge = paint(" <_ ", &format!("{BOLD}{}{}", p.acid_bg, p.void_fg));
+    let line1 = format!(
+        "  {badge}  {} {}",
+        paint("webrev", &format!("{BOLD}{}", p.bone_fg)),
+        paint(VERSION, DIM),
     );
-    let line3 = format!(
-        "  {}  {} {} {}",
-        mark("╰─╯"),
+    let line2 = format!(
+        "        {} {} {}",
         paint(TAGLINE, DIM),
         paint("·", DIM),
-        paint("authorized targets only", YELLOW),
+        paint("authorized targets only", p.acid_fg),
     );
 
-    let _ = writeln!(err, "{line1}\n{line2}\n{line3}\n");
+    let _ = writeln!(err, "\n{line1}\n{line2}\n");
 }
