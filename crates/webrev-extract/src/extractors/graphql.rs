@@ -9,12 +9,18 @@ use webrev_core::{Confidence, Finding, FindingKind, Provenance, Source};
 /// Extracts named GraphQL operations from JS/HTML.
 pub struct GraphQlExtractor {
     operation: Regex,
+    /// Matches shipped introspection queries (Apollo codegen's
+    /// `IntrospectionQuery`, or a literal `__schema { ... }` selection). Their
+    /// presence signals that the target's `/graphql` endpoint is worth
+    /// probing manually for a full schema dump — introspection itself needs a
+    /// live network request, which is out of scope for a pure extractor.
+    introspection: Regex,
 }
 
 impl GraphQlExtractor {
     /// # Panics
     ///
-    /// Never at runtime: the pattern is a constant verified by `pattern_compiles`.
+    /// Never at runtime: the patterns are constants verified by `pattern_compiles`.
     #[must_use]
     pub fn new() -> Self {
         Self {
@@ -22,6 +28,8 @@ impl GraphQlExtractor {
                 r"(?m)\b(query|mutation|subscription)\s+([A-Za-z_][A-Za-z0-9_]*)\s*[({]",
             )
             .expect("constant graphql pattern must compile"),
+            introspection: Regex::new(r"\b(IntrospectionQuery|__schema\s*\{|__type\s*\()")
+                .expect("constant introspection pattern must compile"),
         }
     }
 }
@@ -47,7 +55,8 @@ impl Extractor for GraphQlExtractor {
 
     fn extract(&self, input: &ExtractInput) -> Vec<Finding> {
         let mut seen: BTreeSet<String> = BTreeSet::new();
-        self.operation
+        let mut findings: Vec<Finding> = self
+            .operation
             .captures_iter(&input.body)
             .filter_map(|cap| {
                 let value = format!("{} {}", &cap[1], &cap[2]);
@@ -62,7 +71,20 @@ impl Extractor for GraphQlExtractor {
                     )
                 })
             })
-            .collect()
+            .collect();
+
+        if self.introspection.is_match(&input.body) {
+            findings.push(Finding::new(
+                input.session_id,
+                FindingKind::GraphQl,
+                None,
+                "introspection query shipped client-side".to_owned(),
+                Confidence::Medium,
+                Provenance::new(Source::JsRegex, input.url.clone()),
+            ));
+        }
+
+        findings
     }
 }
 
@@ -88,5 +110,15 @@ mod tests {
         assert!(values.contains(&"query GetUser"));
         assert!(values.contains(&"mutation DeletePost"));
         assert!(found.iter().all(|f| f.kind == FindingKind::GraphQl));
+    }
+
+    #[test]
+    fn flags_shipped_introspection_query() {
+        let js = r"const Q = gql`query IntrospectionQuery { __schema { types { name } } }`;";
+        let input = ExtractInput::new(SessionId::new(), None, ContentKind::JavaScript, js);
+        let found = GraphQlExtractor::new().extract(&input);
+        assert!(found
+            .iter()
+            .any(|f| f.value == "introspection query shipped client-side"));
     }
 }

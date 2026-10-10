@@ -3907,6 +3907,7 @@ version = "0.1.0"
 dependencies = [
  "lol_html",
  "regex",
+ "serde_json",
  "swc_core",
  "webrev-core",
 ]
@@ -3918,6 +3919,7 @@ dependencies = [
  "async-trait",
  "base64 0.22.1",
  "futures",
+ "http",
  "rand 0.8.8",
  "rand_distr",
  "regex",

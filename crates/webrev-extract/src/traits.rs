@@ -11,6 +11,8 @@ pub enum ContentKind {
     Html,
     /// A JavaScript source file (external or inlined).
     JavaScript,
+    /// A JSON document (web app manifest, webpack/Vite asset manifest, …).
+    Json,
 }
 
 /// One unit of content handed to the registry.

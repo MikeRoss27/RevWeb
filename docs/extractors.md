@@ -19,7 +19,8 @@ too.
 | `technology` | Framework / BaaS / server fingerprint | `Supabase (baas/db)` |
 | `form` | HTML form action + method | `POST /login` |
 | `link` | Hyperlink worth noting | `/about` |
-| `script` | Referenced script resource | `/static/app.js` |
+| `script` | Referenced script resource (incl. dynamic `import()` specifiers and bundler-manifest chunk paths) | `/static/app.js` |
+| `config` | Embedded config constant, feature flag, or web-app-manifest setting | `featureFlag = true` |
 
 Each finding carries a `Confidence` (`low` / `medium` / `high`) and a
 `Provenance` (source + optional location).
@@ -30,19 +31,24 @@ Listed by descending priority (higher runs first):
 
 | Name | Priority | Applies to | Produces |
 | --- | --- | --- | --- |
-| `js-ast` | 90 | JS | Endpoints from `fetch`, `axios.*`, `XHR.open`, `new WebSocket/EventSource`, and endpoint-shaped string literals (swc AST). |
+| `js-ast` | 90 | JS | Endpoints from `fetch`, `axios.*`, `XHR.open`, `new WebSocket/EventSource`, endpoint-shaped string literals, and dynamic `import("…")` specifiers (swc AST). |
 | `html` | 80 | HTML | `<script src>`, `<a href>`, `<form>`. |
 | `js-regex` | 70 | JS | Endpoint heuristics for minified/unparseable code (`fetch`, `axios`, `XHR`, `/api/*`, `ws(s)://`, absolute URLs). |
 | `secret` | 65 | HTML + JS | Known credential shapes + Shannon-entropy tokens → fingerprints. |
 | `sourcemap` | 60 | JS | `sourceMappingURL` references. |
 | `tech` | 55 | HTML + JS | Technology/framework/BaaS/server fingerprints (body + URL + response headers). |
-| `graphql` | 52 | HTML + JS | Named GraphQL operations. |
+| `graphql` | 52 | HTML + JS | Named GraphQL operations, plus a flag when a shipped `IntrospectionQuery`/`__schema` signals the endpoint is worth probing manually. |
 | `routes` | 50 | HTML + JS | SPA routes (`path: "/…"`, `<Route path>`). |
 | `params` | 48 | HTML + JS | Query names, JSON keys, form field names. |
+| `config` | 47 | JS | Embedded config objects/constants whose key reads as a flag or setting (`featureFlag`, `DEBUG_MODE`, `apiVersion`, …) bound to a literal (swc AST). |
+| `manifest` | 45 | JSON | W3C web app manifests (`start_url`/`scope`/`id`) and build-tool asset manifests (webpack `asset-manifest.json`, Vite `manifest.json`) — surfaces every emitted chunk path, including ones no page links to directly. |
 
 Note: the **fetch stage** (in `webrev-pipeline`) additionally fetches and parses
 source maps and re-injects the recovered original sources as JS content, so the
-extractors above run over the un-minified code too.
+extractors above run over the un-minified code too. It also follows
+`<link rel="manifest">` and `navigator.serviceWorker.register(...)` references
+so manifests and service workers get crawled even though neither is a
+`<script src>` or `<a href>`.
 
 ## URL normalization
 

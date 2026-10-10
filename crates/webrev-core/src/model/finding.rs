@@ -35,6 +35,14 @@ pub enum FindingKind {
     Technology,
     /// A request parameter / JSON body key / form field name (fuzz wordlist).
     Parameter,
+    /// An embedded configuration constant, feature flag, or app-manifest
+    /// setting (e.g. a `baseURL`/`apiVersion` property, a `DEBUG` flag, a web
+    /// app manifest's `start_url`).
+    Config,
+    /// A WebSocket frame payload observed during a dynamic scan. Captured so
+    /// an operator can replay the exchange with a tool of their choosing
+    /// (webrev itself only observes; it does not resend traffic).
+    WebSocketFrame,
 }
 
 impl FindingKind {
@@ -52,6 +60,8 @@ impl FindingKind {
             Self::GraphQl => "graphql",
             Self::Technology => "technology",
             Self::Parameter => "parameter",
+            Self::Config => "config",
+            Self::WebSocketFrame => "ws_frame",
         }
     }
 }
@@ -213,11 +223,12 @@ impl Finding {
                 endpoint_severity(self.url.as_deref().unwrap_or(&self.value))
             }
             FindingKind::GraphQl | FindingKind::SourceMap => Severity::Medium,
-            FindingKind::Form | FindingKind::Route => Severity::Low,
+            FindingKind::Form | FindingKind::Route | FindingKind::WebSocketFrame => Severity::Low,
             FindingKind::Parameter
             | FindingKind::Link
             | FindingKind::Script
-            | FindingKind::Technology => Severity::Info,
+            | FindingKind::Technology
+            | FindingKind::Config => Severity::Info,
         }
     }
 

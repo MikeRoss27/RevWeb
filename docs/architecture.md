@@ -79,5 +79,20 @@ persists the plaintext in `findings.plaintext` (see [security.md](security.md)).
 `run_dynamic` acquires a browser from a small `BrowserPool`, applies the
 disposable `BrowserProfile` (temp user-data dir, anti-headless init script,
 proxy, auth headers), injects the `fetch`/XHR hooks before navigation, drives an
-active dwell (scroll + click), and returns endpoints from the hook log, CDP
-network capture (HAR), and WebSocket events — all sanitized.
+active dwell, and returns endpoints from the hook log, CDP network capture
+(HAR), and WebSocket events — all sanitized.
+
+The active dwell clicks one element at a time rather than firing all of them
+at once: before each click it sets `window.__webrev_trigger` to a label
+derived from the element (id/aria-label/text), so any call the hooks record
+in the settle window right after is attributed to that click (`Finding`
+`provenance.location` becomes `click: <label>`) — a before/after diff that
+turns a flat endpoint list into "clicking Delete Account calls DELETE
+/api/account".
+
+`EventWebSocketFrameSent`/`EventWebSocketFrameReceived` are captured
+alongside `EventWebSocketCreated` (bounded to `MAX_WS_FRAMES`, each payload
+truncated to `MAX_WS_PAYLOAD_CHARS`) and emitted as `FindingKind::WebSocketFrame`,
+sanitized and tagged with direction + socket URL in `provenance.location`.
+webrev only observes these; it never resends traffic, so replaying a captured
+exchange is left to the operator's own tool (Burp, websocat, …).

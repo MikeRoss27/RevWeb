@@ -85,6 +85,8 @@ fn parse_kind(s: &str) -> Result<FindingKind> {
         "graphql" => FindingKind::GraphQl,
         "technology" => FindingKind::Technology,
         "parameter" => FindingKind::Parameter,
+        "config" => FindingKind::Config,
+        "ws_frame" => FindingKind::WebSocketFrame,
         other => return Err(WebrevError::Storage(format!("unknown finding kind {other:?}"))),
     })
 }
@@ -105,6 +107,7 @@ fn parse_source(s: &str) -> Result<Source> {
         "js-regex" => Source::JsRegex,
         "html" => Source::Html,
         "sourcemap" => Source::SourceMap,
+        "manifest" => Source::Manifest,
         other => return Err(WebrevError::Storage(format!("unknown source {other:?}"))),
     })
 }

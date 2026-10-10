@@ -2,8 +2,9 @@
 //! The priority-ordered collection of extractors.
 
 use crate::extractors::{
-    inline_scripts, GraphQlExtractor, HtmlExtractor, JsAstExtractor, JsRegexExtractor,
-    ParamExtractor, SecretExtractor, SourceMapExtractor, SpaRouteExtractor, TechExtractor,
+    inline_scripts, ConfigExtractor, GraphQlExtractor, HtmlExtractor, JsAstExtractor,
+    JsRegexExtractor, ManifestExtractor, ParamExtractor, SecretExtractor, SourceMapExtractor,
+    SpaRouteExtractor, TechExtractor,
 };
 use crate::traits::{ContentKind, ExtractInput, Extractor};
 use webrev_core::Finding;
@@ -51,6 +52,8 @@ impl ExtractorRegistry {
         reg.register(Box::new(GraphQlExtractor::new()));
         reg.register(Box::new(SpaRouteExtractor::new()));
         reg.register(Box::new(ParamExtractor::new()));
+        reg.register(Box::new(ConfigExtractor::new()));
+        reg.register(Box::new(ManifestExtractor::new()));
         reg
     }
 
@@ -111,12 +114,12 @@ mod tests {
         let names = reg.names();
         // Descending priority: js-ast (90), html (80), js-regex (70),
         // secret (65), sourcemap (60), tech (55), graphql (52), routes (50),
-        // params (48).
+        // params (48), config (47), manifest (45).
         assert_eq!(
             names,
             vec![
                 "js-ast", "html", "js-regex", "secret", "sourcemap", "tech", "graphql", "routes",
-                "params"
+                "params", "config", "manifest"
             ]
         );
     }

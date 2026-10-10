@@ -5,12 +5,24 @@
 use serde::Deserialize;
 
 /// Installed via `evaluate_on_new_document` so it runs before page scripts.
-/// It wraps `fetch` and `XHR.open`, pushing `{method, url}` records onto
-/// `window.__webrev` without altering behaviour.
+/// It wraps `fetch` and `XHR.open`, pushing `{method, url, trigger}` records
+/// onto `window.__webrev` without altering behaviour. `window.__webrev_trigger`
+/// is a label the active-interaction driver sets immediately before clicking
+/// an element and clears right after, so any call recorded in between can be
+/// attributed to the UI action that caused it (the before/after "diff" that
+/// turns a flat endpoint list into "clicking Delete Account calls DELETE
+/// /api/account").
 pub const INSTALL_HOOKS: &str = r"(() => {
   window.__webrev = window.__webrev || [];
+  window.__webrev_trigger = null;
   const record = (method, url) => {
-    try { window.__webrev.push({ method: String(method || 'GET'), url: String(url) }); }
+    try {
+      window.__webrev.push({
+        method: String(method || 'GET'),
+        url: String(url),
+        trigger: window.__webrev_trigger || null,
+      });
+    }
     catch (e) { /* never break the page */ }
   };
   const origFetch = window.fetch;
@@ -37,4 +49,9 @@ pub const COLLECT_HOOKS: &str = "JSON.stringify(window.__webrev || [])";
 pub struct HookRecord {
     pub method: String,
     pub url: String,
+    /// The UI element (label derived from its id/aria-label/text) whose click
+    /// was in flight when this call fired, if any. `None` for calls fired
+    /// outside an attributed click (page load, timers, scroll handlers).
+    #[serde(default)]
+    pub trigger: Option<String>,
 }

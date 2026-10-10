@@ -13,7 +13,7 @@ use swc_core::common::{BytePos, FileName, SourceMap};
 use swc_core::ecma::ast::{CallExpr, Callee, Expr, Lit, MemberExpr, MemberProp, NewExpr, Str};
 use swc_core::ecma::parser::{EsSyntax, Parser, Syntax};
 use swc_core::ecma::visit::{Visit, VisitWith};
-use webrev_core::{Confidence, Endpoint, Finding, Method, Provenance, Source};
+use webrev_core::{Confidence, Endpoint, Finding, FindingKind, Method, Provenance, Source};
 
 /// AST-based JavaScript endpoint extractor.
 pub struct JsAstExtractor;
@@ -35,6 +35,12 @@ impl Default for JsAstExtractor {
 #[derive(Default)]
 struct EndpointVisitor {
     hits: Vec<(Endpoint, Confidence)>,
+    /// Module specifiers passed to a dynamic `import(...)`. Reported
+    /// separately (as [`webrev_core::FindingKind::Script`], not an
+    /// [`Endpoint`]): a lazy-loaded chunk like `import("./AdminPanel")` is a
+    /// module path, not a request target, but it reveals a route the bundler
+    /// never surfaces in a plain HTML/script crawl.
+    dynamic_imports: Vec<String>,
 }
 
 fn string_literal_value(expr: &Expr) -> Option<String> {
@@ -123,6 +129,10 @@ impl Visit for EndpointVisitor {
         } else if let Some((method, url)) = xhr_open(call) {
             self.hits
                 .push((Endpoint::new(url, method, Source::JsAst), Confidence::High));
+        } else if let Callee::Import(_) = call.callee {
+            if let Some(spec) = nth_string_arg(call, 0) {
+                self.dynamic_imports.push(spec);
+            }
         }
         call.visit_children_with(self);
     }
@@ -184,15 +194,22 @@ impl Extractor for JsAstExtractor {
         let mut visitor = EndpointVisitor::default();
         module.visit_with(&mut visitor);
 
-        visitor
-            .hits
-            .into_iter()
-            .map(|(ep, confidence)| {
-                let mut f = Finding::from_endpoint(input.session_id, &ep, confidence);
-                f.provenance = Provenance::new(Source::JsAst, input.url.clone());
-                f
-            })
-            .collect()
+        let endpoints = visitor.hits.into_iter().map(|(ep, confidence)| {
+            let mut f = Finding::from_endpoint(input.session_id, &ep, confidence);
+            f.provenance = Provenance::new(Source::JsAst, input.url.clone());
+            f
+        });
+        let imports = visitor.dynamic_imports.into_iter().map(|spec| {
+            Finding::new(
+                input.session_id,
+                FindingKind::Script,
+                None,
+                spec,
+                Confidence::Medium,
+                Provenance::new(Source::JsAst, input.url.clone()),
+            )
+        });
+        endpoints.chain(imports).collect()
     }
 }
 
@@ -243,6 +260,20 @@ mod tests {
         let found = run(js);
         assert!(found.iter().any(|f| f.value == "GET /api/xhr"));
         assert!(found.iter().any(|f| f.url.as_deref() == Some("wss://t/ws")));
+    }
+
+    #[test]
+    fn extracts_dynamic_import_specifiers() {
+        let js = r#"
+            async function loadAdmin() {
+                const mod = await import("./AdminPanel");
+                return mod;
+            }
+        "#;
+        let found = run(js);
+        assert!(found
+            .iter()
+            .any(|f| f.kind == FindingKind::Script && f.value == "./AdminPanel"));
     }
 
     #[test]
