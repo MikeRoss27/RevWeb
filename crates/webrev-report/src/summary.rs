@@ -12,6 +12,7 @@ pub struct Summary {
     pub total: usize,
     pub by_kind: BTreeMap<String, usize>,
     pub by_confidence: BTreeMap<String, usize>,
+    pub by_severity: BTreeMap<String, usize>,
     /// Unique endpoints split by internal (in-scope) vs external (third-party).
     pub endpoints_by_scope: BTreeMap<String, usize>,
 }
@@ -32,6 +33,10 @@ impl Summary {
             *summary
                 .by_confidence
                 .entry(finding.confidence.slug().to_owned())
+                .or_insert(0) += 1;
+            *summary
+                .by_severity
+                .entry(finding.severity().slug().to_owned())
                 .or_insert(0) += 1;
         }
         summary

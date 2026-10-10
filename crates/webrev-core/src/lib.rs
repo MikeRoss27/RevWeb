@@ -22,7 +22,7 @@ pub mod security;
 
 pub use error::WebrevError;
 pub use model::endpoint::{Endpoint, EndpointScope, Method, Source};
-pub use model::finding::{Confidence, Finding, FindingKind, Provenance};
+pub use model::finding::{Confidence, Finding, FindingKind, Provenance, Severity};
 pub use model::normalize::normalize_url;
 pub use model::session::{Mission, Scope, SessionId};
 pub use security::auth::AuthConfig;

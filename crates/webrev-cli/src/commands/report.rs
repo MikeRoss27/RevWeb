@@ -1,8 +1,8 @@
 // crates/webrev-cli/src/commands/report.rs
 //! `webrev report`: export a stored session as JSON.
 
-use crate::cli::{ConfidenceSel, Format, ReportArgs, ScopeSel};
-use webrev_core::{Confidence, Mission, Scope, SessionId};
+use crate::cli::{ConfidenceSel, Format, ReportArgs, ScopeSel, SeveritySel};
+use webrev_core::{Confidence, Mission, Scope, Severity, SessionId};
 use webrev_report::{RenderOptions, ReportFormat, ScopeFilter, SessionReport};
 use webrev_storage::{SqliteStorage, Storage};
 
@@ -23,6 +23,13 @@ fn render_options(args: &ReportArgs) -> RenderOptions {
             ConfidenceSel::Low => Confidence::Low,
             ConfidenceSel::Medium => Confidence::Medium,
             ConfidenceSel::High => Confidence::High,
+        },
+        min_severity: match args.min_severity {
+            SeveritySel::Info => Severity::Info,
+            SeveritySel::Low => Severity::Low,
+            SeveritySel::Medium => Severity::Medium,
+            SeveritySel::High => Severity::High,
+            SeveritySel::Critical => Severity::Critical,
         },
     }
 }

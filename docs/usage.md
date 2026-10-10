@@ -45,6 +45,7 @@ include list denies everything.
 | `--format <FMT>` | `json` | `json` (full document), `jsonl` (one finding per line), `urls` (bare endpoint URLs, one per line), or `csv` (findings table). |
 | `--scope <SEL>` | `all` | Restrict endpoint output: `all`, `internal` (in-scope target), or `external` (third-party). |
 | `--min-confidence <LVL>` | `low` | Drop findings below `low` / `medium` / `high`. |
+| `--min-severity <LVL>` | `info` | Drop findings below `info` / `low` / `medium` / `high` / `critical`. `jsonl`/`csv` are ranked by severity; `csv` leads with a `severity` column. |
 
 Informational messages go to stderr and the data to stdout, so every format
 pipes cleanly (a closed pipe such as `| head` exits without error).
@@ -86,14 +87,16 @@ Launches the interactive terminal UI and auto-starts a static scan. Keys:
 | `↑` / `k`, `↓` / `j` | Scroll the active list |
 | `g` / `Home`, `G` / `End` | Jump to top / bottom (bottom re-enables follow) |
 | `/` | Filter the active list (type to narrow, `Enter` apply, `Esc` clear) |
+| `o` | Toggle severity ordering of the Endpoints/Findings list |
 | `Enter` | Open/close the detail overlay for the selected endpoint/finding |
 | `s` | Start a static scan |
 | `d` | Start a dynamic scan |
 | `r` | Export the JSON report |
 | `q` / `Esc` | Quit |
 
-The Endpoints tab tags each entry `int` / `ext` (in-scope vs third-party) and
-dims the external ones; the Status tab breaks endpoints down by scope.
+Endpoints and Findings lead each row with a colored severity tag
+(`CRIT`/`HIGH`/`MED`/`LOW`/`INFO`) and, for endpoints, an `int`/`ext` scope tag;
+`o` reorders by severity. The Status tab breaks endpoints down by scope.
 
 ### `report`
 

@@ -16,7 +16,7 @@
 use crate::json::SessionReport;
 use std::collections::BTreeSet;
 use std::fmt;
-use webrev_core::{Confidence, EndpointScope, Finding, Result, WebrevError};
+use webrev_core::{Confidence, EndpointScope, Finding, Result, Severity, WebrevError};
 
 /// The serialization shape requested on the command line.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -52,6 +52,8 @@ pub struct RenderOptions {
     pub scope: ScopeFilter,
     /// Findings below this confidence are dropped from finding-oriented output.
     pub min_confidence: Confidence,
+    /// Findings below this severity are dropped from finding-oriented output.
+    pub min_severity: Severity,
 }
 
 impl Default for RenderOptions {
@@ -60,6 +62,7 @@ impl Default for RenderOptions {
             format: ReportFormat::Json,
             scope: ScopeFilter::All,
             min_confidence: Confidence::Low,
+            min_severity: Severity::Info,
         }
     }
 }
@@ -75,17 +78,32 @@ impl SessionReport {
         }
     }
 
-    /// Findings at or above the confidence floor, in stored order.
+    /// Findings passing both floors, in stored order.
     fn kept_findings(&self, opts: RenderOptions) -> impl Iterator<Item = &Finding> {
-        self.findings
-            .iter()
-            .filter(move |f| f.confidence >= opts.min_confidence)
+        self.findings.iter().filter(move |f| {
+            f.confidence >= opts.min_confidence && f.severity() >= opts.min_severity
+        })
+    }
+
+    /// The kept findings, ranked by severity then confidence (both descending)
+    /// so the most important rows lead the triage-oriented exports.
+    fn ranked_findings(&self, opts: RenderOptions) -> Vec<&Finding> {
+        let mut findings: Vec<&Finding> = self.kept_findings(opts).collect();
+        findings.sort_by(|a, b| {
+            b.severity()
+                .cmp(&a.severity())
+                .then(b.confidence.cmp(&a.confidence))
+        });
+        findings
     }
 
     fn render_json(&self, opts: RenderOptions) -> Result<String> {
         // When no filter is active, emit the document verbatim; otherwise emit a
         // filtered clone so counts and contents stay consistent.
-        if opts.min_confidence == Confidence::Low && opts.scope == ScopeFilter::All {
+        if opts.min_confidence == Confidence::Low
+            && opts.min_severity == Severity::Info
+            && opts.scope == ScopeFilter::All
+        {
             return self.to_json();
         }
         let mut filtered = self.clone();
@@ -103,7 +121,7 @@ impl SessionReport {
 
     fn render_jsonl(&self, opts: RenderOptions) -> Result<String> {
         let mut out = String::new();
-        for finding in self.kept_findings(opts) {
+        for finding in self.ranked_findings(opts) {
             let line = serde_json::to_string(finding)
                 .map_err(|e| WebrevError::Config(format!("serializing finding: {e}")))?;
             out.push_str(&line);
@@ -134,9 +152,10 @@ impl SessionReport {
     }
 
     fn render_csv(&self, opts: RenderOptions) -> String {
-        let mut out = String::from("kind,confidence,url,value,source\n");
-        for f in self.kept_findings(opts) {
+        let mut out = String::from("severity,kind,confidence,url,value,source\n");
+        for f in self.ranked_findings(opts) {
             let row = [
+                f.severity().slug().to_owned(),
                 f.kind.slug().to_owned(),
                 f.confidence.slug().to_owned(),
                 f.url.clone().unwrap_or_default(),
@@ -183,7 +202,7 @@ mod tests {
         let mission = Mission::new("t", Scope::new(vec!["x.test".into()], vec![]), vec![]);
         let sid = mission.id;
         let findings = vec![
-            Finding::new(sid, FindingKind::Endpoint, Some("https://x.test/a".into()), "GET https://x.test/a", Confidence::High, Provenance::new(Source::JsAst, None)),
+            Finding::new(sid, FindingKind::Endpoint, Some("https://x.test/api/v1/users".into()), "GET https://x.test/api/v1/users", Confidence::High, Provenance::new(Source::JsAst, None)),
             Finding::new(sid, FindingKind::Parameter, None, "noisyParam", Confidence::Low, Provenance::new(Source::JsRegex, None)),
         ];
         let endpoints = vec![
@@ -195,7 +214,7 @@ mod tests {
     }
 
     fn opts(format: ReportFormat, scope: ScopeFilter, min: Confidence) -> RenderOptions {
-        RenderOptions { format, scope, min_confidence: min }
+        RenderOptions { format, scope, min_confidence: min, min_severity: Severity::Info }
     }
 
     #[test]
@@ -217,15 +236,33 @@ mod tests {
         assert_eq!(all.lines().count(), 2);
         let high = r.render(opts(ReportFormat::Jsonl, ScopeFilter::All, Confidence::High)).unwrap();
         assert_eq!(high.lines().count(), 1);
-        assert!(high.contains("x.test/a"));
+        assert!(high.contains("x.test/api/v1/users"));
     }
 
     #[test]
     fn csv_has_header_and_quotes_commas() {
         let r = report();
         let csv = r.render(opts(ReportFormat::Csv, ScopeFilter::All, Confidence::Low)).unwrap();
-        assert!(csv.starts_with("kind,confidence,url,value,source\n"));
+        assert!(csv.starts_with("severity,kind,confidence,url,value,source\n"));
         assert_eq!(csv.lines().count(), 3); // header + 2 findings
+        // Ranked: the medium-severity endpoint precedes the info-level param.
+        let first = csv.lines().nth(1).unwrap();
+        assert!(first.starts_with("medium,endpoint"));
+    }
+
+    #[test]
+    fn min_severity_drops_low_signal_findings() {
+        let r = report();
+        let opts = RenderOptions {
+            format: ReportFormat::Jsonl,
+            scope: ScopeFilter::All,
+            min_confidence: Confidence::Low,
+            min_severity: Severity::Medium,
+        };
+        let out = r.render(opts).unwrap();
+        // Only the /api/v1 endpoint (medium) survives; the info-level param is cut.
+        assert_eq!(out.lines().count(), 1);
+        assert!(out.contains("x.test/api/v1/users"));
     }
 
     #[test]

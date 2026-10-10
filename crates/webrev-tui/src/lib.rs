@@ -249,6 +249,7 @@ async fn handle_action(
             }
         }
         Action::ToggleDetail => app.toggle_detail(),
+        Action::ToggleSort => app.toggle_sort(),
         Action::NextTab => app.select_tab(app.tab.next()),
         Action::PrevTab => app.select_tab(app.tab.prev()),
         Action::ScrollUp => app.scroll_up(),

@@ -109,11 +109,16 @@ fn render_body(frame: &mut Frame, area: Rect, app: &mut App) {
     }
 
     let visible = app.visible_items();
+    let sort = if app.sort_by_severity && app.tab != Tab::Logs {
+        " ⇅sev"
+    } else {
+        ""
+    };
     let title = if app.filter.is_empty() {
-        format!(" {} ({}) ", app.tab.title(), visible.len())
+        format!(" {} ({}){sort} ", app.tab.title(), visible.len())
     } else {
         format!(
-            " {} ({}/{}) /{} ",
+            " {} ({}/{}) /{}{sort} ",
             app.tab.title(),
             visible.len(),
             app.current_items().len(),
@@ -131,8 +136,8 @@ fn render_body(frame: &mut Frame, area: Rect, app: &mut App) {
     frame.render_stateful_widget(list, area, &mut app.list_state);
 }
 
-/// Colour log lines by severity, and dim external (third-party) endpoints so
-/// the in-scope target surface stands out; other data tabs stay plain.
+/// Colour log lines by log level, and record lines (Endpoints/Findings) by the
+/// severity tag that leads each one.
 fn styled_item(tab: Tab, line: &str) -> ListItem<'static> {
     let owned = line.to_owned();
     let span = match tab {
@@ -147,10 +152,21 @@ fn styled_item(tab: Tab, line: &str) -> ListItem<'static> {
                 owned.dim()
             }
         }
-        Tab::Endpoints if line.starts_with("ext ") => owned.dim(),
-        _ => Span::from(owned),
+        Tab::Endpoints | Tab::Findings => severity_styled(owned),
+        Tab::Status => Span::from(owned),
     };
     ListItem::new(Line::from(span))
+}
+
+/// Style a record line by its leading severity tag (`CRIT`/`HIGH`/…).
+fn severity_styled(line: String) -> Span<'static> {
+    match line.split(' ').next().unwrap_or("") {
+        "CRIT" => line.red().bold(),
+        "HIGH" => line.red(),
+        "MED" => line.yellow(),
+        "LOW" => line.fg(PRIMARY),
+        _ => line.dim(), // INFO
+    }
 }
 
 fn status_panel(app: &App) -> Paragraph<'static> {
@@ -192,7 +208,7 @@ fn render_footer(frame: &mut Frame, area: Rect, app: &App) {
         Line::from(vec![indicator, Span::from(app.status.clone())])
     };
     let help = Line::from(
-        "Tab/←→ tabs · ↑↓ jk scroll · / filter · Enter detail · s static · d dynamic · r report · q quit",
+        "Tab tabs · ↑↓ scroll · / filter · o sort · Enter detail · s static · d dynamic · r report · q quit",
     )
     .dim();
     let footer = Paragraph::new(vec![top, help]).block(Block::bordered().title(" status "));

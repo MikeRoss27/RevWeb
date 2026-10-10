@@ -124,6 +124,16 @@ pub enum ConfidenceSel {
     High,
 }
 
+/// Minimum severity selector for `report`.
+#[derive(Copy, Clone, Debug, PartialEq, Eq, ValueEnum)]
+pub enum SeveritySel {
+    Info,
+    Low,
+    Medium,
+    High,
+    Critical,
+}
+
 /// Arguments for the `report` subcommand.
 #[derive(Args)]
 pub struct ReportArgs {
@@ -145,4 +155,7 @@ pub struct ReportArgs {
     /// Drop findings below this confidence.
     #[arg(long = "min-confidence", value_enum, default_value_t = ConfidenceSel::Low)]
     pub min_confidence: ConfidenceSel,
+    /// Drop findings below this severity (jsonl/csv are ranked by severity).
+    #[arg(long = "min-severity", value_enum, default_value_t = SeveritySel::Info)]
+    pub min_severity: SeveritySel,
 }

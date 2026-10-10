@@ -84,6 +84,8 @@ pub struct App {
     pub should_quit: bool,
     /// True while the detail overlay for the selected item is open.
     pub show_detail: bool,
+    /// When true, the Endpoints/Findings lists are ordered by severity (desc).
+    pub sort_by_severity: bool,
     /// Selection/scroll state for the active list tab.
     pub list_state: ListState,
     /// Case-insensitive substring filter applied to the active list.
@@ -116,6 +118,7 @@ impl App {
             scanning: false,
             should_quit: false,
             show_detail: false,
+            sort_by_severity: false,
             list_state: ListState::default(),
             filter: String::new(),
             filtering: false,
@@ -137,19 +140,45 @@ impl App {
         }
     }
 
-    /// Indices into `current_items` that pass the active filter, in order.
+    /// Indices into `current_items` that pass the active filter, in order —
+    /// then optionally re-ordered by severity (descending) for the record tabs.
     fn visible_source_indices(&self) -> Vec<usize> {
         let items = self.current_items();
-        if self.filter.is_empty() {
-            return (0..items.len()).collect();
+        let mut indices: Vec<usize> = if self.filter.is_empty() {
+            (0..items.len()).collect()
+        } else {
+            let needle = self.filter.to_lowercase();
+            items
+                .iter()
+                .enumerate()
+                .filter(|(_, line)| line.to_lowercase().contains(&needle))
+                .map(|(i, _)| i)
+                .collect()
+        };
+        if self.sort_by_severity {
+            if let Some(data) = self.active_records() {
+                // Stable sort by descending severity keeps discovery order
+                // within a severity band.
+                indices.sort_by(|&a, &b| data[b].severity().cmp(&data[a].severity()));
+            }
         }
-        let needle = self.filter.to_lowercase();
-        items
-            .iter()
-            .enumerate()
-            .filter(|(_, line)| line.to_lowercase().contains(&needle))
-            .map(|(i, _)| i)
-            .collect()
+        indices
+    }
+
+    /// The structured records parallel to the active list, if it has any.
+    fn active_records(&self) -> Option<&[Finding]> {
+        match self.tab {
+            Tab::Endpoints => Some(&self.endpoint_data),
+            Tab::Findings => Some(&self.finding_data),
+            Tab::Logs | Tab::Status => None,
+        }
+    }
+
+    /// Toggle severity ordering of the active record list.
+    pub fn toggle_sort(&mut self) {
+        self.sort_by_severity = !self.sort_by_severity;
+        self.follow = false;
+        self.clamp_selection();
     }
 
     /// Items actually shown: `current_items` narrowed by the active filter.
@@ -166,11 +195,7 @@ impl App {
     /// Findings tabs only). Maps the selection through the active filter.
     #[must_use]
     pub fn selected_record(&self) -> Option<&Finding> {
-        let data = match self.tab {
-            Tab::Endpoints => &self.endpoint_data,
-            Tab::Findings => &self.finding_data,
-            Tab::Logs | Tab::Status => return None,
-        };
+        let data = self.active_records()?;
         let pos = self.list_state.selected()?;
         let original = *self.visible_source_indices().get(pos)?;
         data.get(original)
@@ -325,8 +350,9 @@ impl App {
 
     fn record_finding(&mut self, finding: &Finding) {
         let locus = finding.url.as_deref().unwrap_or(&finding.value);
+        let sev = finding.severity().tag();
         let line = format!(
-            "{:<9} {} [{}]",
+            "{sev} {:<9} {} [{}]",
             finding.kind.slug(),
             locus,
             finding.provenance.source
@@ -334,7 +360,7 @@ impl App {
         if finding.kind == FindingKind::Endpoint {
             // Tag with the in/out-of-scope classification so the Endpoints tab
             // separates the target surface from third-party references.
-            let tag = match self.scope.classify(locus) {
+            let scope_tag = match self.scope.classify(locus) {
                 EndpointScope::Internal => {
                     self.internal_endpoints += 1;
                     "int"
@@ -344,8 +370,10 @@ impl App {
                     "ext"
                 }
             };
-            self.endpoints
-                .push(format!("{tag} {} [{}]", finding.value, finding.provenance.source));
+            self.endpoints.push(format!(
+                "{sev} {scope_tag} {} [{}]",
+                finding.value, finding.provenance.source
+            ));
             self.endpoint_data.push(finding.clone());
         }
         self.findings.push(line);
@@ -400,8 +428,23 @@ mod tests {
         app.apply(finding_event(FindingKind::Endpoint, Some("https://cdn.other/x".into()), "GET https://cdn.other/x"));
         assert_eq!(app.internal_endpoints, 1);
         assert_eq!(app.external_endpoints, 1);
-        assert!(app.endpoints[0].starts_with("int "));
-        assert!(app.endpoints[1].starts_with("ext "));
+        // Lines lead with a severity tag, then the scope tag.
+        assert!(app.endpoints[0].contains(" int "));
+        assert!(app.endpoints[1].contains(" ext "));
+    }
+
+    #[test]
+    fn sort_by_severity_orders_high_first() {
+        let mut app = app();
+        // Info-level param, then a high-severity admin endpoint.
+        app.apply(finding_event(FindingKind::Parameter, None, "q"));
+        app.apply(finding_event(FindingKind::Endpoint, Some("https://x.test/admin".into()), "GET https://x.test/admin"));
+        app.select_tab(Tab::Findings);
+        // Natural order: param first.
+        assert!(app.visible_items()[0].starts_with("INFO"));
+        app.toggle_sort();
+        // Severity order: the admin endpoint (HIGH) leads.
+        assert!(app.visible_items()[0].starts_with("HIGH"));
     }
 
     #[test]

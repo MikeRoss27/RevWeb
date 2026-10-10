@@ -63,6 +63,44 @@ pub enum Confidence {
     High,
 }
 
+/// How *interesting* a finding is to an operator — orthogonal to [`Confidence`]
+/// (which is about certainty). Ordered `Info < Low < Medium < High < Critical`,
+/// so findings sort naturally by priority.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+pub enum Severity {
+    Info,
+    Low,
+    Medium,
+    High,
+    Critical,
+}
+
+impl Severity {
+    /// Short stable slug for persistence and JSON/TUI labels.
+    #[must_use]
+    pub fn slug(self) -> &'static str {
+        match self {
+            Self::Info => "info",
+            Self::Low => "low",
+            Self::Medium => "medium",
+            Self::High => "high",
+            Self::Critical => "critical",
+        }
+    }
+
+    /// Fixed-width uppercase tag for aligned table/TUI columns.
+    #[must_use]
+    pub fn tag(self) -> &'static str {
+        match self {
+            Self::Info => "INFO",
+            Self::Low => "LOW ",
+            Self::Medium => "MED ",
+            Self::High => "HIGH",
+            Self::Critical => "CRIT",
+        }
+    }
+}
+
 impl Confidence {
     #[must_use]
     pub fn slug(self) -> &'static str {
@@ -138,6 +176,33 @@ impl Finding {
         )
     }
 
+    /// Derive the finding's [`Severity`] from its kind, confidence, and target.
+    ///
+    /// Severity is computed on demand (not stored) so the ruleset can evolve
+    /// without re-scanning. Secrets rank highest; sensitive endpoints
+    /// (admin/debug/config/VCS/etc.) are promoted; low-signal kinds stay info.
+    #[must_use]
+    pub fn severity(&self) -> Severity {
+        match self.kind {
+            FindingKind::Secret => {
+                if self.confidence == Confidence::High {
+                    Severity::Critical
+                } else {
+                    Severity::High
+                }
+            }
+            FindingKind::Endpoint => {
+                endpoint_severity(self.url.as_deref().unwrap_or(&self.value))
+            }
+            FindingKind::GraphQl | FindingKind::SourceMap => Severity::Medium,
+            FindingKind::Form | FindingKind::Route => Severity::Low,
+            FindingKind::Parameter
+            | FindingKind::Link
+            | FindingKind::Script
+            | FindingKind::Technology => Severity::Info,
+        }
+    }
+
     /// Deduplication key: `kind + url` (falling back to the value when there is
     /// no URL). The pipeline inserts these into a `BTreeSet` before storing so
     /// the same endpoint discovered by two extractors is persisted once.
@@ -148,11 +213,56 @@ impl Finding {
     }
 }
 
+/// Markers in an endpoint path that signal a sensitive / high-value target.
+const SENSITIVE_MARKERS: &[&str] = &[
+    "admin", "internal", "debug", "actuator", "/.git", "/.env", "config",
+    "backup", "swagger", "api-docs", "graphql", "token", "secret", "password",
+    "passwd", "oauth", "/sso", "upload", "console", "phpmyadmin", "wp-admin",
+    ".sql", ".bak", "/private",
+];
+
+/// True when the path contains a `/v<digits>` version segment (e.g. `/v1/`).
+fn has_version_segment(path: &str) -> bool {
+    path.split('/').any(|seg| {
+        seg.len() >= 2
+            && seg.starts_with('v')
+            && seg[1..].bytes().all(|b| b.is_ascii_digit())
+    })
+}
+
+fn endpoint_severity(target: &str) -> Severity {
+    let t = target.to_ascii_lowercase();
+    if SENSITIVE_MARKERS.iter().any(|m| t.contains(m)) {
+        Severity::High
+    } else if t.contains("/api") || t.contains("/rest/") || has_version_segment(&t) {
+        Severity::Medium
+    } else {
+        Severity::Low
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::model::endpoint::Method;
     use crate::model::session::SessionId;
+
+    #[test]
+    fn severity_ranks_secrets_and_sensitive_endpoints() {
+        let sid = SessionId::new();
+        let secret = Finding::new(sid, FindingKind::Secret, None, "fp:x", Confidence::High, Provenance::new(Source::JsRegex, None));
+        assert_eq!(secret.severity(), Severity::Critical);
+
+        let mk_ep = |url: &str| Finding::new(sid, FindingKind::Endpoint, Some(url.into()), format!("GET {url}"), Confidence::Low, Provenance::new(Source::JsAst, None));
+        assert_eq!(mk_ep("https://x/admin/users").severity(), Severity::High);
+        assert_eq!(mk_ep("https://x/api/v1/me").severity(), Severity::Medium);
+        assert_eq!(mk_ep("https://x/about").severity(), Severity::Low);
+
+        let param = Finding::new(sid, FindingKind::Parameter, None, "q", Confidence::Low, Provenance::new(Source::JsRegex, None));
+        assert_eq!(param.severity(), Severity::Info);
+        // Severity ordering is usable for sorting.
+        assert!(Severity::Critical > Severity::Info);
+    }
 
     #[test]
     fn dedup_key_ignores_method_and_source() {
