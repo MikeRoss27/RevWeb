@@ -14,7 +14,7 @@ too.
 | `parameter` | Query name, JSON key, or form field (fuzz wordlist) | `userId` |
 | `route` | Client-side SPA router path | `/users/:id` |
 | `graphql` | Named GraphQL operation | `query CurrentUser` |
-| `secret` | Credential, stored as a fingerprint only | `fp:1a2b3c…` |
+| `secret` | Credential, stored as a fingerprint (plaintext only with `--reveal-secrets`) | `fp:1a2b3c…` |
 | `sourcemap` | `sourceMappingURL` reference | `app.js.map` |
 | `technology` | Framework / BaaS / server fingerprint | `Supabase (baas/db)` |
 | `form` | HTML form action + method | `POST /login` |
@@ -61,11 +61,16 @@ normalized. See `webrev_core::normalize_url`.
 
 ## Secret handling
 
-`SecretExtractor` never emits plaintext. Each match is reduced to
+By default `SecretExtractor` never emits plaintext. Each match is reduced to
 `fp:<16 hex>` = the first 64 bits of `HMAC-SHA256(session_key, secret)`, where
 the session key is random per run and never persisted. Findings use `url = None`
 so deduplication keys on the fingerprint (distinct secrets stay distinct), and
 the containing file is recorded in the provenance instead.
+
+The opt-in `--reveal-secrets` flag additionally attaches the plaintext to the
+finding (`Finding::plaintext`); the fingerprint stays the `value`, so dedup and
+storage keys are unchanged. This is dangerous — real credentials then reach the
+database and reports — so it is off by default. See [security.md](security.md).
 
 ## Adding an extractor
 

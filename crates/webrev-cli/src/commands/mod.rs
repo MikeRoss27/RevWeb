@@ -4,6 +4,7 @@
 
 mod dynamic_scan;
 mod report;
+mod scan;
 mod static_scan;
 
 use crate::cli::{Cli, Command, ScanArgs};
@@ -89,6 +90,7 @@ fn build_mission(args: &ScanArgs) -> anyhow::Result<(Mission, OpsecConfig)> {
 /// Dispatch the parsed CLI to its handler.
 pub async fn dispatch(cli: Cli) -> anyhow::Result<()> {
     match cli.command {
+        Command::Scan(args) => scan::run(args).await,
         Command::Static(args) => static_scan::run(args).await,
         Command::Dynamic(args) => dynamic_scan::run(args).await,
         Command::Report(args) => report::run(args).await,
@@ -98,6 +100,7 @@ pub async fn dispatch(cli: Cli) -> anyhow::Result<()> {
                 profile: MissionProfile::new(mission, opsec),
                 db_path: args.db,
                 report_path: args.report,
+                reveal_secrets: args.reveal_secrets,
             })
             .await
         }

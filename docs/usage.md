@@ -1,15 +1,17 @@
 # Usage
 
-`webrev` has four subcommands: `static`, `dynamic`, `tui`, and `report`.
+`webrev` has five subcommands: `scan`, `static`, `dynamic`, `tui`, and `report`.
+`scan` is the one-shot convenience wrapper; the others are the individual steps.
 
 ```text
 webrev <COMMAND> [OPTIONS]
 ```
 
-All scanning subcommands (`static`, `dynamic`, `tui`) share the same options.
-`report` has its own, smaller set.
+All scanning subcommands (`scan`, `static`, `dynamic`, `tui`) share the same
+options below. `scan` adds a few of its own (see its section), and `report` has
+its own, smaller set.
 
-## Scan options (static / dynamic / tui)
+## Scan options (scan / static / dynamic / tui)
 
 | Flag | Default | Description |
 | --- | --- | --- |
@@ -29,7 +31,8 @@ All scanning subcommands (`static`, `dynamic`, `tui`) share the same options.
 | `--max-depth <N>` | `2` | Link-following depth from the seeds (0 = seeds only). |
 | `--max-concurrency <N>` | `4` | Concurrent in-flight requests during the crawl. |
 | `--duration-secs <N>` | `8` | Dynamic dwell time per seed (dynamic/tui only). |
-| `--report <PATH>` | `webrev-report.json` | Report path used by the TUI `r` key. |
+| `--report <PATH>` | `webrev-report.json` | Report path used by `scan` and the TUI `r` key. |
+| `--reveal-secrets` | off | Record and show detected secrets in **plaintext** instead of only a fingerprint (env `WEBREV_REVEAL_SECRETS`). Dangerous: writes live credentials to the DB and reports. See [security.md](security.md). No effect on `dynamic`. |
 
 Scope matching is **host-suffix** based: `--scope example.com` matches
 `example.com` and `api.example.com`. The scope is **fail-closed** — an empty
@@ -51,6 +54,26 @@ Informational messages go to stderr and the data to stdout, so every format
 pipes cleanly (a closed pipe such as `| head` exits without error).
 
 ## Subcommands
+
+### `scan`
+
+One-shot: runs the static pipeline, then (with `--dynamic`) a dynamic pass over
+the same session, then writes a report. The fastest way to go from a seed to
+findings without chaining `static` + `report` by hand.
+
+Adds to the shared scan options:
+
+| Flag | Default | Description |
+| --- | --- | --- |
+| `--dynamic` | off | Also run a dynamic (headless Chromium) pass after the static scan, in the same session. |
+| `--format <FMT>` | `json` | Format of the end-of-scan report: `json`, `jsonl`, `urls`, or `csv`. |
+| `--no-report` | off | Just populate the database; skip writing the report. |
+
+```bash
+webrev scan --seed https://app.example.com/                 # static + report
+webrev scan --seed https://app.example.com/ --dynamic       # + headless pass
+subfinder -d example.com | httpx | webrev scan              # seeds on stdin
+```
 
 ### `static`
 
@@ -96,7 +119,8 @@ Launches the interactive terminal UI and auto-starts a static scan. Keys:
 | `s` | Start a static scan |
 | `d` | Start a dynamic scan |
 | `r` | Export the JSON report |
-| `q` / `Esc` | Quit |
+| `?` | Open/close the keyboard-help overlay |
+| `q` / `Esc` | Close an open overlay, then quit |
 
 Endpoints and Findings lead each row with a colored severity tag
 (`CRIT`/`HIGH`/`MED`/`LOW`/`INFO`) and, for endpoints, an `int`/`ext` scope tag;

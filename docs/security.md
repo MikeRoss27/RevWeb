@@ -28,6 +28,26 @@ So the database and reports record *that* a secret was present and let you count
 or correlate duplicates **within a run**, without ever retaining the credential
 itself. Fingerprints are not comparable across runs (different key each time).
 
+### Revealing plaintext (opt-in, dangerous)
+
+Triaging or reporting a real leak sometimes needs the actual value. Pass
+`--reveal-secrets` (or set `WEBREV_REVEAL_SECRETS=1`) on `static` / `tui` to make
+the secret extractor **also** keep each detected secret in plaintext. When it is
+set:
+
+- the plaintext is shown in the TUI (the `[secret]` log line and the finding
+  detail overlay) **and persisted** to the `findings.plaintext` column, so it
+  flows into exported JSON/JSONL reports;
+- the fingerprint is still the finding's `value`, so dedup and counting are
+  unchanged.
+
+This deliberately drops the fingerprint-only guarantee above, so the database
+and any report now contain live credentials. It is **off by default**; enable it
+only for authorized work, and treat the resulting `webrev.db` and reports as
+secret material (see *Authentication material* below). `dynamic` scans capture
+network traffic rather than running the secret extractor, so the flag has no
+effect there.
+
 Captured HAR headers and URLs are passed through the `Sanitizer`, which redacts
 sensitive headers (`Authorization`, `Cookie`, `Set-Cookie`, `X-API-Key`,
 `Proxy-Authorization`) and scrubs secret-looking substrings before anything is

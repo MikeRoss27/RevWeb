@@ -12,8 +12,12 @@ pub enum PipelineEvent {
     StageCompleted { stage: String, emitted: usize },
     /// A finding reached storage (post-deduplication).
     Finding(Box<Finding>),
-    /// A secret was detected and recorded as a fingerprint (never plaintext).
-    SecretDetected { fingerprint: String },
+    /// A secret was detected and recorded as a fingerprint. `plaintext` is
+    /// `None` unless the operator opted into `--reveal-secrets`.
+    SecretDetected {
+        fingerprint: String,
+        plaintext: Option<String>,
+    },
     /// Periodic progress heartbeat from a stage.
     Progress { stage: String, processed: usize },
     /// A recoverable error occurred within a stage.

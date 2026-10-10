@@ -71,7 +71,8 @@ enum PipelineItem {
 SQLite tables (`migrations/0001_init.sql`, applied idempotently on connect):
 `sessions`, `findings`, `endpoints`, `secrets`. The runtime `sqlx::query` API is
 used (no compile-time schema, so no `DATABASE_URL` is needed to build). Secrets
-are stored as fingerprints only.
+are stored as fingerprints by default; the opt-in `--reveal-secrets` flag also
+persists the plaintext in `findings.plaintext` (see [security.md](security.md)).
 
 ## Dynamic analysis (webrev-browser)
 

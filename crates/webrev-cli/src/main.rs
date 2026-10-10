@@ -20,7 +20,10 @@ async fn main() -> anyhow::Result<()> {
     let parsed = cli::Cli::parse();
     // Brand the active, non-interactive scans; keep `report` silent so its
     // stdout stays pipe-clean, and let the TUI show its own branded header.
-    if matches!(parsed.command, Command::Static(_) | Command::Dynamic(_)) {
+    if matches!(
+        parsed.command,
+        Command::Scan(_) | Command::Static(_) | Command::Dynamic(_)
+    ) {
         banner::print(parsed.no_banner);
     }
     // The TUI owns the terminal, so only initialise stderr logging for the

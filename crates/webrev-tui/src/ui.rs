@@ -30,15 +30,61 @@ pub fn render(frame: &mut Frame, app: &mut App) {
             render_detail(frame, body, finding);
         }
     }
+
+    // The help overlay floats above everything; it takes precedence visually.
+    if app.show_help {
+        render_help(frame, body);
+    }
+}
+
+/// A centered popup listing every key binding, grouped by purpose.
+fn render_help(frame: &mut Frame, area: Rect) {
+    let key = |k: &str, desc: &str| {
+        Line::from(vec![
+            Span::from(format!("  {k:<10}")).fg(PRIMARY).add_modifier(Modifier::BOLD),
+            Span::from(desc.to_owned()),
+        ])
+    };
+    let heading = |t: &str| Line::from(Span::from(t.to_owned()).fg(ACCENT).add_modifier(Modifier::BOLD));
+    let lines = vec![
+        heading("Navigate"),
+        key("Tab / →", "next tab"),
+        key("S-Tab / ←", "previous tab"),
+        key("↑ / k", "scroll up"),
+        key("↓ / j", "scroll down"),
+        key("g / Home", "jump to top"),
+        key("G / End", "jump to bottom (resume follow)"),
+        Line::from(""),
+        heading("Inspect"),
+        key("Enter", "open/close detail of the selected row"),
+        key("/", "filter the active list (Enter apply · Esc clear)"),
+        key("o", "toggle severity sort (Endpoints/Findings)"),
+        Line::from(""),
+        heading("Act"),
+        key("s", "start a static scan"),
+        key("d", "start a dynamic scan (headless Chromium)"),
+        key("r", "export the JSON report"),
+        key("? ", "toggle this help"),
+        key("q / Esc", "close overlay, then quit"),
+        Line::from(""),
+        Line::from("Esc / ? to close").dim(),
+    ];
+    #[allow(clippy::cast_possible_truncation)]
+    let height = (lines.len() as u16) + 2;
+    let popup = centered_rect(area, 60, height);
+    let block = Block::bordered()
+        .border_style(Style::new().fg(PRIMARY))
+        .title(Span::from(" ◠ keys ").fg(PRIMARY).add_modifier(Modifier::BOLD));
+    frame.render_widget(Clear, popup);
+    frame.render_widget(Paragraph::new(lines).block(block).wrap(Wrap { trim: false }), popup);
 }
 
 /// A centered popup showing the selected finding's full structured fields.
 fn render_detail(frame: &mut Frame, area: Rect, finding: &Finding) {
-    let popup = centered_rect(area, 72, 11);
     let field = |label: &str, value: String| {
         Line::from(vec![Span::from(format!("{label:<12}")).bold(), Span::from(value)])
     };
-    let lines = vec![
+    let mut lines = vec![
         field("kind", finding.kind.slug().to_owned()),
         field("confidence", finding.confidence.slug().to_owned()),
         field("source", finding.provenance.source.to_string()),
@@ -48,9 +94,20 @@ fn render_detail(frame: &mut Frame, area: Rect, finding: &Finding) {
             "location",
             finding.provenance.location.clone().unwrap_or_else(|| "—".to_owned()),
         ),
-        Line::from(""),
-        Line::from("Esc / Enter to close").dim(),
     ];
+    // Revealed plaintext (opt-in): flagged in warning red so it reads as
+    // sensitive material, not just another field.
+    if let Some(plaintext) = &finding.plaintext {
+        lines.push(Line::from(vec![
+            Span::from(format!("{:<12}", "plaintext")).bold().red(),
+            Span::from(plaintext.clone()).red(),
+        ]));
+    }
+    lines.push(Line::from(""));
+    lines.push(Line::from("Esc / Enter to close").dim());
+    // Grow the popup by the extra plaintext row so nothing is clipped.
+    let height = 11 + u16::from(finding.plaintext.is_some());
+    let popup = centered_rect(area, 72, height);
     let block = Block::bordered()
         .border_style(Style::new().fg(PRIMARY))
         .title(Span::from(" ◠ detail ").fg(PRIMARY).add_modifier(Modifier::BOLD));
@@ -208,7 +265,7 @@ fn render_footer(frame: &mut Frame, area: Rect, app: &App) {
         Line::from(vec![indicator, Span::from(app.status.clone())])
     };
     let help = Line::from(
-        "Tab tabs · ↑↓ scroll · / filter · o sort · Enter detail · s static · d dynamic · r report · q quit",
+        "? keys · Tab tabs · ↑↓ scroll · / filter · o sort · Enter detail · s static · d dynamic · r report · q quit",
     )
     .dim();
     let footer = Paragraph::new(vec![top, help]).block(Block::bordered().title(" status "));

@@ -25,6 +25,8 @@ pub enum Action {
     ToggleDetail,
     /// Toggle severity ordering of the active list.
     ToggleSort,
+    /// Open/close the keyboard-help overlay.
+    ToggleHelp,
 }
 
 /// Map a key event to an [`Action`].
@@ -43,6 +45,7 @@ pub fn map_key(key: KeyEvent) -> Action {
         KeyCode::Char('r') => Action::ExportReport,
         KeyCode::Char('/') => Action::Filter,
         KeyCode::Char('o') => Action::ToggleSort,
+        KeyCode::Char('?') => Action::ToggleHelp,
         KeyCode::Enter => Action::ToggleDetail,
         _ => Action::None,
     }

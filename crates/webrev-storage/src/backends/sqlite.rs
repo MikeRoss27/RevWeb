@@ -54,6 +54,16 @@ impl SqliteStorage {
                 return Err(storage_err(e));
             }
         }
+        // Same idempotent add for `findings.plaintext` (revealed secrets, opt-in
+        // via `--reveal-secrets`). Nullable, defaults to NULL on older rows.
+        if let Err(e) = sqlx::query("ALTER TABLE findings ADD COLUMN plaintext TEXT")
+            .execute(&pool)
+            .await
+        {
+            if !e.to_string().contains("duplicate column name") {
+                return Err(storage_err(e));
+            }
+        }
         Ok(Self { pool })
     }
 }
@@ -122,8 +132,8 @@ impl Storage for SqliteStorage {
     async fn insert_finding(&self, finding: &Finding) -> Result<()> {
         sqlx::query(
             "INSERT OR REPLACE INTO findings \
-             (id, session_id, kind, url, value, confidence, source, location) \
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+             (id, session_id, kind, url, value, confidence, source, location, plaintext) \
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
         )
         .bind(finding.id.to_string())
         .bind(finding.session_id.to_string())
@@ -133,6 +143,7 @@ impl Storage for SqliteStorage {
         .bind(finding.confidence.slug())
         .bind(finding.provenance.source.to_string())
         .bind(finding.provenance.location.as_deref())
+        .bind(finding.plaintext.as_deref())
         .execute(&self.pool)
         .await
         .map_err(storage_err)?;
@@ -180,7 +191,7 @@ impl Storage for SqliteStorage {
 
     async fn findings_by_session(&self, session: SessionId) -> Result<Vec<Finding>> {
         let rows = sqlx::query(
-            "SELECT id, session_id, kind, url, value, confidence, source, location \
+            "SELECT id, session_id, kind, url, value, confidence, source, location, plaintext \
              FROM findings WHERE session_id = ? ORDER BY rowid",
         )
         .bind(session.to_string())
@@ -197,6 +208,7 @@ impl Storage for SqliteStorage {
                 let url: Option<String> = row.try_get("url").map_err(storage_err)?;
                 let value: String = row.try_get("value").map_err(storage_err)?;
                 let location: Option<String> = row.try_get("location").map_err(storage_err)?;
+                let plaintext: Option<String> = row.try_get("plaintext").map_err(storage_err)?;
                 Ok(Finding {
                     id: Uuid::parse_str(&id).map_err(storage_err)?,
                     session_id: session,
@@ -205,6 +217,7 @@ impl Storage for SqliteStorage {
                     value,
                     confidence: parse_confidence(&confidence)?,
                     provenance: Provenance::new(parse_source(&source)?, location),
+                    plaintext,
                 })
             })
             .collect()
@@ -279,5 +292,31 @@ mod tests {
 
         store.cleanup_session(mission.id).await.expect("cleanup");
         assert!(store.findings_by_session(mission.id).await.unwrap().is_empty());
+    }
+
+    #[tokio::test]
+    async fn sqlite_round_trips_revealed_secret_plaintext() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let db = dir.path().join("webrev-secret.db");
+        let store = SqliteStorage::connect(&db).await.expect("connect");
+
+        let mission = Mission::new("t", Scope::default(), vec![]);
+        store.create_session(&mission).await.expect("session");
+
+        let secret = Finding::new(
+            mission.id,
+            FindingKind::Secret,
+            None,
+            "fp:deadbeefdeadbeef",
+            Confidence::High,
+            Provenance::new(Source::JsRegex, Some("app.js".into())),
+        )
+        .with_plaintext(Some("AKIAZ4XB7NMPQR2STUVW".into()));
+        store.insert_finding(&secret).await.expect("insert");
+
+        let back = store.findings_by_session(mission.id).await.expect("read");
+        assert_eq!(back.len(), 1);
+        assert_eq!(back[0].plaintext.as_deref(), Some("AKIAZ4XB7NMPQR2STUVW"));
+        assert_eq!(back[0], secret);
     }
 }

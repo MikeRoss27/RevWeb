@@ -27,6 +27,10 @@ struct Args {
     /// Optional egress proxy (e.g. http://127.0.0.1:8080).
     #[arg(long, env = "WEBREV_PROXY")]
     proxy: Option<String>,
+    /// Record and show detected secrets in PLAINTEXT (dangerous; off by
+    /// default). See `webrev static --help` for the full warning.
+    #[arg(long, env = "WEBREV_REVEAL_SECRETS")]
+    reveal_secrets: bool,
 }
 
 #[tokio::main]
@@ -54,6 +58,7 @@ async fn main() -> anyhow::Result<()> {
         profile: MissionProfile::new(mission, opsec),
         db_path: args.db,
         report_path: args.report,
+        reveal_secrets: args.reveal_secrets,
     })
     .await
 }

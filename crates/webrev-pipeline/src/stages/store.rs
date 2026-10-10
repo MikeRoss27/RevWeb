@@ -116,6 +116,7 @@ impl Stage for StoreStage {
                     }
                     let _ = events.send(PipelineEvent::SecretDetected {
                         fingerprint: finding.value.clone(),
+                        plaintext: finding.plaintext.clone(),
                     });
                 }
                 FindingKind::SourceMap

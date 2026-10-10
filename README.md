@@ -28,7 +28,8 @@ drives a headless Chromium to capture live traffic.
 - **Source-map recovery** — fetches and parses `.map` files to re-mine the
   original, un-minified source for hidden endpoints and secrets.
 - **Secret detection** — known credential shapes plus Shannon-entropy heuristics;
-  every secret is stored as a truncated HMAC fingerprint, never in plaintext.
+  every secret is stored as a truncated HMAC fingerprint by default, with an
+  opt-in `--reveal-secrets` flag to retain the plaintext for authorized triage.
 - **Technology fingerprinting** — frameworks (Next.js, React, Vue, Angular, …),
   BaaS/DB (Supabase, Firebase, Hasura, Cognito, …), and backend servers
   (nginx, Express, Laravel, Rails, …) from body, URL, and response headers.
@@ -82,20 +83,29 @@ CHROME=/usr/bin/chromium webrev dynamic --seed https://app.example.com/
 ## Quick start
 
 ```bash
-# Static analysis + crawl, then export a JSON report of the latest session
-webrev static --seed https://app.example.com/ --max-depth 2 --max-pages 200
-webrev report --output report.json
+# One-shot: crawl, extract, and write webrev-report.json (easiest start)
+webrev scan --seed https://app.example.com/
+
+# One-shot including a dynamic (headless Chromium) pass, same session
+webrev scan --seed https://app.example.com/ --dynamic
 
 # Authenticated, behind a login, through an intercepting proxy
-webrev static --seed https://app.example.com/ \
+webrev scan --seed https://app.example.com/ \
   --cookie "session=…" --header "X-Env: staging" --proxy http://127.0.0.1:8080
 
-# Dynamic analysis (headless Chromium)
-webrev dynamic --seed https://app.example.com/ --duration-secs 8
-
-# Interactive TUI (auto-starts a static scan; s/d/r/Tab/q)
+# Interactive TUI (auto-starts a static scan; press ? for the key map)
 webrev tui --seed https://app.example.com/
 ```
+
+Prefer to run the steps yourself? `webrev static` crawls + extracts, then
+`webrev report` exports the latest session:
+
+```bash
+webrev static --seed https://app.example.com/ --max-depth 2 --max-pages 200
+webrev report --output report.json
+```
+
+Run `webrev --help` for a full set of copy-paste examples.
 
 Full command/flag reference and the TUI key map are in
 [docs/usage.md](docs/usage.md).

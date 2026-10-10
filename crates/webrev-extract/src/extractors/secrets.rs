@@ -45,6 +45,10 @@ pub struct SecretExtractor {
     patterns: Vec<(Regex, Confidence)>,
     /// Quoted high-entropy candidate tokens (base64/hex-ish, 20..=100 chars).
     entropy_candidate: Regex,
+    /// When true, detected secrets carry their plaintext on the finding in
+    /// addition to the fingerprint. Opt-in (`--reveal-secrets`); off by default
+    /// so the fingerprint-only privacy guarantee holds unless asked otherwise.
+    reveal: bool,
 }
 
 /// Shannon entropy in bits per character.
@@ -193,6 +197,7 @@ impl SecretExtractor {
             key,
             patterns,
             entropy_candidate,
+            reveal: false,
         }
     }
 
@@ -200,6 +205,17 @@ impl SecretExtractor {
     #[must_use]
     pub fn with_random_key() -> Self {
         Self::new(SessionKey::generate())
+    }
+
+    /// Opt into retaining the plaintext secret on each finding (builder style).
+    ///
+    /// **Dangerous**: when `yes` is true the scanner stops being
+    /// fingerprint-only, so real credentials flow into findings, the database,
+    /// and reports. Wired to the `--reveal-secrets` CLI flag.
+    #[must_use]
+    pub fn revealing(mut self, yes: bool) -> Self {
+        self.reveal = yes;
+        self
     }
 }
 
@@ -228,14 +244,21 @@ impl Extractor for SecretExtractor {
         let mut push = |secret: &str, confidence: Confidence, findings: &mut Vec<Finding>| {
             let fingerprint = Sanitizer::fingerprint(&self.key, secret);
             if seen.insert(fingerprint.clone()) {
-                findings.push(Finding::new(
-                    input.session_id,
-                    FindingKind::Secret,
-                    None,
-                    fingerprint,
-                    confidence,
-                    Provenance::new(Source::JsRegex, input.url.clone()),
-                ));
+                // Plaintext is attached only under the opt-in reveal mode; the
+                // fingerprint stays the finding's `value` either way, so dedup
+                // and storage keys are unchanged.
+                let plaintext = self.reveal.then(|| secret.to_owned());
+                findings.push(
+                    Finding::new(
+                        input.session_id,
+                        FindingKind::Secret,
+                        None,
+                        fingerprint,
+                        confidence,
+                        Provenance::new(Source::JsRegex, input.url.clone()),
+                    )
+                    .with_plaintext(plaintext),
+                );
             }
         };
 
@@ -313,6 +336,28 @@ mod tests {
             assert!(!f.value.contains(secret), "plaintext must never be stored");
             assert_eq!(f.kind, FindingKind::Secret);
             assert!(f.url.is_none(), "secrets dedup on fingerprint, not url");
+        }
+    }
+
+    #[test]
+    fn reveal_mode_attaches_plaintext_but_keeps_fingerprint_value() {
+        let secret = "AKIAZ4XB7NMPQR2STUVW";
+        let input = ExtractInput::new(
+            SessionId::new(),
+            Some("https://t/app.js".into()),
+            ContentKind::JavaScript,
+            format!("const k = '{secret}';"),
+        );
+        // Default (fingerprint-only): no plaintext ever.
+        let hidden = SecretExtractor::with_random_key().extract(&input);
+        assert!(hidden.iter().all(|f| f.plaintext.is_none()));
+
+        // Opt-in reveal: value stays a fingerprint, plaintext carries the secret.
+        let shown = SecretExtractor::with_random_key().revealing(true).extract(&input);
+        assert!(!shown.is_empty());
+        for f in &shown {
+            assert!(f.value.starts_with("fp:"), "value must still be a fingerprint");
+            assert_eq!(f.plaintext.as_deref(), Some(secret));
         }
     }
 
