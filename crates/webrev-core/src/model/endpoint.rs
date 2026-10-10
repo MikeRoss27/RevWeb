@@ -67,6 +67,9 @@ pub enum Source {
     Html,
     /// Referenced by a `sourceMappingURL` comment.
     SourceMap,
+    /// Parsed from a JSON manifest (web app manifest, webpack/Vite asset
+    /// manifest) discovered during the crawl.
+    Manifest,
 }
 
 impl fmt::Display for Source {
@@ -77,6 +80,7 @@ impl fmt::Display for Source {
             Self::JsRegex => "js-regex",
             Self::Html => "html",
             Self::SourceMap => "sourcemap",
+            Self::Manifest => "manifest",
         };
         f.write_str(s)
     }

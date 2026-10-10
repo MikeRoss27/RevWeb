@@ -2,8 +2,9 @@
 //! The priority-ordered collection of extractors.
 
 use crate::extractors::{
-    inline_scripts, GraphQlExtractor, HtmlExtractor, JsAstExtractor, JsRegexExtractor,
-    ParamExtractor, SecretExtractor, SourceMapExtractor, SpaRouteExtractor, TechExtractor,
+    inline_scripts, ConfigExtractor, GraphQlExtractor, HtmlExtractor, JsAstExtractor,
+    JsRegexExtractor, ManifestExtractor, ParamExtractor, SecretExtractor, SourceMapExtractor,
+    SpaRouteExtractor, TechExtractor,
 };
 use crate::traits::{ContentKind, ExtractInput, Extractor};
 use webrev_core::Finding;
@@ -26,19 +27,33 @@ impl ExtractorRegistry {
     }
 
     /// The standard registry used by the pipeline: HTML + both JS strategies +
-    /// source-map detection, ordered by priority.
+    /// source-map detection, ordered by priority. Secrets are fingerprint-only.
     #[must_use]
     pub fn with_defaults() -> Self {
+        Self::with_defaults_revealing(false)
+    }
+
+    /// Like [`with_defaults`], but `reveal_secrets` controls whether the secret
+    /// extractor retains detected secrets in plaintext (the `--reveal-secrets`
+    /// opt-in). Keep this `false` unless the operator explicitly asked for it.
+    ///
+    /// [`with_defaults`]: ExtractorRegistry::with_defaults
+    #[must_use]
+    pub fn with_defaults_revealing(reveal_secrets: bool) -> Self {
         let mut reg = Self::new();
         reg.register(Box::new(JsAstExtractor::new()));
         reg.register(Box::new(HtmlExtractor::new()));
         reg.register(Box::new(JsRegexExtractor::new()));
-        reg.register(Box::new(SecretExtractor::with_random_key()));
+        reg.register(Box::new(
+            SecretExtractor::with_random_key().revealing(reveal_secrets),
+        ));
         reg.register(Box::new(SourceMapExtractor::new()));
         reg.register(Box::new(TechExtractor::new()));
         reg.register(Box::new(GraphQlExtractor::new()));
         reg.register(Box::new(SpaRouteExtractor::new()));
         reg.register(Box::new(ParamExtractor::new()));
+        reg.register(Box::new(ConfigExtractor::new()));
+        reg.register(Box::new(ManifestExtractor::new()));
         reg
     }
 
@@ -99,12 +114,12 @@ mod tests {
         let names = reg.names();
         // Descending priority: js-ast (90), html (80), js-regex (70),
         // secret (65), sourcemap (60), tech (55), graphql (52), routes (50),
-        // params (48).
+        // params (48), config (47), manifest (45).
         assert_eq!(
             names,
             vec![
                 "js-ast", "html", "js-regex", "secret", "sourcemap", "tech", "graphql", "routes",
-                "params"
+                "params", "config", "manifest"
             ]
         );
     }

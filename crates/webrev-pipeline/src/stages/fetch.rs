@@ -80,12 +80,16 @@ fn detect_kind(url: &str, content_type: &str) -> ContentKind {
     let ct = content_type.to_ascii_lowercase();
     // Strip any query/fragment before inspecting the file extension.
     let path = url.split(['?', '#']).next().unwrap_or(url);
-    let is_js_ext = Path::new(path)
+    let ext = Path::new(path)
         .extension()
         .and_then(|e| e.to_str())
-        .is_some_and(|e| e.eq_ignore_ascii_case("js") || e.eq_ignore_ascii_case("mjs"));
+        .unwrap_or_default();
+    let is_js_ext = ext.eq_ignore_ascii_case("js") || ext.eq_ignore_ascii_case("mjs");
+    let is_json_ext = ext.eq_ignore_ascii_case("json") || ext.eq_ignore_ascii_case("webmanifest");
     if ct.contains("javascript") || ct.contains("ecmascript") || is_js_ext {
         ContentKind::JavaScript
+    } else if ct.contains("json") || is_json_ext {
+        ContentKind::Json
     } else {
         ContentKind::Html
     }
@@ -174,7 +178,7 @@ async fn fetch_sourcemap_json(
     fetch_with_retry(client, &abs)
         .await
         .ok()
-        .map(|(_, _, body)| body)
+        .map(|(_, _, body, _)| body)
 }
 
 /// Fetch + parse a source map and emit each recovered original source as JS
@@ -257,18 +261,41 @@ fn enqueue(
     }
 }
 
-/// Returns `(content_type, response_headers, body)`.
+/// Cap on how long a single `Retry-After` wait is allowed to block a wave.
+const MAX_RETRY_AFTER: Duration = Duration::from_secs(30);
+
+/// Parse a `Retry-After` header value. Only the delay-seconds form is
+/// handled (the HTTP-date form is rare for API rate limiting and not worth
+/// the parsing surface here); an unparseable or absent header falls back to
+/// the caller's exponential backoff.
+fn parse_retry_after(resp: &reqwest::Response) -> Option<Duration> {
+    resp.headers()
+        .get(HeaderName::from_static("retry-after"))
+        .and_then(|v| v.to_str().ok())
+        .and_then(|s| s.trim().parse::<u64>().ok())
+        .map(|secs| Duration::from_secs(secs).min(MAX_RETRY_AFTER))
+}
+
+/// Returns `(content_type, response_headers, body, rate_limited)`.
+/// `rate_limited` is set once this URL ever drew a 429/503, even if a later
+/// attempt eventually succeeded, so the caller can back off the whole crawl,
+/// not just retry this one request.
 async fn fetch_with_retry(
     client: &reqwest::Client,
     url: &str,
-) -> Result<(String, Vec<(String, String)>, String)> {
+) -> Result<(String, Vec<(String, String)>, String, bool)> {
     let mut attempt = 0;
+    let mut rate_limited = false;
     loop {
         attempt += 1;
         let outcome = client.get(url).send().await;
         match outcome {
             Ok(resp) => {
                 let status = resp.status();
+                let is_rate_limited =
+                    status.as_u16() == 429 || status == reqwest::StatusCode::SERVICE_UNAVAILABLE;
+                rate_limited |= is_rate_limited;
+                let retry_after = parse_retry_after(&resp);
                 let content_type = resp
                     .headers()
                     .get(CONTENT_TYPE)
@@ -284,12 +311,14 @@ async fn fetch_with_retry(
                     .collect();
                 match resp.text().await {
                     Ok(body) => {
-                        if status.is_server_error() && attempt < MAX_ATTEMPTS {
-                            tokio::time::sleep(Duration::from_millis(200 * u64::from(attempt)))
-                                .await;
+                        if (status.is_server_error() || is_rate_limited) && attempt < MAX_ATTEMPTS
+                        {
+                            let wait = retry_after
+                                .unwrap_or_else(|| Duration::from_millis(200 * u64::from(attempt)));
+                            tokio::time::sleep(wait).await;
                             continue;
                         }
-                        return Ok((content_type, headers, body));
+                        return Ok((content_type, headers, body, rate_limited));
                     }
                     Err(e) if attempt < MAX_ATTEMPTS => {
                         tokio::time::sleep(Duration::from_millis(200 * u64::from(attempt))).await;
@@ -343,6 +372,18 @@ impl Stage for FetchStage {
             .expect("constant link pattern must compile");
         let sourcemap_re = Regex::new(r"(?im)//[#@]\s*sourceMappingURL=(\S+)")
             .expect("constant sourcemap pattern must compile");
+        // Web app manifest (`<link rel="manifest" href="…">`) and service
+        // worker registration (`navigator.serviceWorker.register("…")`):
+        // neither is a `<script src>` or `<a href>`, so without these the
+        // crawler never follows them, missing the SW's own cached-route list
+        // and the manifest's `start_url`/`scope`.
+        let manifest_re = Regex::new(
+            r#"(?i)<link[^>]+rel\s*=\s*["']manifest["'][^>]*href\s*=\s*["']([^"']+)["']"#,
+        )
+        .expect("constant manifest-link pattern must compile");
+        let sw_register_re =
+            Regex::new(r#"(?i)serviceWorker\s*\.\s*register\s*\(\s*["']([^"']+)["']"#)
+                .expect("constant service-worker pattern must compile");
 
         // Bounded breadth-first crawl. Scripts are enqueued as JS resources
         // (they never spawn further link-following); HTML links are followed up
@@ -358,16 +399,23 @@ impl Stage for FetchStage {
             .collect();
         let max_concurrency = ctx.opsec.max_concurrency.max(1);
         let mut processed = 0usize;
+        // Consecutive waves that drew a 429/503. Halves the next wave's
+        // concurrency per strike (up to 3x) and stretches the inter-wave
+        // delay (see `sleep_with_jitter`), so a WAF/rate limiter slows the
+        // crawl down instead of getting hammered at a fixed cadence.
+        let mut backoff_strikes: u32 = 0;
 
         'crawl: while processed < max_pages {
             if ctx.cancel.is_cancelled() {
                 break;
             }
 
-            // Assemble the next wave of up to `max_concurrency` fresh, in-scope
-            // URLs (dedup + scope filtering happen here, at dequeue time).
+            // Assemble the next wave of up to `effective_concurrency` fresh,
+            // in-scope URLs (dedup + scope filtering happen here, at dequeue
+            // time).
+            let effective_concurrency = (max_concurrency >> backoff_strikes.min(3)).max(1);
             let mut wave: Vec<(String, usize)> = Vec::new();
-            while wave.len() < max_concurrency {
+            while wave.len() < effective_concurrency {
                 let Some((url, depth)) = queue.pop_front() else {
                     break;
                 };
@@ -397,12 +445,14 @@ impl Stage for FetchStage {
 
             // Process results sequentially so channel order and the budget stay
             // deterministic.
+            let mut wave_rate_limited = false;
             for (url, depth, outcome) in results {
                 if processed >= max_pages {
                     break 'crawl;
                 }
                 match outcome {
-                    Ok((content_type, resp_headers, body)) => {
+                    Ok((content_type, resp_headers, body, rate_limited)) => {
+                        wave_rate_limited |= rate_limited;
                         let kind = detect_kind(&url, &content_type);
                         // Discover references before `body` is moved downstream.
                         let (scripts, links, smap) = if kind == ContentKind::Html {
@@ -411,7 +461,10 @@ impl Stage for FetchStage {
                             } else {
                                 Vec::new()
                             };
-                            (capture_group1(&script_re, &body), links, None)
+                            let mut scripts = capture_group1(&script_re, &body);
+                            scripts.extend(capture_group1(&manifest_re, &body));
+                            scripts.extend(capture_group1(&sw_register_re, &body));
+                            (scripts, links, None)
                         } else {
                             (Vec::new(), Vec::new(), sourcemap_ref(&sourcemap_re, &body))
                         };
@@ -456,11 +509,23 @@ impl Stage for FetchStage {
                 }
             }
 
+            if wave_rate_limited {
+                backoff_strikes = (backoff_strikes + 1).min(5);
+                let _ = events.send(PipelineEvent::Error {
+                    stage: self.name().to_owned(),
+                    message: format!(
+                        "rate-limited (429/503); backing off (strike {backoff_strikes})"
+                    ),
+                });
+            } else {
+                backoff_strikes = backoff_strikes.saturating_sub(1);
+            }
+
             let _ = events.send(PipelineEvent::Progress {
                 stage: self.name().to_owned(),
                 processed,
             });
-            sleep_with_jitter(&ctx.opsec).await;
+            sleep_with_jitter(&ctx.opsec, backoff_strikes).await;
         }
 
         let _ = events.send(PipelineEvent::StageCompleted {
@@ -527,5 +592,48 @@ mod tests {
             ContentKind::JavaScript
         );
         assert_eq!(detect_kind("x", "text/html"), ContentKind::Html);
+        assert_eq!(detect_kind("manifest.json", ""), ContentKind::Json);
+        assert_eq!(detect_kind("x", "application/manifest+json"), ContentKind::Json);
+    }
+
+    #[test]
+    fn retry_after_parses_seconds_and_caps_the_wait() {
+        let resp = |header: Option<&str>| {
+            let mut builder = http::Response::builder().status(429);
+            if let Some(v) = header {
+                builder = builder.header("retry-after", v);
+            }
+            reqwest::Response::from(builder.body(Vec::<u8>::new()).unwrap())
+        };
+        assert_eq!(
+            parse_retry_after(&resp(Some("5"))),
+            Some(Duration::from_secs(5))
+        );
+        // Longer than the cap: clamped.
+        assert_eq!(
+            parse_retry_after(&resp(Some("3600"))),
+            Some(MAX_RETRY_AFTER)
+        );
+        // Missing or non-numeric (HTTP-date form): no delay extracted, caller
+        // falls back to its own exponential backoff.
+        assert_eq!(parse_retry_after(&resp(None)), None);
+        assert_eq!(
+            parse_retry_after(&resp(Some("Wed, 21 Oct 2026 07:28:00 GMT"))),
+            None
+        );
+    }
+
+    #[test]
+    fn discovers_manifest_link_and_sw_registration() {
+        let manifest_re = Regex::new(
+            r#"(?i)<link[^>]+rel\s*=\s*["']manifest["'][^>]*href\s*=\s*["']([^"']+)["']"#,
+        )
+        .unwrap();
+        let sw_re =
+            Regex::new(r#"(?i)serviceWorker\s*\.\s*register\s*\(\s*["']([^"']+)["']"#).unwrap();
+        let html = r#"<link rel="manifest" href="/manifest.json">
+            <script>navigator.serviceWorker.register('/sw.js');</script>"#;
+        assert_eq!(capture_group1(&manifest_re, html), vec!["/manifest.json"]);
+        assert_eq!(capture_group1(&sw_re, html), vec!["/sw.js"]);
     }
 }

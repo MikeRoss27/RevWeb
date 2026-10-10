@@ -17,6 +17,7 @@
 //! and as a thin binary of its own.
 
 pub mod app;
+pub mod brand;
 pub mod events;
 pub mod ui;
 
@@ -47,6 +48,9 @@ pub struct TuiOptions {
     pub profile: MissionProfile,
     pub db_path: PathBuf,
     pub report_path: PathBuf,
+    /// Opt into retaining/showing detected secrets in plaintext
+    /// (`--reveal-secrets`). Off by default.
+    pub reveal_secrets: bool,
 }
 
 /// Launch the TUI: set up the terminal, run the event loop, and restore the
@@ -175,7 +179,9 @@ async fn event_loop(
     let controller = Controller {
         mission: Arc::clone(&mission),
         opsec: Arc::new(options.profile.opsec),
-        registry: Arc::new(ExtractorRegistry::with_defaults()),
+        registry: Arc::new(ExtractorRegistry::with_defaults_revealing(
+            options.reveal_secrets,
+        )),
         storage,
         cancel: CancellationToken::new(),
         report_path: options.report_path,
@@ -240,14 +246,17 @@ async fn handle_action(
 ) {
     match action {
         Action::Quit => {
-            // Esc/q first dismisses an open detail overlay, then quits.
-            if app.show_detail {
+            // Esc/q first dismisses an open overlay (help, then detail), then quits.
+            if app.show_help {
+                app.show_help = false;
+            } else if app.show_detail {
                 app.show_detail = false;
             } else {
                 controller.cancel.cancel();
                 app.should_quit = true;
             }
         }
+        Action::ToggleHelp => app.toggle_help(),
         Action::ToggleDetail => app.toggle_detail(),
         Action::ToggleSort => app.toggle_sort(),
         Action::NextTab => app.select_tab(app.tab.next()),

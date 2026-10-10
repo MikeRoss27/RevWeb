@@ -15,8 +15,9 @@ use uuid::Uuid;
 pub enum FindingKind {
     /// A reachable API / network endpoint.
     Endpoint,
-    /// A credential-like token. The stored `value` is a fingerprint, never
-    /// the plaintext secret (see [`crate::sanitize`]).
+    /// A credential-like token. The stored `value` is a fingerprint; the
+    /// plaintext is kept in `plaintext` only when the operator opts in with
+    /// `--reveal-secrets` (see [`crate::sanitize`]).
     Secret,
     /// A `sourceMappingURL` reference to a JS source map.
     SourceMap,
@@ -34,6 +35,14 @@ pub enum FindingKind {
     Technology,
     /// A request parameter / JSON body key / form field name (fuzz wordlist).
     Parameter,
+    /// An embedded configuration constant, feature flag, or app-manifest
+    /// setting (e.g. a `baseURL`/`apiVersion` property, a `DEBUG` flag, a web
+    /// app manifest's `start_url`).
+    Config,
+    /// A WebSocket frame payload observed during a dynamic scan. Captured so
+    /// an operator can replay the exchange with a tool of their choosing
+    /// (webrev itself only observes; it does not resend traffic).
+    WebSocketFrame,
 }
 
 impl FindingKind {
@@ -51,6 +60,8 @@ impl FindingKind {
             Self::GraphQl => "graphql",
             Self::Technology => "technology",
             Self::Parameter => "parameter",
+            Self::Config => "config",
+            Self::WebSocketFrame => "ws_frame",
         }
     }
 }
@@ -140,6 +151,12 @@ pub struct Finding {
     pub value: String,
     pub confidence: Confidence,
     pub provenance: Provenance,
+    /// Revealed plaintext for a [`FindingKind::Secret`]. `None` by default; set
+    /// only when the operator opts into `--reveal-secrets`, which disables the
+    /// fingerprint-only privacy guarantee. Omitted from serialized reports when
+    /// absent.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub plaintext: Option<String>,
 }
 
 impl Finding {
@@ -160,7 +177,18 @@ impl Finding {
             value: value.into(),
             confidence,
             provenance,
+            plaintext: None,
         }
+    }
+
+    /// Attach a revealed plaintext secret to this finding (builder style).
+    ///
+    /// Only the secret extractor calls this, and only when `--reveal-secrets`
+    /// is set; every other finding leaves `plaintext` at its `None` default.
+    #[must_use]
+    pub fn with_plaintext(mut self, plaintext: Option<String>) -> Self {
+        self.plaintext = plaintext;
+        self
     }
 
     /// Build an endpoint finding from an [`Endpoint`].
@@ -195,11 +223,12 @@ impl Finding {
                 endpoint_severity(self.url.as_deref().unwrap_or(&self.value))
             }
             FindingKind::GraphQl | FindingKind::SourceMap => Severity::Medium,
-            FindingKind::Form | FindingKind::Route => Severity::Low,
+            FindingKind::Form | FindingKind::Route | FindingKind::WebSocketFrame => Severity::Low,
             FindingKind::Parameter
             | FindingKind::Link
             | FindingKind::Script
-            | FindingKind::Technology => Severity::Info,
+            | FindingKind::Technology
+            | FindingKind::Config => Severity::Info,
         }
     }
 

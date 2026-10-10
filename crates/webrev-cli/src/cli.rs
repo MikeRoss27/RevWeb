@@ -1,18 +1,55 @@
 // crates/webrev-cli/src/cli.rs
 //! Command-line surface (clap derive + `WEBREV_` environment variables).
 
+use clap::builder::styling::{Color, RgbColor, Style, Styles};
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use std::path::PathBuf;
+
+/// `--help` colors: orange headings, cream literals, stone placeholders.
+/// clap drops them automatically for pipes and `NO_COLOR`.
+const STYLES: Styles = Styles::styled()
+    .header(Style::new().bold().fg_color(Some(Color::Rgb(RgbColor(229, 101, 63)))))
+    .usage(Style::new().bold().fg_color(Some(Color::Rgb(RgbColor(229, 101, 63)))))
+    .literal(Style::new().bold().fg_color(Some(Color::Rgb(RgbColor(250, 244, 232)))))
+    .placeholder(Style::new().fg_color(Some(Color::Rgb(RgbColor(163, 154, 146)))));
+
+/// Worked examples, shown at the bottom of `webrev --help`.
+const EXAMPLES: &str = "\
+EXAMPLES:
+  # One-shot: crawl, extract, and write a report (easiest start)
+  webrev scan --seed https://app.example.com/
+
+  # One-shot including a dynamic (headless Chromium) pass
+  webrev scan --seed https://app.example.com/ --dynamic
+
+  # Authenticated, behind a login, through an intercepting proxy
+  webrev scan --seed https://app.example.com/ \\
+    --cookie \"session=…\" --header \"X-Env: staging\" --proxy http://127.0.0.1:8080
+
+  # Sit at the end of a recon pipeline (seeds on stdin)
+  subfinder -d example.com | httpx | webrev scan
+
+  # Reveal detected secrets in plaintext (authorized work only)
+  webrev scan --seed https://app.example.com/ --reveal-secrets
+
+  # Interactive TUI (auto-runs a static scan; press ? for keys)
+  webrev tui --seed https://app.example.com/
+
+  # Re-export the latest session as bare URLs for ffuf/nuclei
+  webrev report --format urls | ffuf -u FUZZ -w -";
 
 /// `webrev` — a web reconnaissance and analysis toolkit.
 #[derive(Parser)]
 #[command(
     name = "webrev",
     version,
+    styles = STYLES,
     about = "webrev · web reconnaissance toolkit",
     long_about = "webrev — map a web application's attack surface from static and \
                   dynamic analysis.\n\nUse only against targets you are explicitly \
-                  authorized to test."
+                  authorized to test.",
+    after_help = EXAMPLES,
+    after_long_help = EXAMPLES
 )]
 pub struct Cli {
     #[command(subcommand)]
@@ -24,6 +61,8 @@ pub struct Cli {
 
 #[derive(Subcommand)]
 pub enum Command {
+    /// One-shot: static scan (optionally + dynamic) then write a report.
+    Scan(ScanAllArgs),
     /// Static analysis: fetch seeds + their scripts and extract endpoints.
     Static(ScanArgs),
     /// Dynamic analysis: drive headless Chromium and capture live calls.
@@ -32,6 +71,24 @@ pub enum Command {
     Tui(ScanArgs),
     /// Export a stored session as a JSON report.
     Report(ReportArgs),
+}
+
+/// Arguments for the one-shot `scan` command: the shared scan options plus a
+/// couple of convenience switches that chain the steps together.
+#[derive(Args)]
+pub struct ScanAllArgs {
+    #[command(flatten)]
+    pub scan: ScanArgs,
+    /// Also run a dynamic (headless Chromium) pass after the static scan,
+    /// reusing the same session.
+    #[arg(long)]
+    pub dynamic: bool,
+    /// Report format written at the end of the scan.
+    #[arg(long, value_enum, default_value_t = Format::Json)]
+    pub format: Format,
+    /// Skip writing the end-of-scan report (just populate the database).
+    #[arg(long)]
+    pub no_report: bool,
 }
 
 /// Arguments shared by the scanning subcommands.
@@ -90,6 +147,12 @@ pub struct ScanArgs {
     /// Report output path used by the TUI's 'r' key.
     #[arg(long, default_value = "webrev-report.json")]
     pub report: PathBuf,
+    /// Record and show detected secrets in PLAINTEXT instead of only their
+    /// fingerprint. Dangerous: real credentials are then written to the SQLite
+    /// database and included in exported reports. Off by default — enable only
+    /// for authorized work where you need the leaked value to triage or report.
+    #[arg(long, env = "WEBREV_REVEAL_SECRETS")]
+    pub reveal_secrets: bool,
 }
 
 /// Output serialization for `report`.

@@ -19,7 +19,7 @@ pub async fn run(args: ScanArgs) -> anyhow::Result<()> {
     let ctx = StageContext::new(
         Arc::new(mission),
         Arc::new(opsec),
-        Arc::new(ExtractorRegistry::with_defaults()),
+        Arc::new(ExtractorRegistry::with_defaults_revealing(args.reveal_secrets)),
         Arc::clone(&storage),
         CancellationToken::new(),
     );

@@ -10,15 +10,19 @@ use chromiumoxide::cdp::browser_protocol::emulation::{
     SetGeolocationOverrideParams, SetTimezoneOverrideParams,
 };
 use chromiumoxide::cdp::browser_protocol::network::{
-    EnableParams, EventRequestWillBeSent, EventWebSocketCreated, Headers, SetExtraHttpHeadersParams,
+    EnableParams, EventRequestWillBeSent, EventWebSocketCreated, EventWebSocketFrameReceived,
+    EventWebSocketFrameSent, Headers, RequestId, SetExtraHttpHeadersParams,
 };
 use futures::StreamExt;
-use std::collections::BTreeSet;
+use std::collections::{BTreeSet, HashMap};
 use std::fmt::Display;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 use tokio_util::sync::CancellationToken;
-use webrev_core::{Confidence, Endpoint, Finding, Method, Result, Sanitizer, SessionId, Source};
+use webrev_core::{
+    Confidence, Endpoint, Finding, FindingKind, Method, Provenance, Result, Sanitizer, SessionId,
+    Source,
+};
 
 fn browser_err<E: Display>(e: E) -> webrev_core::WebrevError {
     webrev_core::WebrevError::Browser(e.to_string())
@@ -26,15 +30,49 @@ fn browser_err<E: Display>(e: E) -> webrev_core::WebrevError {
 
 /// Interval between active-interaction passes.
 const INTERACTION_STEP: Duration = Duration::from_millis(1500);
+/// Settle time after a single attributed click, before the next one: long
+/// enough for a typical XHR/fetch fired by the click to reach the hook.
+const CLICK_SETTLE: Duration = Duration::from_millis(200);
+/// Clickable elements attributed per interaction pass. Bounded so a page with
+/// hundreds of buttons does not turn the dwell period into a linear scan.
+const MAX_CLICKS_PER_PASS: usize = 10;
+/// Captured WebSocket frames are bounded in both count and per-frame length:
+/// a chatty socket (live chat, telemetry) should not grow the finding set
+/// unboundedly or balloon storage with megabyte payloads.
+const MAX_WS_FRAMES: usize = 50;
+const MAX_WS_PAYLOAD_CHARS: usize = 500;
 
-/// Injected each pass to exercise single-page apps: scroll to trigger lazy
-/// loading, then click buttons (never links, to avoid navigating away) so
-/// their XHR/fetch calls are captured by the hooks.
-const ACTIVE_SCRIPT: &str = r"(() => {
+/// Scroll to the bottom (to trigger lazy loading) and report how many
+/// clickable elements are now on the page.
+const COUNT_INTERACTIVE_SCRIPT: &str = r"(() => {
   try { window.scrollTo(0, document.body.scrollHeight); } catch (e) {}
-  const els = Array.from(document.querySelectorAll('button, [role=button]')).slice(0, 30);
-  for (const el of els) { try { el.click(); } catch (e) {} }
+  return document.querySelectorAll('button, [role=button]').length;
 })();";
+
+/// Click the `index`-th clickable element (never a link, to avoid navigating
+/// away), first setting `window.__webrev_trigger` to a short label derived
+/// from the element so any network call the click causes is attributed to it
+/// (see [`crate::hooks::INSTALL_HOOKS`]). Returns `false` once `index` is out
+/// of range.
+fn click_attributed_script(index: usize) -> String {
+    format!(
+        r"(() => {{
+  const els = document.querySelectorAll('button, [role=button]');
+  const el = els[{index}];
+  if (!el) return false;
+  const label = (el.id && ('#' + el.id))
+    || el.getAttribute('aria-label')
+    || (el.textContent || '').trim().slice(0, 40)
+    || el.tagName;
+  window.__webrev_trigger = String(label);
+  try {{ el.click(); }} catch (e) {{}}
+  return true;
+}})();"
+    )
+}
+
+/// Clear the active trigger label once its settle window has elapsed.
+const CLEAR_TRIGGER_SCRIPT: &str = "window.__webrev_trigger = null;";
 
 /// Load `url` under `profile`, let it run for `duration` (or until `cancel`),
 /// then return the endpoints the page actually called.
@@ -111,28 +149,82 @@ pub async fn run_dynamic(
         }
     });
 
-    // Capture WebSocket endpoints opened by the page.
-    let ws_urls = Arc::new(Mutex::new(Vec::<String>::new()));
+    // Capture WebSocket endpoints opened by the page, keyed by CDP request id
+    // so frames (captured separately below) can be attributed to a URL.
+    let ws_sockets = Arc::new(Mutex::new(HashMap::<RequestId, String>::new()));
     let mut ws_events = page
         .event_listener::<EventWebSocketCreated>()
         .await
         .map_err(browser_err)?;
-    let ws_capture = Arc::clone(&ws_urls);
+    let ws_capture = Arc::clone(&ws_sockets);
     let ws_collector = tokio::spawn(async move {
         while let Some(event) = ws_events.next().await {
-            if let Ok(mut urls) = ws_capture.lock() {
-                urls.push(event.url.clone());
+            if let Ok(mut sockets) = ws_capture.lock() {
+                sockets.insert(event.request_id.clone(), event.url.clone());
+            }
+        }
+    });
+
+    // Capture WebSocket frame payloads both ways. webrev only observes: it
+    // never resends traffic, but the captured payloads let an operator
+    // replay the exchange with whichever tool they prefer (Burp, websocat).
+    let ws_frames = Arc::new(Mutex::new(Vec::<(RequestId, &'static str, String)>::new()));
+
+    let mut ws_sent_events = page
+        .event_listener::<EventWebSocketFrameSent>()
+        .await
+        .map_err(browser_err)?;
+    let frames_sent = Arc::clone(&ws_frames);
+    let ws_sent_collector = tokio::spawn(async move {
+        while let Some(event) = ws_sent_events.next().await {
+            if let Ok(mut frames) = frames_sent.lock() {
+                if frames.len() < MAX_WS_FRAMES {
+                    frames.push((event.request_id.clone(), "sent", event.response.payload_data.clone()));
+                }
+            }
+        }
+    });
+
+    let mut ws_recv_events = page
+        .event_listener::<EventWebSocketFrameReceived>()
+        .await
+        .map_err(browser_err)?;
+    let frames_recv = Arc::clone(&ws_frames);
+    let ws_recv_collector = tokio::spawn(async move {
+        while let Some(event) = ws_recv_events.next().await {
+            if let Ok(mut frames) = frames_recv.lock() {
+                if frames.len() < MAX_WS_FRAMES {
+                    frames.push((event.request_id.clone(), "received", event.response.payload_data.clone()));
+                }
             }
         }
     });
 
     page.goto(url).await.map_err(browser_err)?;
 
-    // Active dwell: repeatedly scroll and click to drive SPA interactions until
-    // the deadline or cancellation.
+    // Active dwell: repeatedly scroll and click clickable elements one at a
+    // time, attributing each click to the UI element that caused it (see
+    // `click_attributed_script`), until the deadline or cancellation.
     let deadline = Instant::now() + duration;
     while Instant::now() < deadline && !cancel.is_cancelled() {
-        let _ = page.evaluate(ACTIVE_SCRIPT).await;
+        let count: usize = page
+            .evaluate(COUNT_INTERACTIVE_SCRIPT)
+            .await
+            .ok()
+            .and_then(|v| v.into_value().ok())
+            .unwrap_or(0);
+        let clicks = count.min(MAX_CLICKS_PER_PASS);
+        for i in 0..clicks {
+            if cancel.is_cancelled() || Instant::now() >= deadline {
+                break;
+            }
+            let _ = page.evaluate(click_attributed_script(i)).await;
+            tokio::select! {
+                () = cancel.cancelled() => break,
+                () = tokio::time::sleep(CLICK_SETTLE) => {},
+            }
+            let _ = page.evaluate(CLEAR_TRIGGER_SCRIPT).await;
+        }
         tokio::select! {
             () = cancel.cancelled() => break,
             () = tokio::time::sleep(INTERACTION_STEP) => {},
@@ -148,6 +240,8 @@ pub async fn run_dynamic(
         .map_err(browser_err)?;
     collector.abort();
     ws_collector.abort();
+    ws_sent_collector.abort();
+    ws_recv_collector.abort();
 
     let sanitizer = Sanitizer::with_default_patterns();
     let mut har = match Arc::try_unwrap(har) {
@@ -166,7 +260,18 @@ pub async fn run_dynamic(
             let scrubbed = sanitizer.scrub(&record.url);
             if seen.insert(scrubbed.clone()) {
                 let endpoint = Endpoint::new(scrubbed, Method::parse(&record.method), Source::Browser);
-                findings.push(Finding::from_endpoint(session, &endpoint, Confidence::High));
+                let mut finding = Finding::from_endpoint(session, &endpoint, Confidence::High);
+                // Attribute the call to the UI element whose click caused it,
+                // when the active-interaction driver recorded one: the
+                // before/after diff that turns a flat endpoint list into
+                // "clicking Delete Account calls DELETE /api/account".
+                if let Some(trigger) = record.trigger {
+                    finding.provenance = Provenance::new(
+                        Source::Browser,
+                        Some(format!("click: {trigger}")),
+                    );
+                }
+                findings.push(finding);
             }
         }
     }
@@ -177,13 +282,35 @@ pub async fn run_dynamic(
     }
 
     // WebSocket endpoints the page opened.
-    let websockets = ws_urls.lock().map(|v| v.clone()).unwrap_or_default();
-    for url in websockets {
-        let scrubbed = sanitizer.scrub(&url);
+    let sockets = ws_sockets.lock().map(|m| m.clone()).unwrap_or_default();
+    for socket_url in sockets.values() {
+        let scrubbed = sanitizer.scrub(socket_url);
         if seen.insert(scrubbed.clone()) {
             let endpoint = Endpoint::new(scrubbed, Method::Get, Source::Browser);
             findings.push(Finding::from_endpoint(session, &endpoint, Confidence::High));
         }
+    }
+
+    // WebSocket frame payloads, attributed back to their socket's URL.
+    // webrev only observes these; replaying them is left to the operator's
+    // tool of choice (Burp, websocat, …).
+    let frames = ws_frames.lock().map(|v| v.clone()).unwrap_or_default();
+    for (request_id, direction, payload) in frames {
+        let socket_url = sockets
+            .get(&request_id)
+            .map_or_else(|| "unknown".to_owned(), |u| sanitizer.scrub(u));
+        let mut payload = sanitizer.scrub(&payload);
+        if payload.chars().count() > MAX_WS_PAYLOAD_CHARS {
+            payload = payload.chars().take(MAX_WS_PAYLOAD_CHARS).collect::<String>() + "…";
+        }
+        findings.push(Finding::new(
+            session,
+            FindingKind::WebSocketFrame,
+            None,
+            payload,
+            Confidence::Medium,
+            Provenance::new(Source::Browser, Some(format!("{direction} {socket_url}"))),
+        ));
     }
 
     Ok(findings)

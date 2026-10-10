@@ -84,6 +84,8 @@ pub struct App {
     pub should_quit: bool,
     /// True while the detail overlay for the selected item is open.
     pub show_detail: bool,
+    /// True while the keyboard-help overlay is open.
+    pub show_help: bool,
     /// When true, the Endpoints/Findings lists are ordered by severity (desc).
     pub sort_by_severity: bool,
     /// Selection/scroll state for the active list tab.
@@ -118,6 +120,7 @@ impl App {
             scanning: false,
             should_quit: false,
             show_detail: false,
+            show_help: false,
             sort_by_severity: false,
             list_state: ListState::default(),
             filter: String::new(),
@@ -199,6 +202,11 @@ impl App {
         let pos = self.list_state.selected()?;
         let original = *self.visible_source_indices().get(pos)?;
         data.get(original)
+    }
+
+    /// Toggle the keyboard-help overlay.
+    pub fn toggle_help(&mut self) {
+        self.show_help = !self.show_help;
     }
 
     /// Toggle the detail overlay (no-op on tabs without records).
@@ -340,9 +348,12 @@ impl App {
             Pe::Error { stage, message } => {
                 self.push_log(format!("[{stage}] ERROR: {message}"));
             }
-            Pe::SecretDetected { fingerprint } => {
+            Pe::SecretDetected { fingerprint, plaintext } => {
                 self.secrets += 1;
-                self.push_log(format!("[secret] {fingerprint}"));
+                match plaintext {
+                    Some(p) => self.push_log(format!("[secret] {fingerprint} = {p}")),
+                    None => self.push_log(format!("[secret] {fingerprint}")),
+                }
             }
             Pe::Finding(finding) => self.record_finding(&finding),
         }
@@ -351,12 +362,17 @@ impl App {
     fn record_finding(&mut self, finding: &Finding) {
         let locus = finding.url.as_deref().unwrap_or(&finding.value);
         let sev = finding.severity().tag();
-        let line = format!(
+        let mut line = format!(
             "{sev} {:<9} {} [{}]",
             finding.kind.slug(),
             locus,
             finding.provenance.source
         );
+        // Surface a revealed secret's plaintext inline (opt-in reveal mode only).
+        if let Some(plaintext) = &finding.plaintext {
+            use std::fmt::Write as _;
+            let _ = write!(line, " = {plaintext}");
+        }
         if finding.kind == FindingKind::Endpoint {
             // Tag with the in/out-of-scope classification so the Endpoints tab
             // separates the target surface from third-party references.
@@ -462,6 +478,45 @@ mod tests {
         // Detail opens only when something is selected.
         app.toggle_detail();
         assert!(app.show_detail);
+    }
+
+    #[test]
+    fn revealed_secret_shows_plaintext_in_log_and_findings() {
+        let mut app = app();
+        // The store stage emits a SecretDetected carrying the plaintext.
+        app.apply(UiEvent::Pipeline(PipelineEvent::SecretDetected {
+            fingerprint: "fp:deadbeefdeadbeef".into(),
+            plaintext: Some("AKIAZ4XB7NMPQR2STUVW".into()),
+        }));
+        assert_eq!(app.secrets, 1);
+        assert!(app
+            .logs
+            .iter()
+            .any(|l| l == "[secret] fp:deadbeefdeadbeef = AKIAZ4XB7NMPQR2STUVW"));
+
+        // And the finding line surfaces it inline too.
+        let f = Finding::new(
+            SessionId::new(),
+            FindingKind::Secret,
+            None,
+            "fp:deadbeefdeadbeef",
+            Confidence::High,
+            Provenance::new(Source::JsRegex, None),
+        )
+        .with_plaintext(Some("AKIAZ4XB7NMPQR2STUVW".into()));
+        app.apply(UiEvent::Pipeline(PipelineEvent::Finding(Box::new(f))));
+        assert!(app.findings.last().unwrap().ends_with("= AKIAZ4XB7NMPQR2STUVW"));
+    }
+
+    #[test]
+    fn fingerprint_only_secret_omits_plaintext() {
+        let mut app = app();
+        app.apply(UiEvent::Pipeline(PipelineEvent::SecretDetected {
+            fingerprint: "fp:cafebabecafebabe".into(),
+            plaintext: None,
+        }));
+        assert!(app.logs.iter().any(|l| l == "[secret] fp:cafebabecafebabe"));
+        assert!(app.logs.iter().all(|l| !l.contains(" = ")));
     }
 
     #[test]

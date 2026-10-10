@@ -40,10 +40,40 @@ fn sample_jitter_ms(opsec: &OpsecConfig) -> u64 {
     }
 }
 
-/// Sleep for a jittered delay, unless the window is zero.
-pub(crate) async fn sleep_with_jitter(opsec: &OpsecConfig) {
-    let ms = sample_jitter_ms(opsec);
+/// Stretch a base delay by `strikes` consecutive waves that drew a 429/503
+/// from the target: each strike doubles it, capped at 16x, with a 500ms floor
+/// once backing off at all. Pulled out of [`sleep_with_jitter`] so the backoff
+/// curve itself is unit-testable without sleeping.
+fn backoff_delay_ms(base_ms: u64, strikes: u32) -> u64 {
+    let multiplier = 1u64 << strikes.min(4);
+    base_ms
+        .saturating_mul(multiplier)
+        .max(if strikes > 0 { 500 } else { 0 })
+}
+
+/// Sleep for a jittered delay, stretched by `strikes` (see
+/// [`backoff_delay_ms`]). This is what lets the crawler react to a
+/// WAF/rate limiter by slowing down instead of hammering it at a fixed
+/// cadence until the engagement gets blocked outright.
+pub(crate) async fn sleep_with_jitter(opsec: &OpsecConfig, strikes: u32) {
+    let ms = backoff_delay_ms(sample_jitter_ms(opsec), strikes);
     if ms > 0 {
         tokio::time::sleep(Duration::from_millis(ms)).await;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn backoff_doubles_per_strike_and_floors_at_500ms() {
+        assert_eq!(backoff_delay_ms(100, 0), 100);
+        assert_eq!(backoff_delay_ms(100, 1), 500); // 200 < 500 floor
+        assert_eq!(backoff_delay_ms(400, 1), 800);
+        assert_eq!(backoff_delay_ms(100, 2), 500); // 400 < 500 floor
+        assert_eq!(backoff_delay_ms(1000, 2), 4000);
+        // Capped at 2^4 = 16x regardless of how high strikes climbs.
+        assert_eq!(backoff_delay_ms(1000, 4), backoff_delay_ms(1000, 10));
     }
 }
