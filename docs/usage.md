@@ -1,17 +1,18 @@
 # Usage
 
-`webrev` has five subcommands: `scan`, `static`, `dynamic`, `tui`, and `report`.
-`scan` is the one-shot convenience wrapper; the others are the individual steps.
+`webrev` has six subcommands: `scan`, `static`, `dynamic`, `active`, `tui`, and
+`report`. `scan` is the one-shot convenience wrapper; the others are the
+individual steps.
 
 ```text
 webrev <COMMAND> [OPTIONS]
 ```
 
-All scanning subcommands (`scan`, `static`, `dynamic`, `tui`) share the same
-options below. `scan` adds a few of its own (see its section), and `report` has
-its own, smaller set.
+All scanning subcommands (`scan`, `static`, `dynamic`, `active`, `tui`) share
+the same options below. `scan` adds a few of its own (see its section), and
+`report` has its own, smaller set.
 
-## Scan options (scan / static / dynamic / tui)
+## Scan options (scan / static / dynamic / active / tui)
 
 | Flag | Default | Description |
 | --- | --- | --- |
@@ -66,12 +67,14 @@ Adds to the shared scan options:
 | Flag | Default | Description |
 | --- | --- | --- |
 | `--dynamic` | off | Also run a dynamic (headless Chromium) pass after the static scan, in the same session. |
+| `--active` | off | Also run a light active-scan pass (see below) over every endpoint the static/dynamic passes discovered, plus the seeds themselves. Sends abnormal traffic — authorized targets only. |
 | `--format <FMT>` | `json` | Format of the end-of-scan report: `json`, `jsonl`, `urls`, or `csv`. |
 | `--no-report` | off | Just populate the database; skip writing the report. |
 
 ```bash
 webrev scan --seed https://app.example.com/                 # static + report
 webrev scan --seed https://app.example.com/ --dynamic       # + headless pass
+webrev scan --seed https://app.example.com/ --active        # + active probing
 subfinder -d example.com | httpx | webrev scan              # seeds on stdin
 ```
 
@@ -102,6 +105,39 @@ webrev dynamic --seed https://app.example.com/ --duration-secs 10 --cookie "sess
 Chromium is auto-detected on `PATH`. For a non-standard install (Flatpak/Snap,
 custom path), set `CHROME=/path/to/chromium`. On Arch Linux, `pacman -S chromium`
 is detected out of the box.
+
+### `active`
+
+> [!WARNING]
+> Unlike every other subcommand, `active` sends abnormal, intentionally
+> malformed traffic to the target (injected characters, a spoofed `Origin`,
+> probes for well-known sensitive paths). It is opt-in for a reason —
+> authorized targets only. It never issues a state-changing request (no
+> `POST`/`PUT`/`DELETE`/`PATCH` probing) and never follows a redirect it
+> injected itself.
+
+Runs a light, capped battery of active checks against the mission seeds
+(standalone) or, via `scan --active`, every endpoint already discovered by the
+static/dynamic passes plus the seeds. Each check is a handful of requests, not
+a wordlist brute-forcer:
+
+| Check | What it does |
+| --- | --- |
+| Security headers | Flags missing `Content-Security-Policy`, `X-Content-Type-Options`, `X-Frame-Options`, and (on https) `Strict-Transport-Security`. |
+| Cookie flags | Flags `Set-Cookie` entries missing `Secure` (https), `HttpOnly`, or `SameSite`. |
+| CORS misconfiguration | Sends a spoofed `Origin` and checks whether it is reflected in `Access-Control-Allow-Origin`, especially with `Access-Control-Allow-Credentials: true`. |
+| Sensitive-file exposure | Probes a short list of well-known paths (`.env`, `.git/HEAD`, `.git/config`, …), compared against a nonexistent-path baseline so SPA catch-all routes don't false-positive. |
+| Open redirect | For endpoints with a redirect-shaped parameter (`redirect`, `next`, `return`, `url`, …), swaps in a probe URL and checks whether the response blindly redirects there. |
+| Parameter fuzzing | Injects a single combined quote/marker payload into every query parameter and diffs against a baseline response for SQL-error signatures or unescaped reflection (a signal worth manual XSS verification, not a confirmed exploit). |
+| IDOR-lite | On an authenticated mission, resends an id-shaped endpoint with no authentication at all and flags a similarly-sized success response. |
+
+Each category is capped (≤15 targets) per run, and every probe respects the
+mission's rate-limit/jitter settings and scope.
+
+```bash
+webrev active --seed https://app.example.com/ --cookie "session=…"
+webrev scan --seed https://app.example.com/ --active
+```
 
 ### `tui`
 

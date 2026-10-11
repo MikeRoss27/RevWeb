@@ -83,6 +83,33 @@ per-run profile directory that is deleted afterwards. Active interaction is
 limited to scrolling and clicking buttons (never links), to avoid navigating
 away or triggering destructive actions.
 
+## Active scanning (opt-in, abnormal traffic)
+
+`webrev active` and `scan --active` are the only paths that intentionally send
+abnormal traffic rather than passively observing: injected characters in query
+parameters, a spoofed `Origin` header, and probes for a short list of
+well-known sensitive paths (`.env`, `.git/HEAD`, …). This is opt-in for a
+reason, and it is still bound by the same scope and `OpsecConfig` (jitter,
+egress policy) as every other request webrev sends.
+
+Guardrails baked into the checks themselves:
+
+- **Never mutates state.** Endpoints known to be `POST`/`PUT`/`DELETE`/`PATCH`
+  are skipped entirely; only GET-shaped requests are issued.
+- **Never follows an injected redirect.** The probe client disables redirect
+  following outright, so an open-redirect check cannot itself send a request
+  to the attacker-controlled-looking URL it injects.
+- **Hard per-category budgets** (≤15 targets each for fuzzing, redirects, and
+  IDOR-lite) bound the extra request volume regardless of how many endpoints
+  recon discovered.
+- **IDOR-lite only runs on an authenticated mission** — it compares "with the
+  mission's auth" against "with none at all," which is only meaningful once
+  auth material is actually configured.
+
+Findings land as `FindingKind::Vulnerability` or `FindingKind::Idor`, with
+`Provenance::source == Source::Active` so they're always distinguishable from
+passively observed findings in a report.
+
 ## Reporting scope
 
 A report reconstructs minimal mission metadata (scope and seeds are not

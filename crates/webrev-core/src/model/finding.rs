@@ -43,6 +43,16 @@ pub enum FindingKind {
     /// an operator can replay the exchange with a tool of their choosing
     /// (webrev itself only observes; it does not resend traffic).
     WebSocketFrame,
+    /// An active-probe result: a concrete, observed weakness (missing
+    /// security header, CORS misconfiguration, open redirect, reflected or
+    /// error-signalled injection, exposed sensitive file). See
+    /// [`crate::model::finding::Severity`] for how the specific issue maps
+    /// to a priority.
+    Vulnerability,
+    /// A resource that returned a successful response without the
+    /// mission's authentication material attached (IDOR-lite / broken
+    /// access control signal).
+    Idor,
 }
 
 impl FindingKind {
@@ -62,6 +72,8 @@ impl FindingKind {
             Self::Parameter => "parameter",
             Self::Config => "config",
             Self::WebSocketFrame => "ws_frame",
+            Self::Vulnerability => "vulnerability",
+            Self::Idor => "idor",
         }
     }
 }
@@ -229,6 +241,13 @@ impl Finding {
             | FindingKind::Script
             | FindingKind::Technology
             | FindingKind::Config => Severity::Info,
+            // Broken access control is always worth a human look.
+            FindingKind::Idor => Severity::High,
+            // The specific weakness (encoded in `value` by the active-scan
+            // checks) drives severity more than confidence does here: a
+            // missing header is advisory, a credentialed CORS reflection is
+            // critical.
+            FindingKind::Vulnerability => vulnerability_severity(&self.value),
         }
     }
 
@@ -257,6 +276,26 @@ fn has_version_segment(path: &str) -> bool {
             && seg.starts_with('v')
             && seg[1..].bytes().all(|b| b.is_ascii_digit())
     })
+}
+
+/// Map an active-scan vulnerability's `value` text to a severity, by the
+/// stable marker phrase each check in `webrev-pipeline::active` writes into
+/// it. Keeping the mapping here (next to `endpoint_severity`) means the
+/// ruleset can evolve without touching the checks that produce the findings.
+fn vulnerability_severity(value: &str) -> Severity {
+    let v = value.to_ascii_lowercase();
+    if v.contains("cors") && v.contains("credentials") {
+        Severity::Critical
+    } else if v.contains("sql injection") || v.contains("exposed sensitive file") {
+        Severity::High
+    } else if v.contains("open redirect")
+        || v.contains("reflected parameter")
+        || v.contains("cors misconfiguration")
+    {
+        Severity::Medium
+    } else {
+        Severity::Low
+    }
 }
 
 fn endpoint_severity(target: &str) -> Severity {
@@ -291,6 +330,24 @@ mod tests {
         assert_eq!(param.severity(), Severity::Info);
         // Severity ordering is usable for sorting.
         assert!(Severity::Critical > Severity::Info);
+    }
+
+    #[test]
+    fn vulnerability_and_idor_severity_ranked_by_weakness() {
+        let sid = SessionId::new();
+        let mk_vuln = |value: &str| {
+            Finding::new(sid, FindingKind::Vulnerability, None, value, Confidence::High, Provenance::new(Source::Active, None))
+        };
+        assert_eq!(
+            mk_vuln("CORS misconfiguration: arbitrary Origin reflected with credentials allowed").severity(),
+            Severity::Critical
+        );
+        assert_eq!(mk_vuln("possible SQL injection: database error signature returned").severity(), Severity::High);
+        assert_eq!(mk_vuln("open redirect via 'next' parameter").severity(), Severity::Medium);
+        assert_eq!(mk_vuln("missing security header(s): X-Frame-Options").severity(), Severity::Low);
+
+        let idor = Finding::new(sid, FindingKind::Idor, None, "no auth required", Confidence::Medium, Provenance::new(Source::Active, None));
+        assert_eq!(idor.severity(), Severity::High);
     }
 
     #[test]

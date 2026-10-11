@@ -22,6 +22,9 @@ EXAMPLES:
   # One-shot including a dynamic (headless Chromium) pass
   webrev scan --seed https://app.example.com/ --dynamic
 
+  # Add light active probing (headers, CORS, open redirect, fuzzing, IDOR)
+  webrev scan --seed https://app.example.com/ --active
+
   # Authenticated, behind a login, through an intercepting proxy
   webrev scan --seed https://app.example.com/ \\
     --cookie \"session=…\" --header \"X-Env: staging\" --proxy http://127.0.0.1:8080
@@ -67,6 +70,11 @@ pub enum Command {
     Static(ScanArgs),
     /// Dynamic analysis: drive headless Chromium and capture live calls.
     Dynamic(ScanArgs),
+    /// Active analysis: lightweight, opt-in vulnerability probing (security
+    /// headers, CORS, cookie flags, sensitive-file exposure, open redirect,
+    /// parameter fuzzing, IDOR-lite) against discovered endpoints. Sends
+    /// abnormal traffic — authorized targets only.
+    Active(ScanArgs),
     /// Launch the interactive terminal UI.
     Tui(ScanArgs),
     /// Export a stored session as a JSON report.
@@ -83,6 +91,12 @@ pub struct ScanAllArgs {
     /// reusing the same session.
     #[arg(long)]
     pub dynamic: bool,
+    /// Also run a light active-scan pass (security headers, CORS, cookie
+    /// flags, sensitive-file exposure, open redirect, parameter fuzzing,
+    /// IDOR-lite) over the endpoints the static/dynamic passes discovered.
+    /// Sends abnormal traffic to the target — authorized targets only.
+    #[arg(long)]
+    pub active: bool,
     /// Report format written at the end of the scan.
     #[arg(long, value_enum, default_value_t = Format::Json)]
     pub format: Format,

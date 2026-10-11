@@ -70,6 +70,10 @@ pub enum Source {
     /// Parsed from a JSON manifest (web app manifest, webpack/Vite asset
     /// manifest) discovered during the crawl.
     Manifest,
+    /// Produced by an active probe (security-header/CORS/cookie checks,
+    /// parameter fuzzing, open-redirect and IDOR-lite detection) rather than
+    /// passive observation.
+    Active,
 }
 
 impl fmt::Display for Source {
@@ -81,6 +85,7 @@ impl fmt::Display for Source {
             Self::Html => "html",
             Self::SourceMap => "sourcemap",
             Self::Manifest => "manifest",
+            Self::Active => "active",
         };
         f.write_str(s)
     }

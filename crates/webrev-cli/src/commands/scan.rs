@@ -9,10 +9,10 @@ use std::sync::Arc;
 use std::time::Duration;
 use tokio_util::sync::CancellationToken;
 use webrev_browser::{run_dynamic, BrowserPool, BrowserProfile};
-use webrev_core::{Confidence, Endpoint, FindingKind, Method, Severity};
+use webrev_core::{Confidence, Endpoint, FindingKind, Method, Severity, Source};
 use webrev_extract::ExtractorRegistry;
 use webrev_pipeline::stages::{FetchStage, StaticExtractStage, StoreStage};
-use webrev_pipeline::{PipelineBuilder, StageContext};
+use webrev_pipeline::{run_active_scan, PipelineBuilder, StageContext};
 use webrev_report::{RenderOptions, ReportFormat, ScopeFilter, SessionReport};
 use webrev_storage::{SqliteStorage, Storage};
 
@@ -20,6 +20,7 @@ pub async fn run(args: ScanAllArgs) -> anyhow::Result<()> {
     let ScanAllArgs {
         scan,
         dynamic,
+        active,
         format,
         no_report,
     } = args;
@@ -31,9 +32,10 @@ pub async fn run(args: ScanAllArgs) -> anyhow::Result<()> {
     let opsec = Arc::new(opsec);
     let cancel = CancellationToken::new();
     println!(
-        "mission '{}' — scan (static{})",
+        "mission '{}' — scan (static{}{})",
         mission.name,
-        if dynamic { " + dynamic" } else { "" }
+        if dynamic { " + dynamic" } else { "" },
+        if active { " + active" } else { "" }
     );
 
     // --- static pipeline (fetch → extract → store) ------------------------
@@ -60,6 +62,29 @@ pub async fn run(args: ScanAllArgs) -> anyhow::Result<()> {
         let dyn_total =
             dynamic_pass(opsec.as_ref(), &mission, scan.duration_secs, &cancel, &storage).await?;
         println!("dynamic: {dyn_total} findings stored");
+    }
+
+    // --- optional active pass (same session, over discovered endpoints) --
+    if active {
+        eprintln!("active scanning sends abnormal traffic: authorized targets only.");
+        // Static extraction only records endpoints *referenced* from a page
+        // (fetch/axios/XHR calls, links); the seed page itself never shows
+        // up there, so the origin-level checks (headers/CORS/sensitive
+        // files) would otherwise silently never run against it.
+        let mut endpoints = storage.endpoints_by_session(mission.id).await?;
+        let discovered: std::collections::BTreeSet<String> =
+            endpoints.iter().map(|e| e.url.clone()).collect();
+        for seed in &mission.seeds {
+            if mission.scope.allows(seed) && !discovered.contains(seed) {
+                endpoints.push(Endpoint::new(seed.clone(), Method::Get, Source::Html));
+            }
+        }
+        let findings =
+            run_active_scan(&opsec, &mission.scope, mission.id, &endpoints, cancel.clone()).await?;
+        for finding in &findings {
+            storage.insert_finding(finding).await?;
+        }
+        println!("active:  {} findings stored", findings.len());
     }
 
     // --- end-of-scan report -----------------------------------------------
