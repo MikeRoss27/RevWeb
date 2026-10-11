@@ -13,3 +13,6 @@ regex.workspace = true
 lol_html.workspace = true
 swc_core.workspace = true
 serde_json.workspace = true
+# Pure-Rust, no-execution section walker for the wasm extractor: never runs or
+# disassembles module code, only reads import/export/data section metadata.
+wasmparser = "0.261.0"

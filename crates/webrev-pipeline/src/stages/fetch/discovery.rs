@@ -17,7 +17,10 @@ pub(super) fn detect_kind(url: &str, content_type: &str) -> ContentKind {
         .unwrap_or_default();
     let is_js_ext = ext.eq_ignore_ascii_case("js") || ext.eq_ignore_ascii_case("mjs");
     let is_json_ext = ext.eq_ignore_ascii_case("json") || ext.eq_ignore_ascii_case("webmanifest");
-    if ct.contains("javascript") || ct.contains("ecmascript") || is_js_ext {
+    let is_wasm_ext = ext.eq_ignore_ascii_case("wasm");
+    if ct.contains("application/wasm") || is_wasm_ext {
+        ContentKind::Wasm
+    } else if ct.contains("javascript") || ct.contains("ecmascript") || is_js_ext {
         ContentKind::JavaScript
     } else if ct.contains("json") || is_json_ext {
         ContentKind::Json

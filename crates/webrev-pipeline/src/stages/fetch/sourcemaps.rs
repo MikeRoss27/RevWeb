@@ -54,7 +54,7 @@ pub(super) async fn fetch_sourcemap_json(
     fetch_with_retry(client, &abs)
         .await
         .ok()
-        .map(|(_, _, body, _)| body)
+        .map(|(_, _, body, _, _)| body)
 }
 
 /// Fetch + parse a source map and emit each recovered original source as JS
@@ -107,6 +107,7 @@ pub(super) async fn process_sourcemap(
                 kind: ContentKind::JavaScript,
                 body: code,
                 headers: Vec::new(),
+                bytes: None,
             })
             .await
             .is_err()

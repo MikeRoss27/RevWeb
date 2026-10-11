@@ -45,6 +45,7 @@ async fn pipeline_extracts_and_stores_fixture_findings() {
                 kind: ContentKind::Html,
                 body: html.to_owned(),
                 headers: vec![("Server".to_owned(), "nginx".to_owned())],
+                bytes: None,
             }],
         )
         .await

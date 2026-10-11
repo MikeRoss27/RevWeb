@@ -22,9 +22,15 @@ pub enum PipelineItem {
     Content {
         url: Option<String>,
         kind: ContentKind,
+        /// The raw body text. Empty for binary content (e.g. `ContentKind::Wasm`):
+        /// a binary body is never lossily decoded to UTF-8, it is carried in
+        /// `bytes` instead.
         body: String,
         /// HTTP response headers, if any (empty for recovered/inline content).
         headers: Vec<(String, String)>,
+        /// Raw bytes of this content, when it is binary (e.g. a fetched
+        /// `.wasm` module). `None` for text content.
+        bytes: Option<Vec<u8>>,
     },
     /// A produced finding flowing toward storage.
     Finding(Finding),

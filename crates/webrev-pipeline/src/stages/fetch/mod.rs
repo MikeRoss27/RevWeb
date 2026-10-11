@@ -158,11 +158,15 @@ impl Stage for FetchStage {
                     break 'crawl;
                 }
                 match outcome {
-                    Ok((content_type, resp_headers, body, rate_limited)) => {
+                    Ok((content_type, resp_headers, body, bytes, rate_limited)) => {
                         wave_rate_limited |= rate_limited;
                         let kind = detect_kind(&url, &content_type);
                         // Discover references before `body` is moved downstream.
-                        let (scripts, links, smap) = if kind == ContentKind::Html {
+                        // Wasm is binary: none of the HTML/script/sourcemap
+                        // regexes apply to it, so skip discovery entirely.
+                        let (scripts, links, smap) = if kind == ContentKind::Wasm {
+                            (Vec::new(), Vec::new(), None)
+                        } else if kind == ContentKind::Html {
                             let links = if depth < max_depth {
                                 capture_group1(&link_re, &body)
                             } else {
@@ -182,6 +186,7 @@ impl Stage for FetchStage {
                                 kind,
                                 body,
                                 headers: resp_headers,
+                                bytes,
                             })
                             .await
                             .is_err()

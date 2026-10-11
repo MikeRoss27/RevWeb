@@ -10,6 +10,6 @@ pub use endpoints::{
 };
 pub use metadata::{
     BucketExtractor, ConfigExtractor, CspExtractor, DomSinkExtractor, ManifestExtractor,
-    ParamExtractor, TechExtractor,
+    ParamExtractor, TechExtractor, WasmExtractor,
 };
 pub use secrets::{JwtExtractor, SecretExtractor};

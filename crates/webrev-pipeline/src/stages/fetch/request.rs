@@ -60,14 +60,30 @@ pub(super) fn parse_retry_after(resp: &reqwest::Response) -> Option<Duration> {
         .map(|secs| Duration::from_secs(secs).min(MAX_RETRY_AFTER))
 }
 
-/// Returns `(content_type, response_headers, body, rate_limited)`.
-/// `rate_limited` is set once this URL ever drew a 429/503, even if a later
-/// attempt eventually succeeded, so the caller can back off the whole crawl,
-/// not just retry this one request.
+/// Whether a response must be treated as binary (never lossily decoded to
+/// UTF-8 text): the URL ends in `.wasm`, or the response declares
+/// `application/wasm`. Checked against both the URL and the content-type so a
+/// `.wasm` served without the right header, or a wasm endpoint with no `.wasm`
+/// extension, are both caught.
+pub(super) fn is_wasm_response(url: &str, content_type: &str) -> bool {
+    let path = url.split(['?', '#']).next().unwrap_or(url);
+    path.to_ascii_lowercase().ends_with(".wasm")
+        || content_type
+            .to_ascii_lowercase()
+            .contains("application/wasm")
+}
+
+/// Returns `(content_type, response_headers, body, bytes, rate_limited)`.
+/// `body` is always empty for a binary (wasm) response — the raw bytes live in
+/// `bytes` instead, so a binary body is never lossily decoded to UTF-8.
+/// `bytes` is `None` for ordinary text responses. `rate_limited` is set once
+/// this URL ever drew a 429/503, even if a later attempt eventually
+/// succeeded, so the caller can back off the whole crawl, not just retry this
+/// one request.
 pub(super) async fn fetch_with_retry(
     client: &reqwest::Client,
     url: &str,
-) -> Result<(String, Vec<(String, String)>, String, bool)> {
+) -> Result<(String, Vec<(String, String)>, String, Option<Vec<u8>>, bool)> {
     let mut attempt = 0;
     let mut rate_limited = false;
     loop {
@@ -96,15 +112,23 @@ pub(super) async fn fetch_with_retry(
                             .map(|v| (name.as_str().to_owned(), v.to_owned()))
                     })
                     .collect();
-                match resp.text().await {
-                    Ok(body) => {
+                let is_wasm = is_wasm_response(url, &content_type);
+                let read_outcome = if is_wasm {
+                    resp.bytes()
+                        .await
+                        .map(|b| (String::new(), Some(b.to_vec())))
+                } else {
+                    resp.text().await.map(|body| (body, None))
+                };
+                match read_outcome {
+                    Ok((body, bytes)) => {
                         if (status.is_server_error() || is_rate_limited) && attempt < MAX_ATTEMPTS {
                             let wait = retry_after
                                 .unwrap_or_else(|| Duration::from_millis(200 * u64::from(attempt)));
                             tokio::time::sleep(wait).await;
                             continue;
                         }
-                        return Ok((content_type, headers, body, rate_limited));
+                        return Ok((content_type, headers, body, bytes, rate_limited));
                     }
                     Err(e) if attempt < MAX_ATTEMPTS => {
                         tokio::time::sleep(Duration::from_millis(200 * u64::from(attempt))).await;

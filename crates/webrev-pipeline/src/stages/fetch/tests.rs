@@ -1,5 +1,5 @@
 use super::discovery::resolve_url;
-use super::request::{parse_retry_after, MAX_RETRY_AFTER};
+use super::request::{is_wasm_response, parse_retry_after, MAX_RETRY_AFTER};
 use super::*;
 use std::time::Duration;
 use webrev_core::Scope;
@@ -68,6 +68,53 @@ fn kind_detection() {
         detect_kind("x", "application/manifest+json"),
         ContentKind::Json
     );
+    assert_eq!(detect_kind("module.wasm", ""), ContentKind::Wasm);
+    assert_eq!(detect_kind("x", "application/wasm"), ContentKind::Wasm);
+    // Query string / fragment after the extension must not defeat detection.
+    assert_eq!(detect_kind("module.wasm?v=2", ""), ContentKind::Wasm);
+}
+
+#[test]
+fn wasm_response_detected_by_url_or_content_type() {
+    assert!(is_wasm_response("https://x/module.wasm", ""));
+    assert!(is_wasm_response("https://x/module.wasm?v=2", ""));
+    assert!(is_wasm_response("https://x/endpoint", "application/wasm"));
+    assert!(is_wasm_response(
+        "https://x/endpoint",
+        "Application/Wasm; charset=binary"
+    ));
+    assert!(!is_wasm_response(
+        "https://x/app.js",
+        "application/javascript"
+    ));
+    assert!(!is_wasm_response("https://x/app", "text/html"));
+}
+
+/// A `.wasm` response must never go through `resp.text()` — that would
+/// lossily re-encode arbitrary binary bytes as UTF-8, corrupting the module.
+/// This exercises the exact branch `fetch_with_retry` takes: build a response
+/// carrying bytes that are not valid UTF-8, confirm `is_wasm_response` routes
+/// it to the binary path, and confirm `resp.bytes()` returns them unchanged.
+#[tokio::test]
+async fn wasm_bytes_are_preserved_not_lossily_decoded() {
+    // 0xFF is not valid UTF-8 on its own; a `.text()` read would replace it
+    // with U+FFFD, silently corrupting the module.
+    let raw: Vec<u8> = vec![0x00, b'a', b's', b'm', 0x01, 0x00, 0x00, 0x00, 0xFF, 0xFE];
+    let builder = http::Response::builder()
+        .status(200)
+        .header("content-type", "application/wasm");
+    let resp = reqwest::Response::from(builder.body(raw.clone()).unwrap());
+
+    assert!(is_wasm_response(
+        "https://x/module.wasm",
+        resp.headers()
+            .get("content-type")
+            .and_then(|v| v.to_str().ok())
+            .unwrap_or_default()
+    ));
+
+    let bytes = resp.bytes().await.expect("read body as bytes");
+    assert_eq!(bytes.to_vec(), raw, "bytes must round-trip exactly");
 }
 
 #[test]

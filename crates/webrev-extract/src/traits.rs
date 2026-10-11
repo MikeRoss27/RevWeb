@@ -13,6 +13,8 @@ pub enum ContentKind {
     JavaScript,
     /// A JSON document (web app manifest, webpack/Vite asset manifest, …).
     Json,
+    /// A WebAssembly binary module.
+    Wasm,
 }
 
 /// One unit of content handed to the registry.
@@ -24,12 +26,18 @@ pub struct ExtractInput {
     /// inline or synthetic content.
     pub url: Option<String>,
     pub kind: ContentKind,
-    /// The raw body text.
+    /// The raw body text. Empty for binary content (e.g. [`ContentKind::Wasm`]):
+    /// a binary body is never lossily decoded to UTF-8, it is carried in
+    /// [`bytes`](Self::bytes) instead.
     pub body: String,
     /// Response headers (`name`, `value`), when the content came over HTTP.
     /// Empty for inline/synthetic content. Used by the tech fingerprinter to
     /// read `Server`, `X-Powered-By`, `Set-Cookie`, etc.
     pub headers: Vec<(String, String)>,
+    /// The raw, untouched bytes of this content, when it is binary (e.g. a
+    /// fetched `.wasm` module). `None` for text content, where `body` already
+    /// carries everything.
+    pub bytes: Option<Vec<u8>>,
 }
 
 impl ExtractInput {
@@ -46,6 +54,7 @@ impl ExtractInput {
             kind,
             body: body.into(),
             headers: Vec::new(),
+            bytes: None,
         }
     }
 
@@ -53,6 +62,13 @@ impl ExtractInput {
     #[must_use]
     pub fn with_headers(mut self, headers: Vec<(String, String)>) -> Self {
         self.headers = headers;
+        self
+    }
+
+    /// Attach the raw bytes of a binary body (e.g. a fetched `.wasm` module).
+    #[must_use]
+    pub fn with_bytes(mut self, bytes: Vec<u8>) -> Self {
+        self.bytes = Some(bytes);
         self
     }
 }
