@@ -141,6 +141,7 @@ mod tests {
         assert_eq!(store.endpoints_by_session(mission.id).await.unwrap().len(), 1);
 
         store.cleanup_session(mission.id).await.unwrap();
-        assert!(store.findings_by_session(mission.id).await.unwrap().is_empty());
+        let remaining = store.findings_by_session(mission.id).await.unwrap();
+        assert_eq!(remaining, Vec::new());
     }
 }

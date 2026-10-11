@@ -212,6 +212,6 @@ mod tests {
 
     #[test]
     fn unparseable_returns_empty_not_error() {
-        assert!(run("function (() {{{ <<< ").is_empty());
+        assert_eq!(run("function (() {{{ <<< "), Vec::new());
     }
 }

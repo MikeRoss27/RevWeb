@@ -334,7 +334,7 @@ mod tests {
         // filtered as a placeholder).
         let secret = "AKIAZ4XB7NMPQR2STUVW";
         let found = run(&format!("const k = '{secret}';"));
-        assert!(!found.is_empty());
+        assert_eq!(found.len(), 1);
         for f in &found {
             assert!(f.value.starts_with("fp:"), "value must be a fingerprint");
             assert!(!f.value.contains(secret), "plaintext must never be stored");
@@ -358,7 +358,7 @@ mod tests {
 
         // Opt-in reveal: value stays a fingerprint, plaintext carries the secret.
         let shown = SecretExtractor::with_random_key().revealing(true).extract(&input);
-        assert!(!shown.is_empty());
+        assert_eq!(shown.len(), 1);
         for f in &shown {
             assert!(f.value.starts_with("fp:"), "value must still be a fingerprint");
             assert_eq!(f.plaintext.as_deref(), Some(secret));

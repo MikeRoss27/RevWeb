@@ -297,7 +297,8 @@ mod tests {
         assert_eq!(back[0], original);
 
         store.cleanup_session(mission.id).await.expect("cleanup");
-        assert!(store.findings_by_session(mission.id).await.unwrap().is_empty());
+        let remaining = store.findings_by_session(mission.id).await.unwrap();
+        assert_eq!(remaining, Vec::new());
     }
 
     #[tokio::test]

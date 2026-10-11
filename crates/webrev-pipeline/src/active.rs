@@ -725,7 +725,7 @@ mod tests {
         assert_eq!(pairs, vec![("x", "1"), ("y", "two"), ("z", "")]);
         let (base, pairs) = split_query("https://ex.com/a");
         assert_eq!(base, "https://ex.com/a");
-        assert!(pairs.is_empty());
+        assert_eq!(pairs, Vec::<(&str, &str)>::new());
     }
 
     #[test]

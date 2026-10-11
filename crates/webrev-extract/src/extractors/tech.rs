@@ -311,7 +311,7 @@ mod tests {
 
     #[test]
     fn no_false_positive_on_plain_text() {
-        assert!(detect(None, "just some ordinary text content").is_empty());
+        assert_eq!(detect(None, "just some ordinary text content"), Vec::<String>::new());
     }
 
     #[test]
