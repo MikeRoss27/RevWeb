@@ -280,6 +280,6 @@ mod tests {
     fn unparseable_returns_empty_not_error() {
         // A stray token that fails ES parsing.
         let found = run("function (() {{{ <<< ");
-        assert!(found.is_empty());
+        assert_eq!(found, Vec::new());
     }
 }

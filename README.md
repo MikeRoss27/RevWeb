@@ -94,6 +94,13 @@ as JSON, URLs or CSV, ready for your next tool. One Rust binary, a CLI and a TUI
       Host-suffix include / exclude lists. An empty include list denies everything, so nothing leaves the engagement by accident.
     </td>
   </tr>
+  <tr>
+    <td valign="top" colspan="2">
+      <img src="docs/assets/icons/extract.svg" width="40" height="40" alt=""><br>
+      <b>Active scanning</b> (<code>--active</code>, opt-in)<br>
+      Light, capped vulnerability probing over discovered endpoints: missing security headers, cookie flags, CORS reflection, sensitive-file exposure, open redirect, parameter fuzzing, and auth-free (IDOR-lite) access checks. Sends abnormal traffic — authorized targets only.
+    </td>
+  </tr>
 </table>
 
 ## Install
@@ -171,6 +178,9 @@ webrev report --output report.json
 # Authenticated, through an intercepting proxy
 webrev static --seed https://app.example.com/ \
   --cookie "session=…" --header "X-Env: staging" --proxy http://127.0.0.1:8080
+
+# Light active probing over discovered endpoints (opt-in, abnormal traffic)
+webrev scan --seed https://app.example.com/ --active
 
 # Interactive TUI (auto-starts a static scan · s / d / r / Tab / q)
 webrev tui --seed https://app.example.com/

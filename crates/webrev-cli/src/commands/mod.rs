@@ -2,6 +2,7 @@
 //! Subcommand handlers. Each is a thin function that builds the mission and
 //! drives the appropriate library.
 
+mod active_scan;
 mod dynamic_scan;
 mod report;
 mod scan;
@@ -93,6 +94,7 @@ pub async fn dispatch(cli: Cli) -> anyhow::Result<()> {
         Command::Scan(args) => scan::run(args).await,
         Command::Static(args) => static_scan::run(args).await,
         Command::Dynamic(args) => dynamic_scan::run(args).await,
+        Command::Active(args) => active_scan::run(args).await,
         Command::Report(args) => report::run(args).await,
         Command::Tui(args) => {
             let (mission, opsec) = build_mission(&args)?;

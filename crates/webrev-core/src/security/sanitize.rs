@@ -69,8 +69,10 @@ impl Sanitizer {
             r"AKIA[0-9A-Z]{16}",
             // Google API key
             r"AIza[0-9A-Za-z\-_]{35}",
-            // Generic "key"/"token"/"secret" = "<value>" assignments
-            r#"(?i)(?:api[_-]?key|secret|token|password)\s*[:=]\s*["']?[A-Za-z0-9\-_\.]{12,}"#,
+            // Generic "key"/"token"/"secret" = "<value>" assignments, in both
+            // code (`apiKey = "..."`) and JSON shape (`"apiKey":"..."`) where
+            // the key's own closing quote sits before the separator.
+            r#"(?i)(?:api[_-]?key|secret|token|password)["']?\s*[:=]\s*["']?[A-Za-z0-9\-_\.]{12,}"#,
         ];
         let patterns = raw
             .iter()
@@ -140,6 +142,17 @@ mod tests {
         let out = s.scrub("const apiKey = 'abcdef0123456789xyz'; ok");
         assert!(out.contains("[REDACTED]"), "got: {out}");
         assert!(out.ends_with("ok"));
+    }
+
+    #[test]
+    fn scrubs_json_shaped_assignments() {
+        // The key's own closing quote sits between the keyword and the
+        // separator in JSON, e.g. request/response bodies and WS frames.
+        let s = Sanitizer::with_default_patterns();
+        let out = s.scrub(r#"{"token":"eyJhbGciOi-not-a-jwt-shape-abcdef"}"#);
+        assert!(out.contains("[REDACTED]"), "got: {out}");
+        let out = s.scrub(r#"{"accessToken": "raw-session-id-abcdef123456"}"#);
+        assert!(out.contains("[REDACTED]"), "got: {out}");
     }
 
     #[test]

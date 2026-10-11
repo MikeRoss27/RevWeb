@@ -6,7 +6,7 @@ use crate::cli::ScanArgs;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio_util::sync::CancellationToken;
-use webrev_browser::{run_dynamic, BrowserProfile};
+use webrev_browser::{run_dynamic, BrowserPool, BrowserProfile};
 use webrev_core::{Endpoint, FindingKind, Method};
 use webrev_storage::{SqliteStorage, Storage};
 
@@ -17,6 +17,7 @@ pub async fn run(args: ScanArgs) -> anyhow::Result<()> {
     println!("mission '{}' — dynamic scan", mission.name);
 
     let profile = BrowserProfile::from_opsec(&opsec)?;
+    let pool = BrowserPool::new(1);
     let cancel = CancellationToken::new();
     let mut total = 0usize;
 
@@ -27,6 +28,7 @@ pub async fn run(args: ScanArgs) -> anyhow::Result<()> {
         }
         println!("dynamic: {seed}");
         let findings = run_dynamic(
+            &pool,
             &profile,
             seed,
             Duration::from_secs(args.duration_secs),

@@ -34,9 +34,15 @@ impl JsRegexExtractor {
             xhr: c(
                 r#"\.open\s*\(\s*['"`](GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS)['"`]\s*,\s*['"`]([^'"`]+)['"`]"#,
             ),
-            api_path: c(r#"['"`](/(?:api|v\d|graphql|rest)/[A-Za-z0-9_\-/.]*)['"`]"#),
-            websocket: c(r"(wss?://[A-Za-z0-9_\-./:%?=&]+)"),
-            absolute: c(r"(https?://[A-Za-z0-9_\-./:%?=&]+)"),
+            // `(?i)`: real-world backends don't always lowercase path
+            // segments (`/API/`, `/V1/`, `/GraphQL/`).
+            api_path: c(r#"(?i)['"`](/(?:api|v\d|graphql|rest)/[A-Za-z0-9_\-/.]*)['"`]"#),
+            // Char class includes `,`, `@`, `+`, `~`: common, legal URL
+            // characters (e.g. `?q=a,b`, `user:pass@host`) that would
+            // otherwise truncate the match mid-string instead of just
+            // being dropped.
+            websocket: c(r"(wss?://[A-Za-z0-9_\-./:%?=&,@+~]+)"),
+            absolute: c(r"(https?://[A-Za-z0-9_\-./:%?=&,@+~]+)"),
         }
     }
 
@@ -166,6 +172,23 @@ mod tests {
         assert!(found
             .iter()
             .any(|f| f.value.starts_with("POST ") && f.value.contains("/v1/login")));
+    }
+
+    #[test]
+    fn absolute_url_keeps_comma_and_at_characters() {
+        let js = r#"const u = "https://api.example.com/search?q=a,b&user=me@example.com";"#;
+        let urls: Vec<String> = run(js).into_iter().filter_map(|f| f.url).collect();
+        assert!(
+            urls.iter().any(|u| u == "https://api.example.com/search?q=a,b&user=me@example.com"),
+            "got: {urls:?}"
+        );
+    }
+
+    #[test]
+    fn api_path_is_case_insensitive() {
+        let js = r#"const u = "/API/V1/Users";"#;
+        let urls: Vec<String> = run(js).into_iter().filter_map(|f| f.url).collect();
+        assert!(urls.iter().any(|u| u == "/API/V1/Users"), "got: {urls:?}");
     }
 
     #[test]

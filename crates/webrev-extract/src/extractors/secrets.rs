@@ -112,10 +112,11 @@ fn is_sequential(s: &str) -> bool {
     asc || desc
 }
 
-/// Hex of a common digest length (md5/sha1/sha256): almost always an asset,
-/// chunk, or content hash in built front-end code, not a credential.
+/// Hex of a common digest length (md5/sha1/sha224/sha256/sha384/sha512):
+/// almost always an asset, chunk, or content hash in built front-end code,
+/// not a credential.
 fn is_hex_digest(s: &str) -> bool {
-    matches!(s.len(), 32 | 40 | 64) && s.bytes().all(|b| b.is_ascii_hexdigit())
+    matches!(s.len(), 32 | 40 | 56 | 64 | 96 | 128) && s.bytes().all(|b| b.is_ascii_hexdigit())
 }
 
 /// A Subresource Integrity hash (`sha256-…` / `sha384-…` / `sha512-…`).
@@ -192,7 +193,10 @@ impl SecretExtractor {
                 Confidence::Medium,
             ),
         ];
-        let entropy_candidate = compile(r#"["']([A-Za-z0-9+/=_\-]{20,100})["']"#);
+        // Includes backtick so template-literal secrets
+        // (`` const k = `sk_live_...`; ``), common in bundled JS, aren't
+        // silently missed by the entropy fallback.
+        let entropy_candidate = compile(r#"["'`]([A-Za-z0-9+/=_\-]{20,100})["'`]"#);
         Self {
             key,
             patterns,
@@ -330,7 +334,7 @@ mod tests {
         // filtered as a placeholder).
         let secret = "AKIAZ4XB7NMPQR2STUVW";
         let found = run(&format!("const k = '{secret}';"));
-        assert!(!found.is_empty());
+        assert_eq!(found.len(), 1);
         for f in &found {
             assert!(f.value.starts_with("fp:"), "value must be a fingerprint");
             assert!(!f.value.contains(secret), "plaintext must never be stored");
@@ -354,7 +358,7 @@ mod tests {
 
         // Opt-in reveal: value stays a fingerprint, plaintext carries the secret.
         let shown = SecretExtractor::with_random_key().revealing(true).extract(&input);
-        assert!(!shown.is_empty());
+        assert_eq!(shown.len(), 1);
         for f in &shown {
             assert!(f.value.starts_with("fp:"), "value must still be a fingerprint");
             assert_eq!(f.plaintext.as_deref(), Some(secret));
@@ -397,6 +401,22 @@ mod tests {
         let no_ctx = run(&format!(r#"["{token}"]"#));
         assert_eq!(no_ctx.len(), 1);
         assert_eq!(no_ctx[0].confidence, Confidence::Low);
+    }
+
+    #[test]
+    fn keeps_high_entropy_token_in_backtick_template_literal() {
+        let token = "Rj8Kpz2Wqf4Lm9Xv7Tb3Nc6Hy1Qs5Ad";
+        let found = run(&format!("const apiKey = `{token}`;"));
+        assert_eq!(found.len(), 1, "backtick-quoted secrets must be caught too");
+    }
+
+    #[test]
+    fn drops_sha224_and_sha512_hex_digests() {
+        let sha224 = "a1b2".repeat(14); // 56 hex chars
+        let sha512 = "a1b2".repeat(32); // 128 hex chars
+        let js = format!(r#"var a = "{sha224}"; var b = "{sha512}";"#);
+        let found = run(&js);
+        assert!(found.is_empty(), "sha224/sha512 hex digests must be filtered too");
     }
 
     #[test]

@@ -128,7 +128,9 @@ impl Stage for StoreStage {
                 | FindingKind::Technology
                 | FindingKind::Parameter
                 | FindingKind::Config
-                | FindingKind::WebSocketFrame => {}
+                | FindingKind::WebSocketFrame
+                | FindingKind::Vulnerability
+                | FindingKind::Idor => {}
             }
 
             let _ = events.send(PipelineEvent::Finding(Box::new(finding.clone())));

@@ -194,6 +194,6 @@ mod tests {
 
     #[test]
     fn invalid_json_returns_empty_not_error() {
-        assert!(run("not json {{{").is_empty());
+        assert_eq!(run("not json {{{"), Vec::new());
     }
 }

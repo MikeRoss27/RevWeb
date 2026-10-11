@@ -19,11 +19,13 @@
 //! its own tokio task, connected by bounded `mpsc` channels; progress is
 //! published on a `broadcast` channel the TUI subscribes to.
 
+pub mod active;
 pub mod engine;
 pub mod events;
 pub mod stage;
 pub mod stages;
 
+pub use active::run_active_scan;
 pub use engine::{PipelineBuilder, PipelineSummary};
 pub use events::PipelineEvent;
 pub use stage::{PipelineItem, Stage, StageContext};

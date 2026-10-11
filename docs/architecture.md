@@ -12,7 +12,7 @@ workspace.
 | `webrev-core` | Pure domain: `Finding`, `Endpoint`, `Mission`/`Scope`/`SessionId`, `WebrevError`, `sanitize`, `opsec`, `auth`, URL `normalize`. No I/O, no async. | thiserror, serde |
 | `webrev-extract` | Synchronous extractors + priority `ExtractorRegistry`. **Zero network/filesystem I/O.** | regex, lol_html, swc_core |
 | `webrev-storage` | `Storage` port (async trait) + `SqliteStorage` and `InMemoryStorage` backends. | sqlx (runtime API), async-trait |
-| `webrev-pipeline` | tokio stage pipeline wiring extraction + storage; the crawler lives in the fetch stage. | tokio, reqwest, futures |
+| `webrev-pipeline` | tokio stage pipeline wiring extraction + storage (crawler lives in the fetch stage); also the standalone `active` module (opt-in active-scan checks). | tokio, reqwest, futures |
 | `webrev-browser` | All `chromiumoxide`: disposable profile, pool, JS hooks, HAR, dynamic run. | chromiumoxide, futures |
 | `webrev-report` | JSON report document + summary counters. | serde, serde_json |
 | `webrev-cli` | The `webrev` binary (clap subcommands). | clap, anyhow |

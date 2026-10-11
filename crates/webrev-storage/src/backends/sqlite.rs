@@ -87,6 +87,8 @@ fn parse_kind(s: &str) -> Result<FindingKind> {
         "parameter" => FindingKind::Parameter,
         "config" => FindingKind::Config,
         "ws_frame" => FindingKind::WebSocketFrame,
+        "vulnerability" => FindingKind::Vulnerability,
+        "idor" => FindingKind::Idor,
         other => return Err(WebrevError::Storage(format!("unknown finding kind {other:?}"))),
     })
 }
@@ -108,6 +110,7 @@ fn parse_source(s: &str) -> Result<Source> {
         "html" => Source::Html,
         "sourcemap" => Source::SourceMap,
         "manifest" => Source::Manifest,
+        "active" => Source::Active,
         other => return Err(WebrevError::Storage(format!("unknown source {other:?}"))),
     })
 }
@@ -294,7 +297,8 @@ mod tests {
         assert_eq!(back[0], original);
 
         store.cleanup_session(mission.id).await.expect("cleanup");
-        assert!(store.findings_by_session(mission.id).await.unwrap().is_empty());
+        let remaining = store.findings_by_session(mission.id).await.unwrap();
+        assert_eq!(remaining, Vec::new());
     }
 
     #[tokio::test]
