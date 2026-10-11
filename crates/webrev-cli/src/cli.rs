@@ -191,6 +191,9 @@ pub enum Format {
     Urls,
     /// Findings as a CSV table.
     Csv,
+    /// Reconstructed OpenAPI 3.1 spec of the discovered surface.
+    #[value(name = "openapi")]
+    OpenApi,
 }
 
 impl From<Format> for webrev_report::ReportFormat {
@@ -201,6 +204,7 @@ impl From<Format> for webrev_report::ReportFormat {
             Format::Jsonl => Self::Jsonl,
             Format::Urls => Self::Urls,
             Format::Csv => Self::Csv,
+            Format::OpenApi => Self::OpenApi,
         }
     }
 }

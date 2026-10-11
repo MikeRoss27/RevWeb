@@ -26,6 +26,8 @@ pub enum ReportFormat {
     Jsonl,
     Urls,
     Csv,
+    /// Reconstructed `OpenAPI` 3.1 document (reverse the API from the consumer).
+    OpenApi,
 }
 
 /// Which endpoints the URL list should include.
@@ -37,7 +39,7 @@ pub enum ScopeFilter {
 }
 
 impl ScopeFilter {
-    fn matches(self, scope: EndpointScope) -> bool {
+    pub(crate) fn matches(self, scope: EndpointScope) -> bool {
         match self {
             ScopeFilter::All => true,
             ScopeFilter::Internal => scope == EndpointScope::Internal,
@@ -77,6 +79,7 @@ impl SessionReport {
             ReportFormat::Jsonl => self.render_jsonl(opts),
             ReportFormat::Urls => Ok(self.render_urls(opts)),
             ReportFormat::Csv => Ok(self.render_csv(opts)),
+            ReportFormat::OpenApi => self.render_openapi(opts),
         }
     }
 
@@ -196,6 +199,7 @@ impl fmt::Display for ReportFormat {
             ReportFormat::Jsonl => "jsonl",
             ReportFormat::Urls => "urls",
             ReportFormat::Csv => "csv",
+            ReportFormat::OpenApi => "openapi",
         })
     }
 }

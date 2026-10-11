@@ -12,6 +12,7 @@
 
 pub mod format;
 pub mod json;
+pub mod openapi;
 pub mod summary;
 pub mod text;
 
