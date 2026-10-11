@@ -32,7 +32,7 @@ use std::time::Duration;
 use tokio::sync::broadcast;
 use tokio::sync::mpsc::{self, UnboundedSender};
 use tokio_util::sync::CancellationToken;
-use webrev_browser::{run_dynamic, BrowserProfile};
+use webrev_browser::{run_dynamic, BrowserPool, BrowserProfile};
 use webrev_core::{Mission, MissionProfile, OpsecConfig};
 use webrev_extract::ExtractorRegistry;
 use webrev_pipeline::stages::{FetchStage, StaticExtractStage, StoreStage};
@@ -135,13 +135,14 @@ impl Controller {
                 }
             };
 
+            let pool = BrowserPool::new(1);
             let mut total = 0usize;
             for seed in &mission.seeds {
                 if !mission.scope.allows(seed) {
                     let _ = ui_tx.send(UiEvent::Status(format!("dynamic: skip out-of-scope {seed}")));
                     continue;
                 }
-                match run_dynamic(&profile, seed, DYNAMIC_DWELL, mission.id, cancel.clone()).await {
+                match run_dynamic(&pool, &profile, seed, DYNAMIC_DWELL, mission.id, cancel.clone()).await {
                     Ok(findings) => {
                         for finding in &findings {
                             let _ = storage.insert_finding(finding).await;

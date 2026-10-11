@@ -8,7 +8,7 @@ use crate::cli::{Format, ScanAllArgs};
 use std::sync::Arc;
 use std::time::Duration;
 use tokio_util::sync::CancellationToken;
-use webrev_browser::{run_dynamic, BrowserProfile};
+use webrev_browser::{run_dynamic, BrowserPool, BrowserProfile};
 use webrev_core::{Confidence, Endpoint, FindingKind, Method, Severity};
 use webrev_extract::ExtractorRegistry;
 use webrev_pipeline::stages::{FetchStage, StaticExtractStage, StoreStage};
@@ -104,6 +104,7 @@ async fn dynamic_pass(
     storage: &Arc<dyn Storage>,
 ) -> anyhow::Result<usize> {
     let profile = BrowserProfile::from_opsec(opsec)?;
+    let pool = BrowserPool::new(1);
     let mut total = 0usize;
     for seed in &mission.seeds {
         if !mission.scope.allows(seed) {
@@ -112,6 +113,7 @@ async fn dynamic_pass(
         }
         println!("dynamic: {seed}");
         let findings = run_dynamic(
+            &pool,
             &profile,
             seed,
             Duration::from_secs(duration_secs),

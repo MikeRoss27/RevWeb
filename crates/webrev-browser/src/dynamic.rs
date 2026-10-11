@@ -28,6 +28,33 @@ fn browser_err<E: Display>(e: E) -> webrev_core::WebrevError {
     webrev_core::WebrevError::Browser(e.to_string())
 }
 
+/// Race a CDP call (navigation/evaluation) against [`CDP_CALL_TIMEOUT`] and
+/// `cancel`, so a stalled page or an unresponsive CDP command cannot hang
+/// `run_dynamic` past the mission's cancellation/dwell budget.
+async fn with_timeout<F, T, E>(cancel: &CancellationToken, fut: F) -> Result<T>
+where
+    F: std::future::Future<Output = std::result::Result<T, E>>,
+    E: Display,
+{
+    tokio::select! {
+        res = tokio::time::timeout(CDP_CALL_TIMEOUT, fut) => match res {
+            Ok(inner) => inner.map_err(browser_err),
+            Err(_) => Err(webrev_core::WebrevError::Browser(
+                "CDP call timed out".to_owned(),
+            )),
+        },
+        () = cancel.cancelled() => Err(webrev_core::WebrevError::Browser(
+            "cancelled".to_owned(),
+        )),
+    }
+}
+
+/// Upper bound on any single CDP round-trip (navigation or script
+/// evaluation). A page that never finishes loading, or whose JS busy-loops,
+/// would otherwise hang `run_dynamic` forever since the dwell-deadline is
+/// only checked *between* awaits, not during one.
+const CDP_CALL_TIMEOUT: Duration = Duration::from_secs(30);
+
 /// Interval between active-interaction passes.
 const INTERACTION_STEP: Duration = Duration::from_millis(1500);
 /// Settle time after a single attributed click, before the next one: long
@@ -81,13 +108,13 @@ const CLEAR_TRIGGER_SCRIPT: &str = "window.__webrev_trigger = null;";
 /// them); those seen only in CDP network traffic are [`Confidence::Medium`].
 /// All URLs and headers are sanitized before leaving this function.
 pub async fn run_dynamic(
+    pool: &BrowserPool,
     profile: &BrowserProfile,
     url: &str,
     duration: Duration,
     session: SessionId,
     cancel: CancellationToken,
 ) -> Result<Vec<Finding>> {
-    let pool = BrowserPool::new(4);
     let browser = pool.acquire(profile).await?;
     let page = browser.new_page("about:blank").await?;
 
@@ -200,15 +227,14 @@ pub async fn run_dynamic(
         }
     });
 
-    page.goto(url).await.map_err(browser_err)?;
+    with_timeout(&cancel, page.goto(url)).await?;
 
     // Active dwell: repeatedly scroll and click clickable elements one at a
     // time, attributing each click to the UI element that caused it (see
     // `click_attributed_script`), until the deadline or cancellation.
     let deadline = Instant::now() + duration;
     while Instant::now() < deadline && !cancel.is_cancelled() {
-        let count: usize = page
-            .evaluate(COUNT_INTERACTIVE_SCRIPT)
+        let count: usize = with_timeout(&cancel, page.evaluate(COUNT_INTERACTIVE_SCRIPT))
             .await
             .ok()
             .and_then(|v| v.into_value().ok())
@@ -218,12 +244,12 @@ pub async fn run_dynamic(
             if cancel.is_cancelled() || Instant::now() >= deadline {
                 break;
             }
-            let _ = page.evaluate(click_attributed_script(i)).await;
+            let _ = with_timeout(&cancel, page.evaluate(click_attributed_script(i))).await;
             tokio::select! {
                 () = cancel.cancelled() => break,
                 () = tokio::time::sleep(CLICK_SETTLE) => {},
             }
-            let _ = page.evaluate(CLEAR_TRIGGER_SCRIPT).await;
+            let _ = with_timeout(&cancel, page.evaluate(CLEAR_TRIGGER_SCRIPT)).await;
         }
         tokio::select! {
             () = cancel.cancelled() => break,
@@ -232,10 +258,8 @@ pub async fn run_dynamic(
     }
 
     // Read back the hook log, then stop capturing.
-    let raw: String = page
-        .evaluate(hooks::COLLECT_HOOKS)
-        .await
-        .map_err(browser_err)?
+    let raw: String = with_timeout(&cancel, page.evaluate(hooks::COLLECT_HOOKS))
+        .await?
         .into_value()
         .map_err(browser_err)?;
     collector.abort();
@@ -325,7 +349,9 @@ mod tests {
     #[ignore = "requires a local Chromium/Chrome installation"]
     async fn dynamic_run_smoke() {
         let profile = BrowserProfile::from_opsec(&OpsecConfig::default()).expect("profile");
+        let pool = BrowserPool::new(1);
         let findings = run_dynamic(
+            &pool,
             &profile,
             "https://example.com/",
             Duration::from_secs(3),
