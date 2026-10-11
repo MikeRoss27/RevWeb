@@ -14,7 +14,7 @@ too.
 | `parameter` | Query name, JSON key, or form field (fuzz wordlist) | `userId` |
 | `route` | Client-side SPA router path | `/users/:id` |
 | `graphql` | Named GraphQL operation | `query CurrentUser` |
-| `secret` | Credential, stored as a fingerprint (plaintext only with `--reveal-secrets`) | `fp:1a2b3c…` |
+| `secret` | Credential with plaintext and a deduplication fingerprint | `plaintext: AKIA…`, `value: fp:1a2b3c…` |
 | `sourcemap` | `sourceMappingURL` reference | `app.js.map` |
 | `technology` | Framework / BaaS / server fingerprint | `Supabase (baas/db)` |
 | `form` | HTML form action + method | `POST /login` |
@@ -67,20 +67,27 @@ normalized. See `webrev_core::normalize_url`.
 
 ## Secret handling
 
-By default `SecretExtractor` never emits plaintext. Each match is reduced to
+`SecretExtractor` always retains the detected plaintext. Each match also receives
 `fp:<16 hex>` = the first 64 bits of `HMAC-SHA256(session_key, secret)`, where
 the session key is random per run and never persisted. Findings use `url = None`
 so deduplication keys on the fingerprint (distinct secrets stay distinct), and
 the containing file is recorded in the provenance instead.
 
-The opt-in `--reveal-secrets` flag additionally attaches the plaintext to the
-finding (`Finding::plaintext`); the fingerprint stays the `value`, so dedup and
-storage keys are unchanged. This is dangerous — real credentials then reach the
-database and reports — so it is off by default. See [security.md](security.md).
+The plaintext is attached to every secret finding (`Finding::plaintext`) and
+shown in the TUI and JSON/JSONL/CSV reports without an extra flag. The fingerprint
+stays the `value` for deduplication. Sessions exist only in memory; reports are
+exported directly. See [security.md](security.md).
+
+The TUI labels these fields `fingerprint` and `detected` to distinguish the
+deduplication identifier from the raw candidate. Detection does not validate a
+credential against its provider. The `sk-` rule requires a word boundary and a
+random-looking suffix of at least 32 characters; CSS utilities such as
+`mask-image-radial-to-color` must not become critical secret findings. The same
+candidate filter applies to the assignment and entropy passes.
 
 ## Adding an extractor
 
-1. Create `crates/webrev-extract/src/extractors/<name>.rs` implementing the
+1. Create `crates/webrev-extract/src/extractors/<family>/<name>.rs` implementing the
    `Extractor` trait (`name`, `priority`, `applies_to`, `extract`). Keep it pure
    and return an empty `Vec` rather than erroring on "nothing found".
 2. Declare and re-export it in `extractors/mod.rs`.
@@ -92,7 +99,7 @@ database and reports — so it is off by default. See [security.md](security.md)
 
 ## Adding a technology signature
 
-Append one row to the `SIGNATURES` table in `extractors/tech.rs`:
+Append one row to the appropriate stack-layer `SIGNATURES` table in `extractors/metadata/tech/signatures/`:
 
 ```rust
 Signature { name: "Your Tech", category: "baas/db", markers: &["yourtech.io", "your-sdk"] },

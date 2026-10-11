@@ -1,16 +1,16 @@
-// crates/webrev-core/src/sanitize.rs
+// crates/webrev-core/src/security/sanitize.rs
 //! Two related security primitives:
 //!
-//! * [`Sanitizer`] scrubs secret-looking substrings and sensitive headers out
-//!   of captured text before it is persisted or rendered.
+//! * [`Sanitizer`] offers explicit text/header scrubbing for library callers.
+//!   The scan paths retain original values and do not use these scrubbers.
 //! * [`SessionKey`] + [`Sanitizer::fingerprint`] turn a raw secret into a
-//!   truncated HMAC-SHA256 so a finding can record *that* a secret leaked
-//!   without ever storing the secret itself. The key is random per session and
+//!   truncated HMAC-SHA256 for deduplication alongside detected plaintext.
+//!   The key is random per session and
 //!   never persisted, so fingerprints are not reversible or correlatable across
 //!   runs.
 
-use hmac::{Hmac, Mac};
-use rand::RngCore;
+use hmac::{Hmac, KeyInit, Mac};
+use rand::TryRng;
 use regex::Regex;
 use sha2::Sha256;
 
@@ -25,7 +25,9 @@ impl SessionKey {
     #[must_use]
     pub fn generate() -> Self {
         let mut bytes = [0u8; 32];
-        rand::rngs::OsRng.fill_bytes(&mut bytes);
+        rand::rngs::SysRng
+            .try_fill_bytes(&mut bytes)
+            .expect("the operating system random source must be available");
         Self(bytes)
     }
 }
@@ -111,8 +113,7 @@ impl Sanitizer {
     /// not survive the session key.
     #[must_use]
     pub fn fingerprint(key: &SessionKey, secret: &str) -> String {
-        let mut mac =
-            HmacSha256::new_from_slice(&key.0).expect("HMAC accepts any key length");
+        let mut mac = HmacSha256::new_from_slice(&key.0).expect("HMAC accepts any key length");
         mac.update(secret.as_bytes());
         let digest = mac.finalize().into_bytes();
         let hexed = hex::encode(digest);
@@ -159,7 +160,10 @@ mod tests {
     fn scrubs_sensitive_headers_only() {
         let s = Sanitizer::with_default_patterns();
         assert_eq!(s.scrub_header("Authorization", "Bearer abc"), "[REDACTED]");
-        assert_eq!(s.scrub_header("Accept", "application/json"), "application/json");
+        assert_eq!(
+            s.scrub_header("Accept", "application/json"),
+            "application/json"
+        );
     }
 
     #[test]
@@ -170,6 +174,16 @@ mod tests {
         assert_eq!(a, b);
         assert!(a.starts_with("fp:"));
         assert_eq!(a.len(), "fp:".len() + 16);
+    }
+
+    #[test]
+    fn fingerprint_matches_hmac_sha256_vector() {
+        // Expected digest independently computed with Python's hmac/sha256.
+        let key = SessionKey(std::array::from_fn(|i| u8::try_from(i).unwrap()));
+        assert_eq!(
+            Sanitizer::fingerprint(&key, "detected credential"),
+            "fp:3aac920dc31bd04f"
+        );
     }
 
     #[test]

@@ -10,6 +10,9 @@
 //! four rectangles, packed two pixels per cell with half blocks (`▀ ▄ █`) so a
 //! pixel is square in a terminal. The wordmark is a hand-set pixel face.
 
+/// Shared product description for CLI banners and terminal branding.
+pub const TAGLINE: &str = "web security toolkit";
+
 /// An 8-bit RGB color.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Rgb(pub u8, pub u8, pub u8);
@@ -79,7 +82,9 @@ pub fn banner(tagline: &str, version: &str) -> Vec<Vec<Run>> {
         .map(|row| {
             let mut runs: Vec<Run> = vec![(Tone::Orange, GLYPH[row].to_owned())];
             runs.push((Tone::Dim, GAP.to_owned()));
-            let word_row = row.checked_sub(WORDMARK_TOP).filter(|r| *r < WORDMARK.len());
+            let word_row = row
+                .checked_sub(WORDMARK_TOP)
+                .filter(|r| *r < WORDMARK.len());
             match (row, word_row) {
                 (_, Some(r)) => runs.push((Tone::Cream, WORDMARK[r].to_owned())),
                 (6, None) => {
@@ -117,12 +122,15 @@ mod tests {
     #[test]
     fn art_only_uses_half_block_characters() {
         let ok = |c: char| matches!(c, ' ' | '█' | '▀' | '▄');
-        assert!(GLYPH.iter().chain(WORDMARK.iter()).all(|l| l.chars().all(ok)));
+        assert!(GLYPH
+            .iter()
+            .chain(WORDMARK.iter())
+            .all(|l| l.chars().all(ok)));
     }
 
     #[test]
     fn banner_fits_a_classic_80_column_terminal() {
-        let rows = banner("web reconnaissance toolkit", "0.1.0");
+        let rows = banner(TAGLINE, "0.1.0");
         assert_eq!(rows.len(), GLYPH.len());
         for row in &rows {
             let w: usize = row.iter().map(|(_, s)| width(s)).sum();
@@ -132,12 +140,12 @@ mod tests {
 
     #[test]
     fn banner_carries_caption_and_authorization_line() {
-        let text: String = banner("web reconnaissance toolkit", "9.9.9")
+        let text: String = banner(TAGLINE, "9.9.9")
             .iter()
             .flatten()
             .map(|(_, s)| s.as_str())
             .collect();
-        assert!(text.contains("web reconnaissance toolkit · v9.9.9"));
+        assert!(text.contains("web security toolkit · v9.9.9"));
         assert!(text.contains("authorized targets only"));
     }
 }

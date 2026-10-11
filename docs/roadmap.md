@@ -9,22 +9,22 @@ au fur et à mesure. Chaque item renvoie au(x) fichier(s) concerné(s).
       qui détecte les objets/`const` dont la clé ressemble à un flag/réglage
       (`featureFlag`, `DEBUG_MODE`, `apiVersion`, `tenantId`, …) liée à un
       littéral (string/bool/num). Nouveau `FindingKind::Config`.
-      `crates/webrev-extract/src/extractors/config.rs`
+      `crates/webrev-extract/src/extractors/metadata/config.rs`
 - [x] **Imports dynamiques** — `JsAstExtractor` reporte désormais le
       spécificateur de chaque `import("…")` comme finding `script`, même s'il
       ne ressemble pas à une URL (ex. `import("./AdminPanel")`).
-      `crates/webrev-extract/src/extractors/js_ast.rs`
+      `crates/webrev-extract/src/extractors/endpoints/js_ast.rs`
 - [x] **Graphe de chunks webpack/Vite** (version light) — nouvel extracteur
       `manifest` (JSON) qui marche récursivement sur `asset-manifest.json`
       (webpack, forme plate) et `manifest.json` (Vite, forme imbriquée
       entry→{file,imports,css}) et ressort chaque chemin de chunk/asset, y
       compris ceux jamais liés depuis une page HTML.
-      `crates/webrev-extract/src/extractors/manifest.rs`
+      `crates/webrev-extract/src/extractors/metadata/manifest.rs`
 - [x] **Service workers & manifest.json** — le fetch stage suit désormais
       `<link rel="manifest">` et `navigator.serviceWorker.register(...)`
       (jusque-là ignorés : ni `<script src>` ni `<a href>`), et l'extracteur
       `manifest` en tire `start_url`/`scope`/`id` comme findings `config`.
-      `crates/webrev-pipeline/src/stages/fetch.rs`
+      `crates/webrev-pipeline/src/stages/fetch/mod.rs`
 - [x] **Introspection GraphQL — détection** — `graphql` signale désormais
       quand le client embarque une `IntrospectionQuery`/`__schema`, ce qui
       indique qu'une sonde manuelle sur `/graphql` vaut le coup.
@@ -32,10 +32,10 @@ au fur et à mesure. Chaque item renvoie au(x) fichier(s) concerné(s).
       est hors de portée d'un extracteur pur (contrat `Extractor`: pas d'I/O) ;
       il faudrait un nouveau stage pipeline, comme `fetch.rs`. Reste ouvert si
       utile plus tard.
-      `crates/webrev-extract/src/extractors/graphql.rs`
+      `crates/webrev-extract/src/extractors/endpoints/graphql.rs`
 
-Nouveau au passage : `ContentKind::Json` et `Source::Manifest` (core), table
-`parse_kind`/`parse_source` à jour dans `webrev-storage`. Tests ajoutés pour
+Nouveau au passage : `ContentKind::Json` et `Source::Manifest` (core),
+conservés dans les findings et les exports. Tests ajoutés pour
 chaque extracteur ; `cargo test --workspace` et `cargo clippy --workspace
 --all-targets` passent sans warning.
 
@@ -52,13 +52,13 @@ chaque extracteur ; `cargo test --workspace` et `cargo clippy --workspace
 - [x] **Capture des frames WebSocket** — `EventWebSocketFrameSent`/
       `EventWebSocketFrameReceived` sont désormais capturées (en plus de
       `EventWebSocketCreated`), bornées (`MAX_WS_FRAMES`,
-      `MAX_WS_PAYLOAD_CHARS`), sanitizées et ressorties comme nouveau
+      `MAX_WS_PAYLOAD_CHARS`), conservées avec leurs valeurs d'origine et ressorties comme nouveau
       `FindingKind::WebSocketFrame` (tag direction + URL du socket).
-      **Non fait : la rejouabilité elle-même** — renvoyer/muter une frame
-      changerait webrev d'un outil d'observation passive à un outil actif
-      d'exploitation, hors de son identité de recon ; le payload capturé
-      donne à l'opérateur ce qu'il faut pour rejouer avec son propre outil
-      (Burp, websocat, …).
+      **Non fait : replay / mutation des frames** — la capture conserve les
+      échanges pour l'analyse, mais leur réémission n'est pas implémentée.
+      C'est une piste de tests actifs à concevoir avec les contrôles de scope,
+      d'authentification et de trafic du projet. Les payloads peuvent déjà être
+      rejoués avec Burp ou websocat.
       `crates/webrev-browser/src/dynamic.rs`
 - [x] **Adaptation anti-WAF/anti-rate-limit** — en fait plus pertinent côté
       crawler HTTP (`webrev-pipeline`) que navigateur : `fetch_with_retry`
@@ -66,16 +66,32 @@ chaque extracteur ; `cargo test --workspace` et `cargo clippy --workspace
       réduit sa concurrence (÷2 par strike, jusqu'à ÷8) et étire le délai
       inter-vague (jusqu'à ×16) après des vagues consécutives rate-limitées,
       au lieu d'un jitter fixe.
-      `crates/webrev-pipeline/src/stages/fetch.rs`, `crates/webrev-pipeline/src/stages/mod.rs`
+      `crates/webrev-pipeline/src/stages/fetch/mod.rs`, `crates/webrev-pipeline/src/stages/mod.rs`
 
 Nouveau au passage : `FindingKind::WebSocketFrame` (core, slug `ws_frame`,
-`Severity::Low`), table `parse_kind` à jour dans `webrev-storage`. Tests
+`Severity::Low`), conservé dans la session en mémoire. Tests
 unitaires ajoutés (backoff, retry-after, dynamic imports…) ; `cargo test
 --workspace` et `cargo clippy --workspace --all-targets` passent sans
 warning. Le test `dynamic_run_smoke` (ignoré par défaut, nécessite Chromium)
 a été lancé en live contre un vrai Chrome local avec succès.
 
-## 3. Corrélation / intelligence
+## 3. Tests de sécurité actifs — implémentés
+
+- [x] Headers de sécurité, attributs des cookies, CORS, fichiers sensibles
+      accessibles et redirections ouvertes.
+- [x] Signaux XSS par réflexion et SQLi par erreurs de base de données.
+- [x] Signal IDOR / contrôle d'accès par comparaison avec et sans authentification.
+- [x] Probes sur les URL concrètes découvertes, avec leurs paramètres et identifiants.
+- [x] Triage CLI/TUI, secrets complets, stack détectée, confiance et preuves.
+      Lancement par `active`, `scan --active` ou la touche `a` du TUI.
+      `crates/webrev-pipeline/src/active/`, `crates/webrev-report/src/text.rs`,
+      `crates/webrev-tui/src/runtime/active.rs`
+
+Les signaux XSS/SQLi/IDOR demandent une validation manuelle. Aucune vérification
+RCE n'est implémentée. Les fonctions futures restent suivies séparément des
+capacités déjà présentes.
+
+## 4. Corrélation / intelligence
 
 - [ ] **Graphe de relations endpoint ↔ composant ↔ paramètres observés** —
       export vers un format exploitable (DOT/GraphML/Neo4j) en plus du
@@ -87,12 +103,12 @@ a été lancé en live contre un vrai Chrome local avec succès.
 - [ ] **Fingerprint cross-cibles** — comparer la stack/API de plusieurs
       domaines scannés pour repérer la réutilisation d'infra dans un même
       engagement multi-cibles.
-      `crates/webrev-extract/src/extractors/tech.rs`, `crates/webrev-storage/src/*`
+      `crates/webrev-extract/src/extractors/metadata/tech/signatures/`, `crates/webrev-storage/src/*`
 
 ## Notes
 
 - Priorité suggérée : commencer par **1** (statique, gain rapide, peu de
   risque opsec) avant **2** (dynamique, plus coûteux) puis **3**
   (corrélation, dépend des deux premiers).
-- Garder le principe fail-closed / secrets non-réversibles pour toute
+- Garder le scope fail-closed, les sessions en mémoire et les secrets visibles pour toute
   nouvelle fonctionnalité (voir `docs/security.md`).

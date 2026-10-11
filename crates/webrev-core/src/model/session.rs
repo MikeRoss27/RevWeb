@@ -1,4 +1,4 @@
-// crates/webrev-core/src/session.rs
+// crates/webrev-core/src/model/session.rs
 //! Mission / session identity and scoping rules.
 
 use crate::error::WebrevError;
@@ -73,12 +73,22 @@ impl Scope {
             .next()
             .filter(|s| !s.is_empty())?;
         let host_port = authority.rsplit_once('@').map_or(authority, |(_, h)| h);
-        let host = host_port.split(':').next().filter(|s| !s.is_empty())?;
+        let host = if host_port.starts_with('[') {
+            &host_port[1..host_port.find(']')?]
+        } else {
+            host_port.split(':').next().filter(|s| !s.is_empty())?
+        };
+        if host.is_empty() {
+            return None;
+        }
         Some(host)
     }
 
     fn host_matches(host: &str, pattern: &str) -> bool {
-        host == pattern || host.ends_with(&format!(".{pattern}"))
+        host.eq_ignore_ascii_case(pattern)
+            || host
+                .to_ascii_lowercase()
+                .ends_with(&format!(".{}", pattern.to_ascii_lowercase()))
     }
 
     /// Whether a given URL is permitted under this scope. An empty `include`
@@ -89,11 +99,7 @@ impl Scope {
         let Some(host) = Self::host_of(url) else {
             return false;
         };
-        if self
-            .exclude
-            .iter()
-            .any(|p| Self::host_matches(host, p))
-        {
+        if self.exclude.iter().any(|p| Self::host_matches(host, p)) {
             return false;
         }
         self.include.iter().any(|p| Self::host_matches(host, p))
@@ -162,6 +168,18 @@ mod tests {
         );
         assert_eq!(Scope::host_of("not a url"), Some("not a url"));
         assert_eq!(Scope::host_of("https:///nohost"), None);
+    }
+
+    #[test]
+    fn ipv6_scope_keeps_the_full_address_and_dns_matching_ignores_case() {
+        assert_eq!(Scope::host_of("http://[::1]:8080/api"), Some("::1"));
+        let scope = Scope::new(vec!["::1".into()], vec![]);
+        assert!(scope.allows("http://[::1]:8080/"));
+        assert!(!scope.allows("http://[2001:db8::1]:8080/"));
+        let scope = Scope::new(vec!["EXAMPLE.COM".into()], vec!["Admin.Example.com".into()]);
+        assert!(scope.allows("https://Api.example.com/"));
+        assert!(!scope.allows("https://admin.example.com/"));
+        assert!(!scope.allows("https://evilexample.com/"));
     }
 
     #[test]

@@ -1,6 +1,7 @@
 // crates/webrev-pipeline/src/stages/store.rs
-//! Deduplicates findings (requirement: `BTreeSet` on `kind + url` before store)
-//! and persists them via the [`Storage`](webrev_storage::Storage) port.
+//! Deduplicates with `Finding::dedup_key` before recording in memory through
+//! the [`Storage`](webrev_storage::Storage) port. Normalized endpoint exports
+//! resolve relative references while finding evidence keeps its original URL.
 
 use crate::events::PipelineEvent;
 use crate::stage::{PipelineItem, Stage, StageContext};
@@ -62,7 +63,7 @@ impl Stage for StoreStage {
                 continue;
             };
 
-            // Deduplicate on kind+url before any write hits the database.
+            // Merge repeated resources without dropping distinct facts on one URL.
             if !seen.insert(finding.dedup_key()) {
                 continue;
             }
@@ -83,17 +84,19 @@ impl Stage for StoreStage {
                         .split_whitespace()
                         .next()
                         .map_or(Method::Unknown, Method::parse);
-                    let raw = finding.url.clone().unwrap_or_else(|| finding.value.clone());
+                    let raw = crate::targets::resolve_endpoint_url(&ctx.mission, &finding)
+                        .map_or_else(
+                            || finding.url.clone().unwrap_or_else(|| finding.value.clone()),
+                            |url| url.to_string(),
+                        );
                     let normalized = normalize_url(&raw);
                     // Classify against the mission scope on the raw (host-bearing)
                     // URL before normalization strips nothing host-relevant.
                     let endpoint_scope = ctx.mission.scope.classify(&raw);
                     if seen_endpoints.insert(format!("{method} {normalized}")) {
-                        let endpoint =
-                            Endpoint::new(normalized, method, finding.provenance.source)
-                                .with_scope(endpoint_scope);
-                        if let Err(e) =
-                            ctx.storage.insert_endpoint(ctx.session_id, &endpoint).await
+                        let endpoint = Endpoint::new(normalized, method, finding.provenance.source)
+                            .with_scope(endpoint_scope);
+                        if let Err(e) = ctx.storage.insert_endpoint(ctx.session_id, &endpoint).await
                         {
                             let _ = events.send(PipelineEvent::Error {
                                 stage: self.name().to_owned(),
@@ -130,7 +133,8 @@ impl Stage for StoreStage {
                 | FindingKind::Config
                 | FindingKind::WebSocketFrame
                 | FindingKind::Vulnerability
-                | FindingKind::Idor => {}
+                | FindingKind::Idor
+                | FindingKind::ScanCoverage => {}
             }
 
             let _ = events.send(PipelineEvent::Finding(Box::new(finding.clone())));

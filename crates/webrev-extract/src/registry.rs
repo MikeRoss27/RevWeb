@@ -27,26 +27,14 @@ impl ExtractorRegistry {
     }
 
     /// The standard registry used by the pipeline: HTML + both JS strategies +
-    /// source-map detection, ordered by priority. Secrets are fingerprint-only.
+    /// source-map detection, ordered by priority. Detected secrets include plaintext.
     #[must_use]
     pub fn with_defaults() -> Self {
-        Self::with_defaults_revealing(false)
-    }
-
-    /// Like [`with_defaults`], but `reveal_secrets` controls whether the secret
-    /// extractor retains detected secrets in plaintext (the `--reveal-secrets`
-    /// opt-in). Keep this `false` unless the operator explicitly asked for it.
-    ///
-    /// [`with_defaults`]: ExtractorRegistry::with_defaults
-    #[must_use]
-    pub fn with_defaults_revealing(reveal_secrets: bool) -> Self {
         let mut reg = Self::new();
         reg.register(Box::new(JsAstExtractor::new()));
         reg.register(Box::new(HtmlExtractor::new()));
         reg.register(Box::new(JsRegexExtractor::new()));
-        reg.register(Box::new(
-            SecretExtractor::with_random_key().revealing(reveal_secrets),
-        ));
+        reg.register(Box::new(SecretExtractor::with_random_key()));
         reg.register(Box::new(SourceMapExtractor::new()));
         reg.register(Box::new(TechExtractor::new()));
         reg.register(Box::new(GraphQlExtractor::new()));
@@ -118,8 +106,17 @@ mod tests {
         assert_eq!(
             names,
             vec![
-                "js-ast", "html", "js-regex", "secret", "sourcemap", "tech", "graphql", "routes",
-                "params", "config", "manifest"
+                "js-ast",
+                "html",
+                "js-regex",
+                "secret",
+                "sourcemap",
+                "tech",
+                "graphql",
+                "routes",
+                "params",
+                "config",
+                "manifest"
             ]
         );
     }

@@ -2,4 +2,3 @@
 //! Concrete [`Storage`](crate::port::Storage) implementations.
 
 pub mod memory;
-pub mod sqlite;

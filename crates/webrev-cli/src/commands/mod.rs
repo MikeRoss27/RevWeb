@@ -4,6 +4,7 @@
 
 mod active_scan;
 mod dynamic_scan;
+mod output;
 mod report;
 mod scan;
 mod static_scan;
@@ -11,6 +12,25 @@ mod static_scan;
 use crate::cli::{Cli, Command, ScanArgs};
 use webrev_core::{AuthConfig, EgressPolicy, Mission, MissionProfile, OpsecConfig, Scope};
 use webrev_tui::TuiOptions;
+
+/// Export a standalone scan while its session is still in memory.
+async fn write_session_report(
+    mission: &Mission,
+    storage: &dyn webrev_storage::Storage,
+    path: &std::path::Path,
+) -> anyhow::Result<()> {
+    let findings = storage.findings_by_session(mission.id).await?;
+    let endpoints = storage.endpoints_by_session(mission.id).await?;
+    let report = webrev_report::SessionReport::build(mission.clone(), findings, endpoints);
+    if path == std::path::Path::new("-") {
+        report::write_stdout(&report.to_json()?)?;
+    } else {
+        output::show(&report)?;
+        std::fs::write(path, report.to_json()?)?;
+        eprintln!("report written to {}", path.display());
+    }
+    Ok(())
+}
 
 /// Resolve the seed list: explicit `--seed` values, plus stdin (one URL per
 /// line) when `--stdin` is set or no seeds were given and stdin is piped. This
@@ -83,6 +103,10 @@ fn build_mission(args: &ScanArgs) -> anyhow::Result<(Mission, OpsecConfig)> {
         max_depth: args.max_depth,
         max_concurrency: args.max_concurrency.max(1),
         auth,
+        active: webrev_core::ActiveLimits {
+            max_requests: args.max_active_requests,
+            ..webrev_core::ActiveLimits::default()
+        },
         ..OpsecConfig::default()
     };
     Ok((mission, opsec))
@@ -95,14 +119,12 @@ pub async fn dispatch(cli: Cli) -> anyhow::Result<()> {
         Command::Static(args) => static_scan::run(args).await,
         Command::Dynamic(args) => dynamic_scan::run(args).await,
         Command::Active(args) => active_scan::run(args).await,
-        Command::Report(args) => report::run(args).await,
+        Command::Report(args) => report::run(args),
         Command::Tui(args) => {
             let (mission, opsec) = build_mission(&args)?;
             webrev_tui::run(TuiOptions {
                 profile: MissionProfile::new(mission, opsec),
-                db_path: args.db,
                 report_path: args.report,
-                reveal_secrets: args.reveal_secrets,
             })
             .await
         }

@@ -1,0 +1,43 @@
+name: Portable bundles
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+jobs:
+  bundle:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+          - os: ubuntu-24.04
+            target: x86_64-unknown-linux-gnu
+          - os: macos-15-intel
+            target: x86_64-apple-darwin
+          - os: macos-15
+            target: aarch64-apple-darwin
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+      - name: Build CLI + TUI
+        run: cargo build --release --locked --target ${{ matrix.target }} -p webrev-cli -p webrev-tui
+      - name: Package with installers and checksums
+        run: python scripts/package.py --target ${{ matrix.target }} --binary-dir target/${{ matrix.target }}/release
+      - name: Verify native install and reject corrupt binaries
+        run: python scripts/check_bundle.py --target ${{ matrix.target }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: webrev-${{ matrix.target }}
+          path: target/bundles/*
+          if-no-files-found: error

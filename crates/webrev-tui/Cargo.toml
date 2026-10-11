@@ -25,8 +25,12 @@ webrev-report.workspace = true
 anyhow.workspace = true
 tokio.workspace = true
 tokio-util.workspace = true
-ratatui.workspace = true
+# Exact wrapped line count keeps long evidence scrollable without blank overscroll.
+ratatui = { workspace = true, features = ["unstable-rendered-line-info"] }
 # `event-stream` enables the async `EventStream` input used by the event loop.
 crossterm = { workspace = true, features = ["event-stream"] }
 futures.workspace = true
 clap.workspace = true
+
+[dev-dependencies]
+reqwest.workspace = true

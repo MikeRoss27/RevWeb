@@ -25,7 +25,9 @@ pub mod events;
 pub mod stage;
 pub mod stages;
 
-pub use active::run_active_scan;
+pub use active::{active_targets, run_active_scan};
 pub use engine::{PipelineBuilder, PipelineSummary};
 pub use events::PipelineEvent;
 pub use stage::{PipelineItem, Stage, StageContext};
+
+mod targets;

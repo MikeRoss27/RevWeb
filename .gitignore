@@ -8,11 +8,6 @@
 # Cargo.lock
 
 # --- webrev runtime artifacts ---
-# SQLite databases produced by scans
-*.db
-*.db-journal
-*.db-wal
-*.db-shm
 # JSON reports exported by `webrev report` / the TUI
 *-report.json
 webrev-report.json
@@ -31,3 +26,6 @@ webrev-profile-*/
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# Local Python helper bytecode
+__pycache__/

@@ -1,4 +1,4 @@
-// crates/webrev-core/src/finding.rs
+// crates/webrev-core/src/model/finding.rs
 //! The central unit of output: a `Finding`.
 //!
 //! Every stage of the pipeline emits `Finding`s; the report crate serializes
@@ -16,8 +16,7 @@ pub enum FindingKind {
     /// A reachable API / network endpoint.
     Endpoint,
     /// A credential-like token. The stored `value` is a fingerprint; the
-    /// plaintext is kept in `plaintext` only when the operator opts in with
-    /// `--reveal-secrets` (see [`crate::sanitize`]).
+    /// detected credential is always kept in `plaintext` for analysis.
     Secret,
     /// A `sourceMappingURL` reference to a JS source map.
     SourceMap,
@@ -53,6 +52,8 @@ pub enum FindingKind {
     /// mission's authentication material attached (IDOR-lite / broken
     /// access control signal).
     Idor,
+    /// Actual active-probe coverage, including failed and skipped work.
+    ScanCoverage,
 }
 
 impl FindingKind {
@@ -74,6 +75,7 @@ impl FindingKind {
             Self::WebSocketFrame => "ws_frame",
             Self::Vulnerability => "vulnerability",
             Self::Idor => "idor",
+            Self::ScanCoverage => "scan_coverage",
         }
     }
 }
@@ -163,12 +165,14 @@ pub struct Finding {
     pub value: String,
     pub confidence: Confidence,
     pub provenance: Provenance,
-    /// Revealed plaintext for a [`FindingKind::Secret`]. `None` by default; set
-    /// only when the operator opts into `--reveal-secrets`, which disables the
-    /// fingerprint-only privacy guarantee. Omitted from serialized reports when
-    /// absent.
+    /// Detected plaintext for a [`FindingKind::Secret`]. Always populated by
+    /// the secret extractor; absent for other kinds of findings.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub plaintext: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub evidence: Option<Box<super::evidence::ProbeEvidence>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub coverage: Option<Box<super::evidence::ActiveCoverage>>,
 }
 
 impl Finding {
@@ -190,13 +194,14 @@ impl Finding {
             confidence,
             provenance,
             plaintext: None,
+            evidence: None,
+            coverage: None,
         }
     }
 
     /// Attach a revealed plaintext secret to this finding (builder style).
     ///
-    /// Only the secret extractor calls this, and only when `--reveal-secrets`
-    /// is set; every other finding leaves `plaintext` at its `None` default.
+    /// The secret extractor calls this for every detected credential.
     #[must_use]
     pub fn with_plaintext(mut self, plaintext: Option<String>) -> Self {
         self.plaintext = plaintext;
@@ -231,16 +236,15 @@ impl Finding {
                     Severity::High
                 }
             }
-            FindingKind::Endpoint => {
-                endpoint_severity(self.url.as_deref().unwrap_or(&self.value))
-            }
+            FindingKind::Endpoint => endpoint_severity(self.url.as_deref().unwrap_or(&self.value)),
             FindingKind::GraphQl | FindingKind::SourceMap => Severity::Medium,
             FindingKind::Form | FindingKind::Route | FindingKind::WebSocketFrame => Severity::Low,
             FindingKind::Parameter
             | FindingKind::Link
             | FindingKind::Script
             | FindingKind::Technology
-            | FindingKind::Config => Severity::Info,
+            | FindingKind::Config
+            | FindingKind::ScanCoverage => Severity::Info,
             // Broken access control is always worth a human look.
             FindingKind::Idor => Severity::High,
             // The specific weakness (encoded in `value` by the active-scan
@@ -251,30 +255,59 @@ impl Finding {
         }
     }
 
-    /// Deduplication key: `kind + url` (falling back to the value when there is
-    /// no URL). The pipeline inserts these into a `BTreeSet` before storing so
-    /// the same endpoint discovered by two extractors is persisted once.
+    /// Resource findings deduplicate by kind + URL; other facts also include
+    /// their value so distinct proofs on one page survive. Without a URL the
+    /// value is the locus. Repeated endpoints from two extractors merge.
     #[must_use]
     pub fn dedup_key(&self) -> String {
         let locus = self.url.as_deref().unwrap_or(&self.value);
-        format!("{}|{}", self.kind.slug(), locus)
+        // A page can expose several technologies, credentials, parameters or
+        // vulnerabilities. Keeping only kind+URL would silently lose evidence.
+        match self.kind {
+            FindingKind::Endpoint
+            | FindingKind::Link
+            | FindingKind::Script
+            | FindingKind::Route
+            | FindingKind::SourceMap
+            | FindingKind::Form => format!("{}|{}", self.kind.slug(), locus),
+            _ if self.url.is_some() => format!("{}|{}|{}", self.kind.slug(), locus, self.value),
+            _ => format!("{}|{}", self.kind.slug(), locus),
+        }
     }
 }
 
 /// Markers in an endpoint path that signal a sensitive / high-value target.
 const SENSITIVE_MARKERS: &[&str] = &[
-    "admin", "internal", "debug", "actuator", "/.git", "/.env", "config",
-    "backup", "swagger", "api-docs", "graphql", "token", "secret", "password",
-    "passwd", "oauth", "/sso", "upload", "console", "phpmyadmin", "wp-admin",
-    ".sql", ".bak", "/private",
+    "admin",
+    "internal",
+    "debug",
+    "actuator",
+    "/.git",
+    "/.env",
+    "config",
+    "backup",
+    "swagger",
+    "api-docs",
+    "graphql",
+    "token",
+    "secret",
+    "password",
+    "passwd",
+    "oauth",
+    "/sso",
+    "upload",
+    "console",
+    "phpmyadmin",
+    "wp-admin",
+    ".sql",
+    ".bak",
+    "/private",
 ];
 
 /// True when the path contains a `/v<digits>` version segment (e.g. `/v1/`).
 fn has_version_segment(path: &str) -> bool {
     path.split('/').any(|seg| {
-        seg.len() >= 2
-            && seg.starts_with('v')
-            && seg[1..].bytes().all(|b| b.is_ascii_digit())
+        seg.len() >= 2 && seg.starts_with('v') && seg[1..].bytes().all(|b| b.is_ascii_digit())
     })
 }
 
@@ -286,7 +319,10 @@ fn vulnerability_severity(value: &str) -> Severity {
     let v = value.to_ascii_lowercase();
     if v.contains("cors") && v.contains("credentials") {
         Severity::Critical
-    } else if v.contains("sql injection") || v.contains("exposed sensitive file") {
+    } else if v.contains("sql injection")
+        || v.contains("exposed sensitive file")
+        || v.contains("template expression evaluation")
+    {
         Severity::High
     } else if v.contains("open redirect")
         || v.contains("reflected parameter")
@@ -318,15 +354,38 @@ mod tests {
     #[test]
     fn severity_ranks_secrets_and_sensitive_endpoints() {
         let sid = SessionId::new();
-        let secret = Finding::new(sid, FindingKind::Secret, None, "fp:x", Confidence::High, Provenance::new(Source::JsRegex, None));
+        let secret = Finding::new(
+            sid,
+            FindingKind::Secret,
+            None,
+            "fp:x",
+            Confidence::High,
+            Provenance::new(Source::JsRegex, None),
+        );
         assert_eq!(secret.severity(), Severity::Critical);
 
-        let mk_ep = |url: &str| Finding::new(sid, FindingKind::Endpoint, Some(url.into()), format!("GET {url}"), Confidence::Low, Provenance::new(Source::JsAst, None));
+        let mk_ep = |url: &str| {
+            Finding::new(
+                sid,
+                FindingKind::Endpoint,
+                Some(url.into()),
+                format!("GET {url}"),
+                Confidence::Low,
+                Provenance::new(Source::JsAst, None),
+            )
+        };
         assert_eq!(mk_ep("https://x/admin/users").severity(), Severity::High);
         assert_eq!(mk_ep("https://x/api/v1/me").severity(), Severity::Medium);
         assert_eq!(mk_ep("https://x/about").severity(), Severity::Low);
 
-        let param = Finding::new(sid, FindingKind::Parameter, None, "q", Confidence::Low, Provenance::new(Source::JsRegex, None));
+        let param = Finding::new(
+            sid,
+            FindingKind::Parameter,
+            None,
+            "q",
+            Confidence::Low,
+            Provenance::new(Source::JsRegex, None),
+        );
         assert_eq!(param.severity(), Severity::Info);
         // Severity ordering is usable for sorting.
         assert!(Severity::Critical > Severity::Info);
@@ -336,17 +395,41 @@ mod tests {
     fn vulnerability_and_idor_severity_ranked_by_weakness() {
         let sid = SessionId::new();
         let mk_vuln = |value: &str| {
-            Finding::new(sid, FindingKind::Vulnerability, None, value, Confidence::High, Provenance::new(Source::Active, None))
+            Finding::new(
+                sid,
+                FindingKind::Vulnerability,
+                None,
+                value,
+                Confidence::High,
+                Provenance::new(Source::Active, None),
+            )
         };
         assert_eq!(
-            mk_vuln("CORS misconfiguration: arbitrary Origin reflected with credentials allowed").severity(),
+            mk_vuln("CORS misconfiguration: arbitrary Origin reflected with credentials allowed")
+                .severity(),
             Severity::Critical
         );
-        assert_eq!(mk_vuln("possible SQL injection: database error signature returned").severity(), Severity::High);
-        assert_eq!(mk_vuln("open redirect via 'next' parameter").severity(), Severity::Medium);
-        assert_eq!(mk_vuln("missing security header(s): X-Frame-Options").severity(), Severity::Low);
+        assert_eq!(
+            mk_vuln("possible SQL injection: database error signature returned").severity(),
+            Severity::High
+        );
+        assert_eq!(
+            mk_vuln("open redirect via 'next' parameter").severity(),
+            Severity::Medium
+        );
+        assert_eq!(
+            mk_vuln("missing security header(s): X-Frame-Options").severity(),
+            Severity::Low
+        );
 
-        let idor = Finding::new(sid, FindingKind::Idor, None, "no auth required", Confidence::Medium, Provenance::new(Source::Active, None));
+        let idor = Finding::new(
+            sid,
+            FindingKind::Idor,
+            None,
+            "no auth required",
+            Confidence::Medium,
+            Provenance::new(Source::Active, None),
+        );
         assert_eq!(idor.severity(), Severity::High);
     }
 
@@ -379,5 +462,27 @@ mod tests {
             Provenance::new(Source::JsRegex, None),
         );
         assert_eq!(f.dedup_key(), "secret|fp:deadbeef");
+    }
+
+    #[test]
+    fn same_page_can_keep_multiple_technologies_and_proofs() {
+        for kind in [
+            FindingKind::Technology,
+            FindingKind::Vulnerability,
+            FindingKind::Parameter,
+        ] {
+            let mk = |value| {
+                Finding::new(
+                    SessionId::new(),
+                    kind,
+                    Some("https://x/page".into()),
+                    value,
+                    Confidence::High,
+                    Provenance::new(Source::Html, None),
+                )
+            };
+            assert_ne!(mk("one").dedup_key(), mk("two").dedup_key());
+            assert_eq!(mk("one").dedup_key(), mk("one").dedup_key());
+        }
     }
 }

@@ -46,8 +46,13 @@ async fn main() -> anyhow::Result<()> {
 
 fn init_tracing() {
     use tracing_subscriber::{fmt, EnvFilter};
-    let filter =
-        EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info"));
+    // Default to `info`, but silence `chromiumoxide::handler`'s benign WARN
+    // flood ("WS Invalid message: data did not match any variant of untagged
+    // enum Message") — emitted once per unrecognised CDP event when the
+    // installed Chrome is newer than the CDP types the crate knows. Genuine
+    // handler errors stay visible. `RUST_LOG`, when set, overrides this.
+    let filter = EnvFilter::try_from_default_env()
+        .unwrap_or_else(|_| EnvFilter::new("info,chromiumoxide::handler=error"));
     let _ = fmt()
         .with_env_filter(filter)
         .with_writer(std::io::stderr)

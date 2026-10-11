@@ -22,12 +22,15 @@ pub mod security;
 
 pub use error::WebrevError;
 pub use model::endpoint::{Endpoint, EndpointScope, Method, Source};
+pub use model::evidence::{
+    ActiveCoverage, CheckCoverage, EvidenceVerdict, ProbeEvidence, ResponseObservation,
+};
 pub use model::finding::{Confidence, Finding, FindingKind, Provenance, Severity};
 pub use model::normalize::normalize_url;
 pub use model::session::{Mission, Scope, SessionId};
 pub use security::auth::AuthConfig;
 pub use security::opsec::{
-    DnsPolicy, EgressPolicy, MissionProfile, OpsecConfig, RotationPolicy,
+    ActiveLimits, DnsPolicy, EgressPolicy, MissionProfile, OpsecConfig, RotationPolicy,
 };
 pub use security::sanitize::{Sanitizer, SessionKey};
 

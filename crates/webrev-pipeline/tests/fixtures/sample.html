@@ -12,7 +12,7 @@
         const me = await fetch("/api/v1/me");
         await axios.post("https://api.fixture.test/v1/login", creds);
         const ws = "wss://fixture.test/live";
-        // A credential-shaped token the secret extractor must fingerprint.
+        // A credential-shaped token retained in plaintext with a dedup fingerprint.
         const awsKey = "AKIAZ4XB7NMPQR2STUVW";
         // Technology, GraphQL, and SPA-route signals for the new extractors.
         const sb = createClient("https://xyzcompany.supabase.co", awsKey);

@@ -1,4 +1,4 @@
-// crates/webrev-core/src/endpoint.rs
+// crates/webrev-core/src/model/endpoint.rs
 //! Network endpoints discovered during analysis, plus their provenance enums.
 
 use serde::{Deserialize, Serialize};

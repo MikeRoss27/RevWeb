@@ -12,8 +12,7 @@ pub enum PipelineEvent {
     StageCompleted { stage: String, emitted: usize },
     /// A finding reached storage (post-deduplication).
     Finding(Box<Finding>),
-    /// A secret was detected and recorded as a fingerprint. `plaintext` is
-    /// `None` unless the operator opted into `--reveal-secrets`.
+    /// A secret was detected. The extractor includes its plaintext and dedup fingerprint.
     SecretDetected {
         fingerprint: String,
         plaintext: Option<String>,
