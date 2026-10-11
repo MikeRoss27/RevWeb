@@ -47,13 +47,16 @@ Listed by descending priority (higher runs first):
 | `dom-sinks` | 42 | JS | Client-side XSS via lightweight intra-procedural taint: traces tainted sources (`location.*`, `document.cookie`, `window.name`, postMessage `event.data`) into sinks (`innerHTML`, `eval`, `document.write`, `insertAdjacentHTML`, `new Function`, `dangerouslySetInnerHTML`, `location` nav), reporting `source -> sink` at high/medium confidence; untraced sinks, `.wasm` references and origin-less postMessage receivers stay low-confidence leads. |
 | `csp` | 41 | HTML + headers | Passive Content-Security-Policy / security-header **policy** analysis (response headers + `<meta http-equiv>`): `unsafe-inline`/`unsafe-eval`/wildcards, missing `object-src`/`base-uri`, absent CSP, weak Referrer-/Permissions-Policy. Distinct from the active header check. |
 | `ghost` | 40 | JS | "Ghost endpoints" — endpoints/targets inside a client-side access or feature gate (`if (user.isAdmin)`, `if (flags.beta)`, role checks); joins them to the surface plus a note naming the condition that hid them. |
+| `wasm` | 39 | WASM | Recovers the host↔module boundary from a fetched `.wasm` binary: import/export section entries (low-confidence `config` findings) and endpoint-shaped strings found in data segments (low-confidence `endpoint` findings). No execution, disassembly or decompilation — section metadata and literal strings only. |
 
 Note: the **fetch stage** (in `webrev-pipeline`) additionally fetches and parses
 source maps and re-injects the recovered original sources as JS content, so the
 extractors above run over the un-minified code too. It also follows
 `<link rel="manifest">` and `navigator.serviceWorker.register(...)` references
 so manifests and service workers get crawled even though neither is a
-`<script src>` or `<a href>`.
+`<script src>` or `<a href>`. Responses whose URL ends in `.wasm` or whose
+`Content-Type` is `application/wasm` are read as raw bytes (never decoded as
+UTF-8 text) and fed to the `wasm` extractor above instead of the HTML/JS ones.
 
 ## URL normalization
 
