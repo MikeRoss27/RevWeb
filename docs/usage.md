@@ -62,7 +62,7 @@ the TUI. No reveal flag is required. The fingerprint remains a deduplication key
 | --- | --- | --- |
 | `--input <PATH>` | `webrev-report.json` | Existing full JSON report to convert or filter. |
 | `--output <PATH>` | stdout | Write the report to a file instead of printing it. |
-| `--format <FMT>` | `json` | `json` (full document), `jsonl` (one finding per line), `urls` (bare endpoint URLs, one per line), or `csv` (findings table). |
+| `--format <FMT>` | `json` | `json` (full document), `jsonl` (one finding per line), `urls` (bare endpoint URLs, one per line), `csv` (findings table), `text` (grouped human-readable triage), or `openapi` (reconstructed OpenAPI 3.1 spec of the discovered surface). |
 | `--scope <SEL>` | `all` | Restrict endpoint output: `all`, `internal` (in-scope target), or `external` (third-party). |
 | `--min-confidence <LVL>` | `low` | Drop findings below `low` / `medium` / `high`. |
 | `--min-severity <LVL>` | `info` | Drop findings below `info` / `low` / `medium` / `high` / `critical`. `jsonl`/`csv` are ranked by severity; `csv` leads with a `severity` column. |
@@ -84,7 +84,7 @@ Adds to the shared scan options:
 | --- | --- | --- |
 | `--dynamic` | off | Also run a dynamic (headless Chromium) pass after the static scan, in the same session. |
 | `--active` | off | Also run a light active-scan pass (see below) over every endpoint the static/dynamic passes discovered, plus the seeds themselves. Sends abnormal traffic — authorized targets only. |
-| `--format <FMT>` | `json` | Format of the end-of-scan report: `json`, `jsonl`, `urls`, or `csv`. |
+| `--format <FMT>` | `json` | Format of the end-of-scan report: `json`, `jsonl`, `urls`, `csv`, `text`, or `openapi`. |
 | `--no-report` | off | Print the scan summary, then discard the in-memory session without writing a report. |
 
 ```bash
@@ -153,6 +153,12 @@ The standalone command exports its findings as JSON directly to `--report`.
 | Parameter fuzzing | Mutates one query position at a time, preserving other raw pairs. Compares new SQL errors and literal HTML/XHTML reflection against a successful baseline; JSON is not classified as XSS. |
 | IDOR-lite | Compares authenticated and anonymous id-shaped responses, omitting all mission headers and skipping recognized query credentials. Public resources can match; ownership is not established. |
 | Template expressions | Two randomized arithmetic results plus a payload-free control verify expression evaluation in braces/dollar syntax. This does not prove OS command execution. |
+| Path traversal / LFI | For file/path-shaped parameters, sends `../`-style and encoded payloads and content-verifies the response for `/etc/passwd` or `win.ini` signatures (not length alone). |
+| CRLF / header injection | Injects an encoded `\r\n`-prefixed header into reflectable parameters and flags only when the response actually carries the injected header. |
+| SSRF signal | For URL-valued parameters, substitutes a harmless unresolvable `.invalid` host — never internal/metadata addresses — and reports reflection or a behavior change as a low-confidence lead. Observational only. |
+| Prototype pollution signal | Appends `__proto__[…]` / `constructor[prototype][…]` and flags a new 500 or reflected marker; a low-confidence lead for dynamic confirmation. |
+| GraphQL introspection | For `graphql` endpoints, attempts an introspection query over GET and flags a `__schema`/`queryType` response. |
+| Subdomain takeover | Fetches each origin root once and matches the body against known dangling-service signatures (GitHub Pages, S3 `NoSuchBucket`, Heroku, Fastly, Shopify, Surge, Read the Docs, Netlify). |
 
 The active engine counts every HTTP attempt against a shared budget (default
 200), including controls and unsuccessful requests. Each query/redirect/access
@@ -211,6 +217,9 @@ webrev report --format urls --scope internal | ffuf -u FUZZ -w -
 
 # Only the high-confidence findings, as a spreadsheet
 webrev report --format csv --min-confidence high --output findings.csv
+
+# Reconstruct an OpenAPI 3.1 spec of the discovered surface (marked UNVERIFIED)
+webrev report --format openapi --output api.json
 ```
 
 ## Environment variables

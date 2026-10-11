@@ -42,6 +42,11 @@ Listed by descending priority (higher runs first):
 | `params` | 48 | HTML + JS | Query names, JSON keys, form field names. |
 | `config` | 47 | JS | Embedded config objects/constants whose key reads as a flag or setting (`featureFlag`, `DEBUG_MODE`, `apiVersion`, …) bound to a literal (swc AST). |
 | `manifest` | 45 | JSON | W3C web app manifests (`start_url`/`scope`/`id`) and build-tool asset manifests (webpack `asset-manifest.json`, Vite `manifest.json`) — surfaces every emitted chunk path, including ones no page links to directly. |
+| `buckets` | 44 | HTML + JS | Exposed cloud storage URLs — AWS S3 (virtual-host, path-style, regional), Google Cloud Storage, Azure Blob → endpoint findings. |
+| `jwt` | 43 | HTML + JS | JWTs (base64url-decoded header/payload, flags `alg:none` and `alg:HS*`), `Bearer` tokens, and token-ish storage assignments → secret findings with plaintext. |
+| `dom-sinks` | 42 | JS | Client-side XSS via lightweight intra-procedural taint: traces tainted sources (`location.*`, `document.cookie`, `window.name`, postMessage `event.data`) into sinks (`innerHTML`, `eval`, `document.write`, `insertAdjacentHTML`, `new Function`, `dangerouslySetInnerHTML`, `location` nav), reporting `source -> sink` at high/medium confidence; untraced sinks, `.wasm` references and origin-less postMessage receivers stay low-confidence leads. |
+| `csp` | 41 | HTML + headers | Passive Content-Security-Policy / security-header **policy** analysis (response headers + `<meta http-equiv>`): `unsafe-inline`/`unsafe-eval`/wildcards, missing `object-src`/`base-uri`, absent CSP, weak Referrer-/Permissions-Policy. Distinct from the active header check. |
+| `ghost` | 40 | JS | "Ghost endpoints" — endpoints/targets inside a client-side access or feature gate (`if (user.isAdmin)`, `if (flags.beta)`, role checks); joins them to the surface plus a note naming the condition that hid them. |
 
 Note: the **fetch stage** (in `webrev-pipeline`) additionally fetches and parses
 source maps and re-injects the recovered original sources as JS content, so the

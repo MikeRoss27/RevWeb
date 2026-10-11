@@ -94,7 +94,7 @@ investigation and `--active` adds security probes. The TUI exposes all three mod
     <td valign="top">
       <img src="docs/assets/icons/pipe.svg" width="40" height="40" alt=""><br>
       <b>Pipeline-native</b><br>
-      Seeds from stdin, reports as <code>json</code>, <code>jsonl</code>, <code>urls</code> or <code>csv</code>, plus a readable <code>text</code> triage view. Data on stdout, chatter on stderr, closed pipes exit cleanly.
+      Seeds from stdin, reports as <code>json</code>, <code>jsonl</code>, <code>urls</code> or <code>csv</code>, a readable <code>text</code> triage view, plus an <code>openapi</code> spec reconstructed from the discovered surface. Data on stdout, chatter on stderr, closed pipes exit cleanly.
     </td>
     <td valign="top">
       <img src="docs/assets/icons/scope.svg" width="40" height="40" alt=""><br>
@@ -104,9 +104,16 @@ investigation and `--active` adds security probes. The TUI exposes all three mod
   </tr>
   <tr>
     <td valign="top" colspan="2">
+      <img src="docs/assets/icons/secret.svg" width="40" height="40" alt=""><br>
+      <b>Deeper static analysis</b><br>
+      Exposed cloud buckets (S3 / GCS / Azure Blob), decoded JWTs (flags <code>alg:none</code> / <code>alg:HS*</code>) and bearer/storage tokens, client-side XSS by lightweight source→sink taint over DOM sinks, passive CSP / security-header policy review, and "ghost" endpoints hidden behind client-side role or feature-flag gates.
+    </td>
+  </tr>
+  <tr>
+    <td valign="top" colspan="2">
       <img src="docs/assets/icons/extract.svg" width="40" height="40" alt=""><br>
       <b>Active scanning</b> (<code>--active</code>, opt-in)<br>
-      Light, capped vulnerability probing over discovered endpoints: missing security headers, cookie flags, credentialed CORS, content-verified sensitive files, open redirects, per-parameter SQL/XSS signals, differential template arithmetic, and auth-free (IDOR-lite) access checks. Every attempt consumes the shared request budget; reports include proof tiers and actual coverage. Sends abnormal traffic — authorized targets only.
+      Light, capped vulnerability probing over discovered endpoints: missing security headers, cookie flags, credentialed CORS, content-verified sensitive files, open redirects, per-parameter SQL/XSS signals, differential template arithmetic, auth-free (IDOR-lite) access checks, content-verified path traversal/LFI, CRLF, SSRF and prototype-pollution signals, GraphQL introspection, and per-origin subdomain-takeover fingerprinting. Every attempt consumes the shared request budget; reports include proof tiers and actual coverage. Sends abnormal traffic — authorized targets only.
     </td>
   </tr>
 </table>
