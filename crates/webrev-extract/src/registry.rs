@@ -3,9 +3,9 @@
 
 use crate::extractors::{
     inline_scripts, BucketExtractor, ConfigExtractor, CspExtractor, DomSinkExtractor,
-    GraphQlExtractor, HtmlExtractor, JsAstExtractor, JsRegexExtractor, JwtExtractor,
-    ManifestExtractor, ParamExtractor, SecretExtractor, SourceMapExtractor, SpaRouteExtractor,
-    TechExtractor,
+    GhostEndpointExtractor, GraphQlExtractor, HtmlExtractor, JsAstExtractor, JsRegexExtractor,
+    JwtExtractor, ManifestExtractor, ParamExtractor, SecretExtractor, SourceMapExtractor,
+    SpaRouteExtractor, TechExtractor,
 };
 use crate::traits::{ContentKind, ExtractInput, Extractor};
 use webrev_core::Finding;
@@ -47,6 +47,7 @@ impl ExtractorRegistry {
         reg.register(Box::new(JwtExtractor::new()));
         reg.register(Box::new(DomSinkExtractor::new()));
         reg.register(Box::new(CspExtractor::new()));
+        reg.register(Box::new(GhostEndpointExtractor::new()));
         reg
     }
 
@@ -108,7 +109,7 @@ mod tests {
         // Descending priority: js-ast (90), html (80), js-regex (70),
         // secret (65), sourcemap (60), tech (55), graphql (52), routes (50),
         // params (48), config (47), manifest (45), buckets (44), jwt (43),
-        // dom-sinks (42), csp (41).
+        // dom-sinks (42), csp (41), ghost (40).
         assert_eq!(
             names,
             vec![
@@ -126,7 +127,8 @@ mod tests {
                 "buckets",
                 "jwt",
                 "dom-sinks",
-                "csp"
+                "csp",
+                "ghost"
             ]
         );
     }
