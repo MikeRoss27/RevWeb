@@ -43,6 +43,16 @@ pub(super) fn mutate_parameter(url: &str, index: usize, value: &str) -> Option<S
     Some(format!("{base}?{}", pairs.join("&")))
 }
 
+/// Append an already-encoded `key=value` pair to a URL's query string,
+/// preserving any existing query and dropping any fragment. Used by probes
+/// that add their own parameters (prototype pollution, GraphQL introspection)
+/// rather than mutating an existing one.
+pub(super) fn append_query_pair(url: &str, pair: &str) -> Option<String> {
+    let base = url.split('#').next()?;
+    let separator = if base.contains('?') { '&' } else { '?' };
+    Some(format!("{base}{separator}{pair}"))
+}
+
 /// Minimal percent-encoding, sufficient for the ASCII probe characters this
 /// module injects (quotes, angle brackets, braces).
 pub(super) fn urlencode(s: &str) -> String {

@@ -1,13 +1,19 @@
 //! Scoped active assessment with shared request limits and explicit proof tiers.
 mod access;
 mod client;
+mod crlf;
 mod evidence;
 mod expression;
+mod graphql;
 mod headers;
 mod injection;
 mod origin;
+mod pollution;
+mod ssrf;
+mod takeover;
 mod targets;
 mod transport;
+mod traversal;
 mod urls;
 pub use targets::active_targets;
 #[cfg(test)]
@@ -16,12 +22,18 @@ mod integration_tests;
 mod tests;
 
 use access::{check_idor, has_query_credentials};
+use crlf::check_crlf;
 use expression::check_expressions;
+use graphql::{check_graphql_introspection, is_graphql_endpoint};
 use injection::{check_open_redirect, check_param_fuzz, redirect_parameter};
 use origin::{check_cors, check_origin};
+use pollution::check_prototype_pollution;
+use ssrf::{check_ssrf, has_url_param};
 use std::collections::{BTreeMap, BTreeSet};
+use takeover::check_subdomain_takeover;
 use tokio_util::sync::CancellationToken;
 use transport::ProbeClient;
+use traversal::{check_path_traversal, has_file_param};
 use urls::{has_identifier_segment, looks_like_api_endpoint, origin_of, query_parameters};
 use webrev_core::{
     Confidence, Endpoint, Finding, FindingKind, Method, OpsecConfig, Provenance, Result, Scope,
@@ -60,6 +72,7 @@ pub async fn run_active_scan(
         }
         origins.insert(origin);
     }
+    let mut takeover = 0;
     for origin in &origins {
         if client.stopped() {
             break;
@@ -72,8 +85,16 @@ pub async fn run_active_scan(
             client.record_check("api_cors", usize::from(found.is_some()));
             findings.extend(found);
         }
+        if takeover < MAX_TARGETS_PER_CHECK && !client.stopped() {
+            takeover += 1;
+            let found = check_subdomain_takeover(&client, origin, session).await;
+            client.record_check("subdomain_takeover", usize::from(found.is_some()));
+            findings.extend(found);
+        } else if takeover >= MAX_TARGETS_PER_CHECK {
+            client.update(|c| c.target_limit_reached = true);
+        }
     }
-    let (mut fuzz, mut redirects, mut access, mut expressions) = (0, 0, 0, 0);
+    let mut budget = Budget::default();
     for ep in eligible {
         if client.stopped() {
             break;
@@ -83,58 +104,143 @@ pub async fn run_active_scan(
         if params.len() != all_params.len() {
             client.update(|c| c.parameter_limit_reached = true);
         }
-        if let Some(index) = redirect_parameter(params) {
-            if redirects < MAX_TARGETS_PER_CHECK {
-                redirects += 1;
-                let found =
-                    check_open_redirect(&client, &ep.url, index, &params[index].0, session).await;
-                client.record_check("open_redirect", usize::from(found.is_some()));
-                findings.extend(found);
-            } else {
-                client.update(|c| c.target_limit_reached = true);
-            }
-        }
-        if !params.is_empty() {
-            if fuzz < MAX_TARGETS_PER_CHECK {
-                fuzz += 1;
-                let found = check_param_fuzz(&client, &ep.url, params, session).await;
-                client.record_check("parameter_fuzz", found.len());
-                findings.extend(found);
-            } else {
-                client.update(|c| c.target_limit_reached = true);
-            }
-            if expressions < MAX_TARGETS_PER_CHECK && !client.stopped() {
-                expressions += 1;
-                let found = check_expressions(&client, &ep.url, params, session).await;
-                client.record_check("template_arithmetic", found.len());
-                findings.extend(found);
-            } else if expressions >= MAX_TARGETS_PER_CHECK {
-                client.update(|c| c.target_limit_reached = true);
-            }
-        }
-        if !opsec.auth.is_empty()
-            && has_identifier_segment(&ep.url)
-            && has_query_credentials(&ep.url)
-        {
-            client.update(|c| c.skipped_query_auth += 1);
-        }
-        if !opsec.auth.is_empty()
-            && has_identifier_segment(&ep.url)
-            && !has_query_credentials(&ep.url)
-        {
-            if access < MAX_TARGETS_PER_CHECK && !client.stopped() {
-                access += 1;
-                let found = check_idor(&client, &ep.url, session).await;
-                client.record_check("anonymous_access", usize::from(found.is_some()));
-                findings.extend(found);
-            } else if access >= MAX_TARGETS_PER_CHECK {
-                client.update(|c| c.target_limit_reached = true);
-            }
-        }
+        findings
+            .extend(classic_checks(&client, opsec, &ep.url, params, &mut budget, session).await);
+        findings.extend(recon_checks(&client, &ep.url, params, &mut budget, session).await);
     }
     let record = coverage_finding(session, client.coverage());
     findings.push(record);
     Ok(findings)
+}
+
+/// Per-endpoint target counters, so each check is independently capped at
+/// `MAX_TARGETS_PER_CHECK` across the whole scan.
+#[derive(Default)]
+struct Budget {
+    fuzz: usize,
+    redirects: usize,
+    access: usize,
+    expressions: usize,
+    traversal: usize,
+    crlf: usize,
+    ssrf: usize,
+    pollution: usize,
+    graphql: usize,
+}
+
+/// The original SQLi/XSS/open-redirect/SSTI/IDOR checks for one endpoint.
+async fn classic_checks(
+    client: &ProbeClient<'_>,
+    opsec: &OpsecConfig,
+    url: &str,
+    params: &[(String, String)],
+    budget: &mut Budget,
+    session: SessionId,
+) -> Vec<Finding> {
+    let mut findings = Vec::new();
+    if let Some(index) = redirect_parameter(params) {
+        if budget.redirects < MAX_TARGETS_PER_CHECK {
+            budget.redirects += 1;
+            let found = check_open_redirect(client, url, index, &params[index].0, session).await;
+            client.record_check("open_redirect", usize::from(found.is_some()));
+            findings.extend(found);
+        } else {
+            client.update(|c| c.target_limit_reached = true);
+        }
+    }
+    if !params.is_empty() {
+        if budget.fuzz < MAX_TARGETS_PER_CHECK {
+            budget.fuzz += 1;
+            let found = check_param_fuzz(client, url, params, session).await;
+            client.record_check("parameter_fuzz", found.len());
+            findings.extend(found);
+        } else {
+            client.update(|c| c.target_limit_reached = true);
+        }
+        if budget.expressions < MAX_TARGETS_PER_CHECK && !client.stopped() {
+            budget.expressions += 1;
+            let found = check_expressions(client, url, params, session).await;
+            client.record_check("template_arithmetic", found.len());
+            findings.extend(found);
+        } else if budget.expressions >= MAX_TARGETS_PER_CHECK {
+            client.update(|c| c.target_limit_reached = true);
+        }
+    }
+    if !opsec.auth.is_empty() && has_identifier_segment(url) && has_query_credentials(url) {
+        client.update(|c| c.skipped_query_auth += 1);
+    }
+    if !opsec.auth.is_empty() && has_identifier_segment(url) && !has_query_credentials(url) {
+        if budget.access < MAX_TARGETS_PER_CHECK && !client.stopped() {
+            budget.access += 1;
+            let found = check_idor(client, url, session).await;
+            client.record_check("anonymous_access", usize::from(found.is_some()));
+            findings.extend(found);
+        } else if budget.access >= MAX_TARGETS_PER_CHECK {
+            client.update(|c| c.target_limit_reached = true);
+        }
+    }
+    findings
+}
+
+/// The recon-style checks (CRLF, traversal, SSRF signal, prototype pollution,
+/// GraphQL introspection) for one endpoint, each capped independently.
+async fn recon_checks(
+    client: &ProbeClient<'_>,
+    url: &str,
+    params: &[(String, String)],
+    budget: &mut Budget,
+    session: SessionId,
+) -> Vec<Finding> {
+    let mut findings = Vec::new();
+    if !params.is_empty() {
+        if budget.crlf < MAX_TARGETS_PER_CHECK && !client.stopped() {
+            budget.crlf += 1;
+            let found = check_crlf(client, url, params, session).await;
+            client.record_check("crlf_injection", found.len());
+            findings.extend(found);
+        } else if budget.crlf >= MAX_TARGETS_PER_CHECK {
+            client.update(|c| c.target_limit_reached = true);
+        }
+        if has_file_param(params) {
+            if budget.traversal < MAX_TARGETS_PER_CHECK && !client.stopped() {
+                budget.traversal += 1;
+                let found = check_path_traversal(client, url, params, session).await;
+                client.record_check("path_traversal", found.len());
+                findings.extend(found);
+            } else if budget.traversal >= MAX_TARGETS_PER_CHECK {
+                client.update(|c| c.target_limit_reached = true);
+            }
+        }
+        if has_url_param(params) {
+            if budget.ssrf < MAX_TARGETS_PER_CHECK && !client.stopped() {
+                budget.ssrf += 1;
+                let found = check_ssrf(client, url, params, session).await;
+                client.record_check("ssrf_signal", found.len());
+                findings.extend(found);
+            } else if budget.ssrf >= MAX_TARGETS_PER_CHECK {
+                client.update(|c| c.target_limit_reached = true);
+            }
+        }
+    }
+    if budget.pollution < MAX_TARGETS_PER_CHECK && !client.stopped() {
+        budget.pollution += 1;
+        let found = check_prototype_pollution(client, url, session).await;
+        client.record_check("prototype_pollution", usize::from(found.is_some()));
+        findings.extend(found);
+    } else if budget.pollution >= MAX_TARGETS_PER_CHECK {
+        client.update(|c| c.target_limit_reached = true);
+    }
+    if is_graphql_endpoint(url) {
+        if budget.graphql < MAX_TARGETS_PER_CHECK && !client.stopped() {
+            budget.graphql += 1;
+            let found = check_graphql_introspection(client, url, session).await;
+            client.record_check("graphql_introspection", usize::from(found.is_some()));
+            findings.extend(found);
+        } else if budget.graphql >= MAX_TARGETS_PER_CHECK {
+            client.update(|c| c.target_limit_reached = true);
+        }
+    }
+    findings
 }
 
 fn scoped_endpoints<'a>(

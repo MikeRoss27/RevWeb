@@ -12,9 +12,12 @@ use std::collections::BTreeSet;
 use webrev_core::{Confidence, Finding, FindingKind, Provenance, Sanitizer, SessionKey, Source};
 
 mod heuristics;
+mod jwt;
 mod patterns;
 #[cfg(test)]
 mod tests;
+
+pub use jwt::JwtExtractor;
 
 use heuristics::{
     distinct_chars, is_common_false_positive, is_hex_digest, is_mixed, near_secret_keyword,

@@ -66,17 +66,12 @@ impl PipelineBuilder {
     /// Run the pipeline to completion, seeding the first stage with `seed`.
     ///
     /// Returns once every stage task has joined.
-    pub async fn run(
-        self,
-        ctx: StageContext,
-        seed: Vec<PipelineItem>,
-    ) -> Result<PipelineSummary> {
+    pub async fn run(self, ctx: StageContext, seed: Vec<PipelineItem>) -> Result<PipelineSummary> {
         let n = self.stages.len();
         if n == 0 {
             return Err(WebrevError::Pipeline("pipeline has no stages".into()));
         }
-        let stage_names: Vec<String> =
-            self.stages.iter().map(|s| s.name().to_string()).collect();
+        let stage_names: Vec<String> = self.stages.iter().map(|s| s.name().to_string()).collect();
 
         // n+1 channels: txs[0]/rxs[0] feeds stage 0; rxs[n] is the drained tail.
         let mut txs = Vec::with_capacity(n + 1);
@@ -92,11 +87,7 @@ impl PipelineBuilder {
         let mut final_rx = rxs.pop().expect("n+1 >= 2 receivers exist"); // rxs[i] is IN for stage i
 
         let mut join: JoinSet<(&'static str, Result<()>)> = JoinSet::new();
-        for (stage, (in_rx, out_tx)) in self
-            .stages
-            .into_iter()
-            .zip(rxs.into_iter().zip(txs))
-        {
+        for (stage, (in_rx, out_tx)) in self.stages.into_iter().zip(rxs.into_iter().zip(txs)) {
             let ctx = ctx.clone();
             let events = self.events.clone();
             join.spawn(async move {

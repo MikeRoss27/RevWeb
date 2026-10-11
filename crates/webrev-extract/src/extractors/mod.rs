@@ -8,5 +8,8 @@ pub use endpoints::{
     GraphQlExtractor, HtmlExtractor, JsAstExtractor, JsRegexExtractor, SourceMapExtractor,
     SpaRouteExtractor,
 };
-pub use metadata::{ConfigExtractor, ManifestExtractor, ParamExtractor, TechExtractor};
-pub use secrets::SecretExtractor;
+pub use metadata::{
+    BucketExtractor, ConfigExtractor, CspExtractor, DomSinkExtractor, ManifestExtractor,
+    ParamExtractor, TechExtractor,
+};
+pub use secrets::{JwtExtractor, SecretExtractor};

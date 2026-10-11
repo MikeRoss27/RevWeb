@@ -2,9 +2,10 @@
 //! The priority-ordered collection of extractors.
 
 use crate::extractors::{
-    inline_scripts, ConfigExtractor, GraphQlExtractor, HtmlExtractor, JsAstExtractor,
-    JsRegexExtractor, ManifestExtractor, ParamExtractor, SecretExtractor, SourceMapExtractor,
-    SpaRouteExtractor, TechExtractor,
+    inline_scripts, BucketExtractor, ConfigExtractor, CspExtractor, DomSinkExtractor,
+    GraphQlExtractor, HtmlExtractor, JsAstExtractor, JsRegexExtractor, JwtExtractor,
+    ManifestExtractor, ParamExtractor, SecretExtractor, SourceMapExtractor, SpaRouteExtractor,
+    TechExtractor,
 };
 use crate::traits::{ContentKind, ExtractInput, Extractor};
 use webrev_core::Finding;
@@ -42,6 +43,10 @@ impl ExtractorRegistry {
         reg.register(Box::new(ParamExtractor::new()));
         reg.register(Box::new(ConfigExtractor::new()));
         reg.register(Box::new(ManifestExtractor::new()));
+        reg.register(Box::new(BucketExtractor::new()));
+        reg.register(Box::new(JwtExtractor::new()));
+        reg.register(Box::new(DomSinkExtractor::new()));
+        reg.register(Box::new(CspExtractor::new()));
         reg
     }
 
@@ -102,7 +107,8 @@ mod tests {
         let names = reg.names();
         // Descending priority: js-ast (90), html (80), js-regex (70),
         // secret (65), sourcemap (60), tech (55), graphql (52), routes (50),
-        // params (48), config (47), manifest (45).
+        // params (48), config (47), manifest (45), buckets (44), jwt (43),
+        // dom-sinks (42), csp (41).
         assert_eq!(
             names,
             vec![
@@ -116,7 +122,11 @@ mod tests {
                 "routes",
                 "params",
                 "config",
-                "manifest"
+                "manifest",
+                "buckets",
+                "jwt",
+                "dom-sinks",
+                "csp"
             ]
         );
     }

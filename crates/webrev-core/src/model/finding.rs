@@ -322,14 +322,20 @@ fn vulnerability_severity(value: &str) -> Severity {
     } else if v.contains("sql injection")
         || v.contains("exposed sensitive file")
         || v.contains("template expression evaluation")
+        || v.contains("path traversal")
+        || v.contains("subdomain takeover")
     {
         Severity::High
     } else if v.contains("open redirect")
         || v.contains("reflected parameter")
         || v.contains("cors misconfiguration")
+        || v.contains("crlf")
+        || v.contains("graphql introspection")
     {
         Severity::Medium
     } else {
+        // SSRF-sink and prototype-pollution leads, missing headers/cookies and
+        // other advisory observations remain Low until confirmed dynamically.
         Severity::Low
     }
 }
@@ -419,6 +425,41 @@ mod tests {
         );
         assert_eq!(
             mk_vuln("missing security header(s): X-Frame-Options").severity(),
+            Severity::Low
+        );
+        // Active checks added later map through the same marker phrases.
+        assert_eq!(
+            mk_vuln(
+                "possible path traversal / local file inclusion: /etc/passwd contents returned for 'file' parameter"
+            )
+            .severity(),
+            Severity::High
+        );
+        assert_eq!(
+            mk_vuln("possible subdomain takeover (GitHub Pages)").severity(),
+            Severity::High
+        );
+        assert_eq!(
+            mk_vuln(
+                "possible CRLF / header injection: injected response header observed via 'q' parameter"
+            )
+            .severity(),
+            Severity::Medium
+        );
+        assert_eq!(
+            mk_vuln("graphql introspection enabled: __schema returned over GET").severity(),
+            Severity::Medium
+        );
+        assert_eq!(
+            mk_vuln("possible SSRF sink: parameter accepts a URL ('url', URL value reflected in response)")
+                .severity(),
+            Severity::Low
+        );
+        assert_eq!(
+            mk_vuln(
+                "possible prototype pollution: server error triggered by '__proto__[webrevpp]=1'"
+            )
+            .severity(),
             Severity::Low
         );
 

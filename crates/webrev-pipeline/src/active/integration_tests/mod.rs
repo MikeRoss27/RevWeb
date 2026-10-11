@@ -2,6 +2,7 @@
 mod fixture;
 mod limits;
 mod proofs;
+mod recon;
 
 use super::*;
 use fixture::{Fixture, Reply};
