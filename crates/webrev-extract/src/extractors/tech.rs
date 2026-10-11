@@ -32,7 +32,9 @@ const SIGNATURES: &[Signature] = &[
     // --- BaaS / auth / DB-as-a-service ---
     Signature { name: "Supabase", category: "baas/db", markers: &["supabase.co", "supabase.in", "supabase-js", "supabase"] },
     Signature { name: "Firebase", category: "baas/db", markers: &["firebaseio.com", "firebaseapp.com", "firestore", "identitytoolkit", "firebase"] },
-    Signature { name: "AWS Amplify/Cognito", category: "baas/db", markers: &["cognito-idp", "amazon-cognito", "aws-amplify", "amazonaws.com"] },
+    // `amazonaws.com` deliberately excluded: any S3-hosted image/font/CDN
+    // asset would otherwise mis-fingerprint the whole stack as Amplify/Cognito.
+    Signature { name: "AWS Amplify/Cognito", category: "baas/db", markers: &["cognito-idp", "amazon-cognito", "aws-amplify"] },
     Signature { name: "Hasura", category: "baas/db", markers: &["x-hasura", "/v1/graphql", "hasura"] },
     Signature { name: "MongoDB Atlas/Realm", category: "baas/db", markers: &["mongodb-realm", "realm.mongodb.com", "mongodb.net"] },
     Signature { name: "PlanetScale", category: "db", markers: &["psdb.cloud", "planetscale"] },
@@ -52,13 +54,18 @@ const SIGNATURES: &[Signature] = &[
     // --- Hosting / edge ---
     Signature { name: "Vercel", category: "hosting", markers: &["vercel.app", "/_vercel/", "x-vercel-id"] },
     Signature { name: "Netlify", category: "hosting", markers: &["netlify.app", "netlify"] },
-    Signature { name: "Cloudflare", category: "edge", markers: &["/cdn-cgi/", "cloudflare", "cf-ray"] },
-    Signature { name: "CloudFront", category: "edge", markers: &["x-amz-cf-id", "cloudfront"] },
-    Signature { name: "Fastly", category: "edge", markers: &["x-served-by: cache", "x-fastly", "fastly"] },
-    Signature { name: "Akamai", category: "edge", markers: &["x-akamai", "akamai"] },
+    // Bare "cloudflare"/"cloudfront"/"fastly"/"akamai"/"nginx"/"apache" are
+    // deliberately excluded below: a page merely *mentioning* the word (a
+    // blog post, a cookie-consent banner naming Cloudflare) would otherwise
+    // mis-fingerprint the stack. The header-prefixed markers are the
+    // low-noise signal; keep to those.
+    Signature { name: "Cloudflare", category: "edge", markers: &["/cdn-cgi/", "cf-ray"] },
+    Signature { name: "CloudFront", category: "edge", markers: &["x-amz-cf-id"] },
+    Signature { name: "Fastly", category: "edge", markers: &["x-served-by: cache", "x-fastly"] },
+    Signature { name: "Akamai", category: "edge", markers: &["x-akamai"] },
     // --- Backend servers / stacks (mostly from response headers) ---
-    Signature { name: "nginx", category: "server", markers: &["server: nginx", "nginx"] },
-    Signature { name: "Apache", category: "server", markers: &["server: apache", "apache"] },
+    Signature { name: "nginx", category: "server", markers: &["server: nginx"] },
+    Signature { name: "Apache", category: "server", markers: &["server: apache"] },
     Signature { name: "Caddy", category: "server", markers: &["server: caddy"] },
     Signature { name: "Express", category: "backend", markers: &["x-powered-by: express"] },
     Signature { name: "PHP", category: "backend", markers: &["x-powered-by: php", "php/"] },
@@ -166,6 +173,19 @@ mod tests {
     #[test]
     fn no_false_positive_on_plain_text() {
         assert!(detect(None, "just some ordinary text content").is_empty());
+    }
+
+    #[test]
+    fn no_false_positive_from_mentioning_edge_vendor_names() {
+        // A page that merely *mentions* these vendors (blog post, a
+        // cookie-consent banner naming Cloudflare, an S3-hosted image url)
+        // must not mis-fingerprint the stack.
+        let values = detect(
+            Some("https://blog.example/post"),
+            "This site uses Cloudflare and is served from an nginx box behind \
+             Akamai and Fastly, with assets on https://cdn.example.s3.amazonaws.com/img.png.",
+        );
+        assert!(values.is_empty(), "got: {values:?}");
     }
 
     #[test]

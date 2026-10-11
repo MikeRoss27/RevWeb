@@ -30,19 +30,25 @@ const REQUEST_TIMEOUT: Duration = Duration::from_secs(15);
 /// reflection, not coincidental page content.
 const FUZZ_MARKER: &str = "wrvFuzz9f3aQ<>";
 
-/// Narrow, well-known error-based `SQLi` tells, checked after the fuzz probe.
-/// Deliberately short to keep false positives low.
-const SQL_ERROR_SIGNS: &[&str] = &[
-    "sql syntax",
+/// Database-specific error tells: on their own they're strong enough to
+/// qualify as a `SQLi` signal (no other parser produces these exact strings).
+const SQL_ERROR_SIGNS_STRONG: &[&str] = &[
     "mysql_fetch",
     "ora-01756",
     "sqlite3::",
     "pg_query()",
-    "unclosed quotation mark",
-    "syntax error at or near",
     "odbc sql server driver",
     "sqlstate[",
     "pdoexception",
+];
+/// Generic-sounding error phrases: plausible from a non-SQL parser (e.g. a
+/// GraphQL/JSON parser's own "syntax error" message) choking on the same
+/// quote/bracket probe, so these alone don't qualify — only paired with a
+/// server-error status on the fuzzed request.
+const SQL_ERROR_SIGNS_GENERIC: &[&str] = &[
+    "sql syntax",
+    "unclosed quotation mark",
+    "syntax error at or near",
 ];
 
 /// A handful of well-known sensitive paths, checked once per origin. This is
@@ -219,6 +225,20 @@ fn has_identifier_segment(url: &str) -> bool {
         .any(|seg| (!seg.is_empty() && seg.bytes().all(|b| b.is_ascii_digit())) || looks_like_uuid(seg))
 }
 
+/// Heuristic for "this looks like an API/XHR endpoint, not a page" — used to
+/// pick a second, more CORS-relevant target per origin beyond the root.
+fn looks_like_api_endpoint(url: &str) -> bool {
+    let path = url.split(['?', '#']).next().unwrap_or(url);
+    let lower = url.to_ascii_lowercase();
+    lower.contains("/api/")
+        || lower.contains("/rest/")
+        || lower.contains("/graphql")
+        || std::path::Path::new(path)
+            .extension()
+            .is_some_and(|ext| ext.eq_ignore_ascii_case("json"))
+        || url.contains('?')
+}
+
 fn looks_like_uuid(seg: &str) -> bool {
     let parts: Vec<&str> = seg.split('-').collect();
     parts.len() == 5
@@ -343,15 +363,22 @@ async fn check_sensitive_files(
 ) -> Vec<Finding> {
     let mut findings = Vec::new();
     let baseline_url = format!("{origin}/{NONEXISTENT_PROBE_PATH}");
-    let baseline = apply_headers(client.get(&baseline_url), auth_headers)
+    // If the baseline itself can't be fetched, there is nothing to compare
+    // against: treating that as "distinct" would flag every reachable
+    // sensitive path as exposed. Skip the whole sweep for this origin
+    // instead of risking a false-positive storm.
+    let Ok(baseline_resp) = apply_headers(client.get(&baseline_url), auth_headers)
         .send()
         .await
-        .ok();
-    let baseline_status = baseline.as_ref().map(|r| r.status().as_u16());
-    let baseline_len = match baseline {
-        Some(r) => r.text().await.unwrap_or_default().len(),
-        None => 0,
+    else {
+        return findings;
     };
+    let baseline_status = baseline_resp.status().as_u16();
+    let Ok(baseline_body) = baseline_resp.text().await else {
+        return findings;
+    };
+    let baseline_len = normalized_len(&baseline_body, NONEXISTENT_PROBE_PATH);
+
     for path in SENSITIVE_PATHS {
         let url = format!("{origin}/{path}");
         let Ok(resp) = apply_headers(client.get(&url), auth_headers).send().await else {
@@ -359,8 +386,12 @@ async fn check_sensitive_files(
         };
         let status = resp.status();
         let Ok(body) = resp.text().await else { continue };
-        let looks_distinct =
-            baseline_status != Some(status.as_u16()) || body.len().abs_diff(baseline_len) > 32;
+        // Strip the requested path from both bodies before comparing
+        // length: many servers echo it into their error page ("The
+        // requested URL /x was not found"), which otherwise makes the
+        // length diff mostly a function of path length, not exposure.
+        let len = normalized_len(&body, path);
+        let looks_distinct = status.as_u16() != baseline_status || len.abs_diff(baseline_len) > 32;
         if status.is_success() && looks_distinct && !body.trim().is_empty() {
             findings.push(vuln_finding(
                 session,
@@ -371,6 +402,13 @@ async fn check_sensitive_files(
         }
     }
     findings
+}
+
+/// Body length with every occurrence of `needle` (typically the requested
+/// path) stripped first, so a server that echoes the path into an error page
+/// doesn't make the comparison mostly measure path length.
+fn normalized_len(body: &str, needle: &str) -> usize {
+    body.replace(needle, "").len()
 }
 
 /// Origin-level checks: missing security headers, cookie flags, CORS
@@ -464,13 +502,18 @@ async fn check_param_fuzz(
         .collect();
     let url = rebuild_query(base, &fuzzed);
     let resp = apply_headers(client.get(&url), auth_headers).send().await.ok()?;
+    let status = resp.status();
     let body = resp.text().await.ok()?;
     let lower = body.to_ascii_lowercase();
 
     let mut findings = Vec::new();
-    let sql_error_signal = SQL_ERROR_SIGNS.iter().any(|sig| lower.contains(sig))
-        && !SQL_ERROR_SIGNS.iter().any(|sig| baseline_lower.contains(sig));
-    if sql_error_signal {
+    let already_in_baseline = |sig: &&str| baseline_lower.contains(*sig);
+    let strong_hit = SQL_ERROR_SIGNS_STRONG.iter().any(|sig| lower.contains(sig))
+        && !SQL_ERROR_SIGNS_STRONG.iter().any(already_in_baseline);
+    let generic_hit = status.is_server_error()
+        && SQL_ERROR_SIGNS_GENERIC.iter().any(|sig| lower.contains(sig))
+        && !SQL_ERROR_SIGNS_GENERIC.iter().any(already_in_baseline);
+    if strong_hit || generic_hit {
         findings.push(vuln_finding(
             session,
             &url,
@@ -493,10 +536,38 @@ async fn check_param_fuzz(
     }
 }
 
-/// IDOR-lite: does the same URL still return a successful, similarly-sized
-/// response with no authentication material attached at all? This does not
-/// require a second identity — just comparing "with the mission's auth" to
-/// "with none".
+/// Collapse digit runs (ids/timestamps) and drop whitespace, so two
+/// responses sharing the same structure but different dynamic values
+/// compare equal, while a materially different payload (e.g. a generic
+/// `{"error":"unauthorized"}` wrapper that coincidentally lands within the
+/// length tolerance) does not. Capped so a huge body can't blow up the
+/// comparison cost.
+fn response_shape(body: &str) -> String {
+    let mut out = String::with_capacity(body.len().min(4096));
+    let mut last_was_digit = false;
+    for c in body.chars().take(4096) {
+        if c.is_whitespace() {
+            continue;
+        }
+        if c.is_ascii_digit() {
+            if !last_was_digit {
+                out.push('0');
+            }
+            last_was_digit = true;
+        } else {
+            out.push(c);
+            last_was_digit = false;
+        }
+    }
+    out
+}
+
+/// IDOR-lite: does the same URL still return a successful response, similar
+/// in both size and structure, with no authentication material attached at
+/// all? This does not require a second identity — just comparing "with the
+/// mission's auth" to "with none". Requiring both a length match *and* a
+/// structural (shape) match keeps a same-length-but-different-content
+/// response (e.g. a generic error wrapper) from false-positiving.
 async fn check_idor(
     client: &reqwest::Client,
     auth_headers: &[(String, String)],
@@ -507,16 +578,20 @@ async fn check_idor(
     if !authed.status().is_success() {
         return None;
     }
-    let authed_len = authed.text().await.ok()?.len();
+    let authed_body = authed.text().await.ok()?;
+    if authed_body.trim().is_empty() {
+        return None;
+    }
 
     let anon = client.get(url).send().await.ok()?;
     if !anon.status().is_success() {
         return None;
     }
-    let anon_len = anon.text().await.ok()?.len();
+    let anon_body = anon.text().await.ok()?;
 
-    let close_enough = authed_len.abs_diff(anon_len) <= (authed_len / 10).max(16);
-    if close_enough {
+    let len_close = authed_body.len().abs_diff(anon_body.len()) <= (authed_body.len() / 10).max(16);
+    let shape_matches = response_shape(&authed_body) == response_shape(&anon_body);
+    if len_close && shape_matches {
         Some(idor_finding(
             session,
             url,
@@ -551,19 +626,32 @@ pub async fn run_active_scan(
     let auth_headers = opsec.auth.effective_headers();
     let mut findings = Vec::new();
 
+    // Most real CORS misconfigurations live on an API route's response, not
+    // the site root, so track one API-looking endpoint per origin (first
+    // seen) to probe in addition to the root.
     let mut origins: BTreeSet<String> = BTreeSet::new();
+    let mut api_endpoint_by_origin: std::collections::BTreeMap<String, String> =
+        std::collections::BTreeMap::new();
     for ep in endpoints {
-        if scope.allows(&ep.url) {
-            if let Some(origin) = origin_of(&ep.url) {
-                origins.insert(origin);
-            }
+        if !scope.allows(&ep.url) {
+            continue;
         }
+        let Some(origin) = origin_of(&ep.url) else { continue };
+        if looks_like_api_endpoint(&ep.url) {
+            api_endpoint_by_origin
+                .entry(origin.clone())
+                .or_insert_with(|| ep.url.clone());
+        }
+        origins.insert(origin);
     }
     for origin in &origins {
         if cancel.is_cancelled() {
             return Ok(findings);
         }
         findings.extend(check_origin(&client, &auth_headers, origin, session).await);
+        if let Some(api_url) = api_endpoint_by_origin.get(origin) {
+            findings.extend(check_cors(&client, &auth_headers, api_url, session).await);
+        }
         sleep_with_jitter(opsec, 0).await;
     }
 
@@ -656,6 +744,33 @@ mod tests {
             "https://ex.com/orders/550e8400-e29b-41d4-a716-446655440000"
         ));
         assert!(!has_identifier_segment("https://ex.com/about"));
+    }
+
+    #[test]
+    fn normalized_len_strips_echoed_path() {
+        let body_a = "404: /__webrev_probe_9f3aqxnever__ was not found";
+        let body_b = "404: /.env was not found";
+        assert_eq!(
+            normalized_len(body_a, NONEXISTENT_PROBE_PATH),
+            normalized_len(body_b, ".env")
+        );
+    }
+
+    #[test]
+    fn response_shape_ignores_digits_and_whitespace_but_not_structure() {
+        let a = response_shape(r#"{"id": 42, "name": "x"}"#);
+        let b = response_shape(r#"{"id":  9001, "name": "x"}"#);
+        assert_eq!(a, b);
+        let unauthorized = response_shape(r#"{"error":"unauthorized"}"#);
+        assert_ne!(a, unauthorized);
+    }
+
+    #[test]
+    fn api_endpoint_heuristic() {
+        assert!(looks_like_api_endpoint("https://ex.com/api/users"));
+        assert!(looks_like_api_endpoint("https://ex.com/data.json"));
+        assert!(looks_like_api_endpoint("https://ex.com/search?q=x"));
+        assert!(!looks_like_api_endpoint("https://ex.com/about"));
     }
 
     #[test]

@@ -28,8 +28,15 @@ impl ParamExtractor {
             form_field: compile(
                 r#"(?i)<(?:input|select|textarea)\b[^>]*\bname\s*=\s*["']([^"']+)["']"#,
             ),
-            // Quoted object/JSON keys: `"userId":` (quoted only, to stay precise).
-            json_key: compile(r#"["']([A-Za-z_$][A-Za-z0-9_$\-.]{1,60})["']\s*:"#),
+            // Quoted object/JSON keys: `"userId":` (quoted only, to stay
+            // precise). Requires the quote to be preceded by `{`/`,`/start
+            // of input (an object-literal key position) rather than bare on
+            // `"...":`, so a JS ternary (`cond ? "yes" : "no"`) — whose
+            // branches are *also* `"quoted string" :`-shaped — doesn't get
+            // its branch values reported as bogus parameter names.
+            json_key: compile(
+                r#"(?:^|[{,])\s*["']([A-Za-z_$][A-Za-z0-9_$\-.]{1,60})["']\s*:"#,
+            ),
         }
     }
 
@@ -122,5 +129,19 @@ mod tests {
         sorted.sort();
         sorted.dedup();
         assert_eq!(sorted.len(), names.len());
+    }
+
+    #[test]
+    fn ternary_branches_are_not_reported_as_parameters() {
+        let js = r#"const label = cond ? "yes" : "no"; const o = {"realKey": 1};"#;
+        let input = ExtractInput::new(SessionId::new(), None, ContentKind::JavaScript, js);
+        let names: Vec<String> = ParamExtractor::new()
+            .extract(&input)
+            .into_iter()
+            .map(|f| f.value)
+            .collect();
+        assert!(!names.contains(&"yes".to_owned()), "got: {names:?}");
+        assert!(!names.contains(&"no".to_owned()), "got: {names:?}");
+        assert!(names.contains(&"realKey".to_owned()), "got: {names:?}");
     }
 }
