@@ -67,7 +67,7 @@ impl BrowserProfile {
     /// cheapest headless tells so legitimate analysis is not refused.
     #[must_use]
     pub fn init_script(&self) -> String {
-        let vendor = if self.fingerprint_seed % 2 == 0 {
+        let vendor = if self.fingerprint_seed.is_multiple_of(2) {
             "Intel Inc."
         } else {
             "Google Inc."

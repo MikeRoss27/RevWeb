@@ -14,7 +14,7 @@ too.
 | `parameter` | Query name, JSON key, or form field (fuzz wordlist) | `userId` |
 | `route` | Client-side SPA router path | `/users/:id` |
 | `graphql` | Named GraphQL operation | `query CurrentUser` |
-| `secret` | Credential, stored as a fingerprint (plaintext only with `--reveal-secrets`) | `fp:1a2b3c…` |
+| `secret` | Credential with plaintext and a deduplication fingerprint | `plaintext: AKIA…`, `value: fp:1a2b3c…` |
 | `sourcemap` | `sourceMappingURL` reference | `app.js.map` |
 | `technology` | Framework / BaaS / server fingerprint | `Supabase (baas/db)` |
 | `form` | HTML form action + method | `POST /login` |
@@ -42,13 +42,21 @@ Listed by descending priority (higher runs first):
 | `params` | 48 | HTML + JS | Query names, JSON keys, form field names. |
 | `config` | 47 | JS | Embedded config objects/constants whose key reads as a flag or setting (`featureFlag`, `DEBUG_MODE`, `apiVersion`, …) bound to a literal (swc AST). |
 | `manifest` | 45 | JSON | W3C web app manifests (`start_url`/`scope`/`id`) and build-tool asset manifests (webpack `asset-manifest.json`, Vite `manifest.json`) — surfaces every emitted chunk path, including ones no page links to directly. |
+| `buckets` | 44 | HTML + JS | Exposed cloud storage URLs — AWS S3 (virtual-host, path-style, regional), Google Cloud Storage, Azure Blob → endpoint findings. |
+| `jwt` | 43 | HTML + JS | JWTs (base64url-decoded header/payload, flags `alg:none` and `alg:HS*`), `Bearer` tokens, and token-ish storage assignments → secret findings with plaintext. |
+| `dom-sinks` | 42 | JS | Client-side XSS via lightweight intra-procedural taint: traces tainted sources (`location.*`, `document.cookie`, `window.name`, postMessage `event.data`) into sinks (`innerHTML`, `eval`, `document.write`, `insertAdjacentHTML`, `new Function`, `dangerouslySetInnerHTML`, `location` nav), reporting `source -> sink` at high/medium confidence; untraced sinks, `.wasm` references and origin-less postMessage receivers stay low-confidence leads. |
+| `csp` | 41 | HTML + headers | Passive Content-Security-Policy / security-header **policy** analysis (response headers + `<meta http-equiv>`): `unsafe-inline`/`unsafe-eval`/wildcards, missing `object-src`/`base-uri`, absent CSP, weak Referrer-/Permissions-Policy. Distinct from the active header check. |
+| `ghost` | 40 | JS | "Ghost endpoints" — endpoints/targets inside a client-side access or feature gate (`if (user.isAdmin)`, `if (flags.beta)`, role checks); joins them to the surface plus a note naming the condition that hid them. |
+| `wasm` | 39 | WASM | Recovers the host↔module boundary from a fetched `.wasm` binary: import/export section entries (low-confidence `config` findings) and endpoint-shaped strings found in data segments (low-confidence `endpoint` findings). No execution, disassembly or decompilation — section metadata and literal strings only. |
 
 Note: the **fetch stage** (in `webrev-pipeline`) additionally fetches and parses
 source maps and re-injects the recovered original sources as JS content, so the
 extractors above run over the un-minified code too. It also follows
 `<link rel="manifest">` and `navigator.serviceWorker.register(...)` references
 so manifests and service workers get crawled even though neither is a
-`<script src>` or `<a href>`.
+`<script src>` or `<a href>`. Responses whose URL ends in `.wasm` or whose
+`Content-Type` is `application/wasm` are read as raw bytes (never decoded as
+UTF-8 text) and fed to the `wasm` extractor above instead of the HTML/JS ones.
 
 ## URL normalization
 
@@ -67,20 +75,27 @@ normalized. See `webrev_core::normalize_url`.
 
 ## Secret handling
 
-By default `SecretExtractor` never emits plaintext. Each match is reduced to
+`SecretExtractor` always retains the detected plaintext. Each match also receives
 `fp:<16 hex>` = the first 64 bits of `HMAC-SHA256(session_key, secret)`, where
 the session key is random per run and never persisted. Findings use `url = None`
 so deduplication keys on the fingerprint (distinct secrets stay distinct), and
 the containing file is recorded in the provenance instead.
 
-The opt-in `--reveal-secrets` flag additionally attaches the plaintext to the
-finding (`Finding::plaintext`); the fingerprint stays the `value`, so dedup and
-storage keys are unchanged. This is dangerous — real credentials then reach the
-database and reports — so it is off by default. See [security.md](security.md).
+The plaintext is attached to every secret finding (`Finding::plaintext`) and
+shown in the TUI and JSON/JSONL/CSV reports without an extra flag. The fingerprint
+stays the `value` for deduplication. Sessions exist only in memory; reports are
+exported directly. See [security.md](security.md).
+
+The TUI labels these fields `fingerprint` and `detected` to distinguish the
+deduplication identifier from the raw candidate. Detection does not validate a
+credential against its provider. The `sk-` rule requires a word boundary and a
+random-looking suffix of at least 32 characters; CSS utilities such as
+`mask-image-radial-to-color` must not become critical secret findings. The same
+candidate filter applies to the assignment and entropy passes.
 
 ## Adding an extractor
 
-1. Create `crates/webrev-extract/src/extractors/<name>.rs` implementing the
+1. Create `crates/webrev-extract/src/extractors/<family>/<name>.rs` implementing the
    `Extractor` trait (`name`, `priority`, `applies_to`, `extract`). Keep it pure
    and return an empty `Vec` rather than erroring on "nothing found".
 2. Declare and re-export it in `extractors/mod.rs`.
@@ -92,7 +107,7 @@ database and reports — so it is off by default. See [security.md](security.md)
 
 ## Adding a technology signature
 
-Append one row to the `SIGNATURES` table in `extractors/tech.rs`:
+Append one row to the appropriate stack-layer `SIGNATURES` table in `extractors/metadata/tech/signatures/`:
 
 ```rust
 Signature { name: "Your Tech", category: "baas/db", markers: &["yourtech.io", "your-sdk"] },

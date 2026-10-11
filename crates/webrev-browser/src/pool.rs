@@ -13,7 +13,7 @@ use webrev_core::{Result, WebrevError};
 /// A launched browser plus the task driving its CDP event loop.
 struct BrowserEntry {
     browser: Browser,
-    _handler: JoinHandle<()>,
+    handler: JoinHandle<()>,
 }
 
 /// Bounds the number of live browsers via a semaphore and keeps idle instances
@@ -66,8 +66,33 @@ impl BrowserPool {
         let task = tokio::spawn(async move { while handler.next().await.is_some() {} });
         Ok(BrowserEntry {
             browser,
-            _handler: task,
+            handler: task,
         })
+    }
+
+    /// Gracefully shut the pool down: ask every idle browser to close over CDP
+    /// (`Browser.close`), reap its OS process, then stop its event-loop task.
+    ///
+    /// Call this once the pool is finished with. Letting a
+    /// [`chromiumoxide::Browser`] reach its `Drop` without closing it first
+    /// logs `Browser was not closed manually ...` and kills Chromium abruptly,
+    /// which races the still-running CDP WebSocket handler and surfaces as a
+    /// spurious `WS Connection error: ... ConnectionReset` (WSAECONNRESET /
+    /// 10054 on Windows). Closing first, waiting for exit, then aborting the
+    /// handler avoids both. Errors are ignored: a browser that already exited
+    /// needs no further cleanup.
+    pub async fn shutdown(&self) {
+        let entries: Vec<BrowserEntry> = match self.idle.lock() {
+            Ok(mut idle) => std::mem::take(&mut *idle),
+            Err(_) => return,
+        };
+        for mut entry in entries {
+            // The handler task must stay alive for `close` to round-trip over
+            // CDP, so it is only aborted after the browser has gone away.
+            let _ = entry.browser.close().await;
+            let _ = entry.browser.wait().await;
+            entry.handler.abort();
+        }
     }
 }
 

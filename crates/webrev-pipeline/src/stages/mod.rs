@@ -25,12 +25,12 @@ fn sample_jitter_ms(opsec: &OpsecConfig) -> u64 {
     }
     #[allow(clippy::cast_precision_loss)] // ms magnitudes are tiny; f64 is exact here
     let (lo_f, hi_f) = (lo as f64, hi as f64);
-    let mean = (lo_f + hi_f) / 2.0;
+    let mean = lo_f.midpoint(hi_f);
     let std_dev = (hi_f - lo_f) / 6.0;
     // Normal::new only fails for a non-finite/negative std_dev, impossible here.
     match Normal::new(mean, std_dev) {
         Ok(dist) => {
-            let sample = dist.sample(&mut rand::thread_rng()).clamp(lo_f, hi_f);
+            let sample = dist.sample(&mut rand::rng()).clamp(lo_f, hi_f);
             #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
             {
                 sample.round() as u64

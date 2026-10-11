@@ -7,7 +7,11 @@ use webrev_core::{EgressPolicy, Mission, MissionProfile, OpsecConfig, Scope};
 use webrev_tui::{run, TuiOptions};
 
 #[derive(Parser)]
-#[command(name = "webrev-tui", version, about = "webrev terminal UI")]
+#[command(
+    name = "webrev-tui",
+    version,
+    about = "webrev · interactive web security analysis and testing"
+)]
 struct Args {
     /// Seed URL to analyze (repeatable).
     #[arg(long = "seed", value_name = "URL")]
@@ -18,19 +22,15 @@ struct Args {
     /// Mission name.
     #[arg(long, default_value = "webrev-mission")]
     name: String,
-    /// SQLite database path.
-    #[arg(long, env = "WEBREV_DB", default_value = "webrev.db")]
-    db: PathBuf,
     /// Report output path for the 'r' key.
     #[arg(long, default_value = "webrev-report.json")]
     report: PathBuf,
     /// Optional egress proxy (e.g. http://127.0.0.1:8080).
     #[arg(long, env = "WEBREV_PROXY")]
     proxy: Option<String>,
-    /// Record and show detected secrets in PLAINTEXT (dangerous; off by
-    /// default). See `webrev static --help` for the full warning.
-    #[arg(long, env = "WEBREV_REVEAL_SECRETS")]
-    reveal_secrets: bool,
+    /// Shared active request budget (the a action), including controls.
+    #[arg(long, default_value_t = 200)]
+    max_active_requests: usize,
 }
 
 #[tokio::main]
@@ -47,6 +47,10 @@ async fn main() -> anyhow::Result<()> {
     };
     let mission = Mission::new(args.name, Scope::new(include, vec![]), args.seeds);
     let opsec = OpsecConfig {
+        active: webrev_core::ActiveLimits {
+            max_requests: args.max_active_requests,
+            ..webrev_core::ActiveLimits::default()
+        },
         egress: EgressPolicy {
             proxy: args.proxy,
             allow_direct: true,
@@ -56,9 +60,7 @@ async fn main() -> anyhow::Result<()> {
 
     run(TuiOptions {
         profile: MissionProfile::new(mission, opsec),
-        db_path: args.db,
         report_path: args.report,
-        reveal_secrets: args.reveal_secrets,
     })
     .await
 }

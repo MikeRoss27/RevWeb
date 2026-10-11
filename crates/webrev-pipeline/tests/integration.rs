@@ -45,6 +45,7 @@ async fn pipeline_extracts_and_stores_fixture_findings() {
                 kind: ContentKind::Html,
                 body: html.to_owned(),
                 headers: vec![("Server".to_owned(), "nginx".to_owned())],
+                bytes: None,
             }],
         )
         .await
@@ -71,24 +72,27 @@ async fn pipeline_extracts_and_stores_fixture_findings() {
         endpoints >= 2,
         "expected >= 2 endpoints, got {endpoints}: {stored:#?}"
     );
-    assert!(
-        sourcemaps >= 1,
-        "expected >= 1 sourcemap, got {sourcemaps}"
-    );
+    assert!(sourcemaps >= 1, "expected >= 1 sourcemap, got {sourcemaps}");
 
-    // The embedded AWS-style key is detected and stored as a fingerprint only.
+    // The embedded AWS-style key retains plaintext alongside its dedup fingerprint.
     let secrets: Vec<&webrev_core::Finding> = stored
         .iter()
         .filter(|f| f.kind == FindingKind::Secret)
         .collect();
     assert!(!secrets.is_empty(), "expected >= 1 secret finding");
     for secret in &secrets {
-        assert!(secret.value.starts_with("fp:"), "secret must be a fingerprint");
         assert!(
-            !secret.value.contains("AKIAZ4XB7NMPQR2STUVW"),
-            "plaintext secret must never be persisted"
+            secret.value.starts_with("fp:"),
+            "secret must be a fingerprint"
+        );
+        assert!(
+            secret.plaintext.is_some(),
+            "detected secrets must retain plaintext"
         );
     }
+    assert!(secrets
+        .iter()
+        .any(|secret| { secret.plaintext.as_deref() == Some("AKIAZ4XB7NMPQR2STUVW") }));
 
     // The store stage reports exactly the unique findings it persisted.
     assert_eq!(summary.findings_emitted, stored.len());
@@ -105,7 +109,10 @@ async fn pipeline_extracts_and_stores_fixture_findings() {
             .any(|f| f.kind == kind && f.value.contains(needle))
     };
     assert!(has(FindingKind::Technology, "Supabase"), "tech detection");
-    assert!(has(FindingKind::Technology, "nginx"), "header-based server detection");
+    assert!(
+        has(FindingKind::Technology, "nginx"),
+        "header-based server detection"
+    );
     assert!(has(FindingKind::GraphQl, "CurrentUser"), "graphql op");
     assert!(has(FindingKind::Route, "/dashboard"), "spa route");
 }

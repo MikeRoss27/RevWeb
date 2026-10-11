@@ -1,10 +1,10 @@
 <p align="center">
-  <img src="docs/assets/hero.svg" alt="webrev: web recon, no theater" width="100%">
+  <img src="docs/assets/hero.svg" alt="webrev: Inspect. Probe. Investigate. — static, dynamic and active web security" width="100%">
 </p>
 
 <p align="center">
-  <a href="https://github.com/MikeRoss27/WebRev/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/MikeRoss27/WebRev/ci.yml?branch=main&style=flat-square&label=ci&labelColor=211C1C&color=E5653F"></a>
-  <img alt="Rust 1.82+" src="https://img.shields.io/badge/rust-1.82%2B-E5653F?style=flat-square&labelColor=211C1C">
+  <a href="https://github.com/MikeRoss27/WebRev/actions/workflows/ci.yml"><img alt="CI workflow" src="https://img.shields.io/badge/ci-workflow-E5653F?style=flat-square&labelColor=211C1C"></a>
+  <img alt="Rust 1.89+" src="https://img.shields.io/badge/rust-1.89%2B-E5653F?style=flat-square&labelColor=211C1C">
   <img alt="Platforms" src="https://img.shields.io/badge/platform-linux%20%C2%B7%20windows-FAF4E8?style=flat-square&labelColor=211C1C">
   <img alt="License MIT" src="https://img.shields.io/badge/license-MIT-FAF4E8?style=flat-square&labelColor=211C1C">
 </p>
@@ -20,15 +20,23 @@
 
 <br>
 
-**webrev** maps what a web front end gives away. It crawls in scope, pulls
-endpoints, parameters, routes, GraphQL operations, source maps and secrets out
-of HTML and JavaScript, fingerprints the stack, and can drive a headless
-Chromium to capture live traffic. Results land in SQLite and come back out
-as JSON, URLs or CSV, ready for your next tool. One Rust binary, a CLI and a TUI.
+**webrev** is a **web security analysis and testing toolkit** for application
+assessment, reverse engineering and penetration testing. It combines static code
+inspection, dynamic browser investigation and scoped active security probes.
+
+Discover APIs, routes, parameters, GraphQL operations, source maps, credentials
+and the technology stack. Investigate HTTP and WebSocket traffic, trace calls to
+browser interactions, and probe access controls, CORS, redirects, exposed files
+and injection signals. Findings carry severity, confidence, evidence and source
+locations for triage in the CLI, TUI or structured reports.
+
+Sessions stay in memory; export JSON, JSONL, CSV, URLs or readable text when
+needed. The default `scan` runs static analysis; `--dynamic` adds browser-driven
+investigation and `--active` adds security probes. The TUI exposes all three modes.
 
 > [!WARNING]
-> **Authorized targets only.** The scope is fail-closed and secrets are stored
-> as non-reversible fingerprints, but staying within the bounds of your
+> **Authorized targets only.** The scope is fail-closed. Detected secrets are shown
+> in plaintext in the TUI and reports. Staying within the bounds of your
 > engagement is on you. Read [docs/security.md](docs/security.md) first.
 
 ## Features
@@ -55,7 +63,7 @@ as JSON, URLs or CSV, ready for your next tool. One Rust binary, a CLI and a TUI
     <td valign="top">
       <img src="docs/assets/icons/secret.svg" width="40" height="40" alt=""><br>
       <b>Secret detection</b><br>
-      Known credential shapes plus Shannon-entropy heuristics. Every secret is stored as a truncated HMAC fingerprint, never in plaintext.
+      Known credential shapes plus Shannon-entropy heuristics. Detected secrets are visible in plaintext by default, with fingerprints for deduplication.
     </td>
   </tr>
   <tr>
@@ -79,14 +87,14 @@ as JSON, URLs or CSV, ready for your next tool. One Rust binary, a CLI and a TUI
     <td valign="top">
       <img src="docs/assets/icons/tui.svg" width="40" height="40" alt=""><br>
       <b>Live TUI</b><br>
-      Endpoints / Findings / Logs / Status tabs streaming pipeline events, <code>/</code> filtering, severity sort, internal / external tagging.
+      Endpoints / Findings / Vulns / Secrets / Tech / Logs / Status tabs streaming pipeline events, <code>/</code> filtering, severity sort, internal / external tagging.
     </td>
   </tr>
   <tr>
     <td valign="top">
       <img src="docs/assets/icons/pipe.svg" width="40" height="40" alt=""><br>
       <b>Pipeline-native</b><br>
-      Seeds from stdin, reports as <code>json</code>, <code>jsonl</code>, <code>urls</code> or <code>csv</code>. Data on stdout, chatter on stderr, closed pipes exit cleanly.
+      Seeds from stdin, reports as <code>json</code>, <code>jsonl</code>, <code>urls</code> or <code>csv</code>, a readable <code>text</code> triage view, plus an <code>openapi</code> spec reconstructed from the discovered surface. Data on stdout, chatter on stderr, closed pipes exit cleanly.
     </td>
     <td valign="top">
       <img src="docs/assets/icons/scope.svg" width="40" height="40" alt=""><br>
@@ -96,61 +104,42 @@ as JSON, URLs or CSV, ready for your next tool. One Rust binary, a CLI and a TUI
   </tr>
   <tr>
     <td valign="top" colspan="2">
+      <img src="docs/assets/icons/secret.svg" width="40" height="40" alt=""><br>
+      <b>Deeper static analysis</b><br>
+      Exposed cloud buckets (S3 / GCS / Azure Blob), decoded JWTs (flags <code>alg:none</code> / <code>alg:HS*</code>) and bearer/storage tokens, client-side XSS by lightweight source→sink taint over DOM sinks, passive CSP / security-header policy review, and "ghost" endpoints hidden behind client-side role or feature-flag gates.
+    </td>
+  </tr>
+  <tr>
+    <td valign="top" colspan="2">
       <img src="docs/assets/icons/extract.svg" width="40" height="40" alt=""><br>
       <b>Active scanning</b> (<code>--active</code>, opt-in)<br>
-      Light, capped vulnerability probing over discovered endpoints: missing security headers, cookie flags, CORS reflection, sensitive-file exposure, open redirect, parameter fuzzing, and auth-free (IDOR-lite) access checks. Sends abnormal traffic — authorized targets only.
+      Light, capped vulnerability probing over discovered endpoints: missing security headers, cookie flags, credentialed CORS, content-verified sensitive files, open redirects, per-parameter SQL/XSS signals, differential template arithmetic, auth-free (IDOR-lite) access checks, content-verified path traversal/LFI, CRLF, SSRF and prototype-pollution signals, GraphQL introspection, and per-origin subdomain-takeover fingerprinting. Every attempt consumes the shared request budget; reports include proof tiers and actual coverage. Sends abnormal traffic — authorized targets only.
     </td>
   </tr>
 </table>
 
 ## Install
 
-Requires a recent stable Rust toolchain (edition 2021, Rust ≥ 1.82) and a C
-compiler. SQLite and the TLS backend (rustls / ring) are built from source, so
-no system OpenSSL or libsqlite3 is needed. Dynamic analysis also needs a local
-Chrome / Chromium.
+From a checkout, one command builds and installs **both** the CLI and TUI:
 
-```bash
-git clone https://github.com/MikeRoss27/WebRev.git && cd WebRev
-cargo build --release        # → target/release/webrev and webrev-tui
+```powershell
+# Windows (Rust 1.89+, Visual Studio C++ tools, CMake)
+./scripts/install.ps1
 ```
 
-<details>
-<summary><b>Linux / Arch Linux</b></summary>
-
-<br>
-
-Fully supported: the only build requirement beyond Rust is a C toolchain.
-
-```bash
-# Arch Linux
-sudo pacman -S --needed rustup base-devel   # Rust + gcc
-sudo pacman -S chromium                      # only for `webrev dynamic` / TUI `d`
-
-# Debian / Ubuntu: build-essential + chromium (or chromium-browser)
+```sh
+# Linux/macOS (Rust 1.89+, C compiler, CMake)
+sh scripts/install.sh
 ```
 
-Chromium is auto-detected on `PATH` (`chromium`, `chromium-browser`,
-`google-chrome-stable`, …). For a Flatpak / Snap or custom install, point
-webrev at the binary:
+Already built? Add `-BinaryDir ./target/release` on Windows or
+`--binary-dir ./target/release` on Unix. Downloaded portable bundles use the same
+scripts without a compiler and verify their SHA-256 checksums. The
+`Portable bundles` workflow prepares Windows/Linux/macOS artifacts; these are
+not yet published releases. See [installation and troubleshooting](docs/installation.md).
 
-```bash
-CHROME=/usr/bin/chromium webrev dynamic --seed https://app.example.com/
-```
-
-</details>
-
-<details>
-<summary><b>Development</b></summary>
-
-<br>
-
-```bash
-cargo test --workspace                                 # browser tests are #[ignore]
-cargo clippy --workspace --all-targets -- -D warnings
-```
-
-</details>
+Chromium/Chrome is needed only for dynamic analysis. `CHROME` can point to its
+executable. Static/active HTTP scans work without it.
 
 ## Quick start
 
@@ -163,37 +152,56 @@ $ webrev scan --seed https://app.example.com/
   ████     ▄▄▄▄▄▄▄▄   ██ ▄▄ ██ ██▄▄██ ██  ██ ██▀    ██▄▄██ ▀█▄  ▄█▀
   ████     ████████   ██▄██▄██ ██  ▄▄ ██  ██ ██     ██  ▄▄  ▀█▄▄█▀
   ████     ▀▀▀▀████    ▀▀  ▀▀   ▀▀▀▀  ▀▀▀▀▀  ▀▀      ▀▀▀▀     ▀▀
-  ████         ████   web reconnaissance toolkit · v0.1.0
+  ████         ████   web security toolkit · v0.1.0
   ████         ████   authorized targets only
 ```
 
 ```bash
-# One shot: static crawl + report (add --dynamic for a headless pass)
+# Application assessment: static + browser investigation + active probes
+webrev scan --seed https://app.example.com/ --dynamic --active
+
+# Static inspection + report
 webrev scan --seed https://app.example.com/
+
+# Console triage: discard the session without writing a report
+webrev scan --seed https://app.example.com/ --no-report
 
 # Step by step, with budgets
 webrev static --seed https://app.example.com/ --max-depth 2 --max-pages 200
 webrev report --output report.json
 
 # Authenticated, through an intercepting proxy
-webrev static --seed https://app.example.com/ \
+webrev scan --seed https://app.example.com/ --dynamic --active \
   --cookie "session=…" --header "X-Env: staging" --proxy http://127.0.0.1:8080
 
 # Light active probing over discovered endpoints (opt-in, abnormal traffic)
 webrev scan --seed https://app.example.com/ --active
 
-# Interactive TUI (auto-starts a static scan · s / d / r / Tab / q)
+# Interactive TUI (auto-starts static analysis · s / d / a / r / Tab / q)
 webrev tui --seed https://app.example.com/
+```
+
+Scans show grouped vulnerabilities, full secrets, technologies and attack surface,
+with severity, confidence, evidence and source URLs. The TUI has focused Secrets,
+Vulns and Tech tabs; `a` launches active checks, `Enter` opens scrollable evidence.
+IDOR/XSS/SQLi signals need manual verification. SSTI arithmetic uses two calculated
+results and a payload-free control; OS RCE remains untested. Probe observations
+and incomplete coverage are visible in reports and TUI details. See the
+[research review](docs/active-research.md).
+
+```sh
+webrev report --format text                    # inspect a saved JSON report
+webrev scan --seed https://app.example.com/ --format jsonl --report - | jq .
 ```
 
 ## Pipeline-native
 
-webrev sits in the middle of a recon chain: seeds come in on stdin, results go
+webrev fits into a security testing toolchain: seeds come in on stdin, results go
 out on stdout, and the banner and logs stay on stderr.
 
 ```bash
-# Subdomains in, findings stored
-subfinder -d example.com | httpx -silent | webrev static --scope example.com
+# Subdomains in, static inspection results as JSON Lines on stdout
+subfinder -d example.com | httpx -silent | webrev scan --scope example.com --format jsonl --report -
 
 # In-scope endpoint URLs out, straight into a fuzzer or scanner
 webrev report --format urls --scope internal | ffuf -u FUZZ -w -
@@ -206,7 +214,7 @@ webrev report --format csv --min-severity high --output findings.csv
 ## How it works
 
 <p align="center">
-  <img src="docs/assets/pipeline.svg" alt="webrev pipeline: seeds → fetch → static-extract → store → report; dynamic analysis writes to store; the TUI follows live events" width="100%">
+  <img src="docs/assets/pipeline.svg" alt="webrev: static analysis, dynamic browser investigation and active probes feed an in-memory session, reports and the live TUI" width="100%">
 </p>
 
 Each stage runs in its own tokio task, joined by bounded channels. Extraction is
@@ -217,10 +225,10 @@ store. A Cargo workspace keeps the layers honest:
 | --- | --- |
 | `webrev-core` | Domain model, errors, sanitize / opsec / auth, URL normalization |
 | `webrev-extract` | Pure, synchronous extractors + priority registry (zero I/O) |
-| `webrev-storage` | `Storage` port + SQLite and in-memory backends |
-| `webrev-pipeline` | tokio stage pipeline: fetch → static-extract → store |
-| `webrev-browser` | chromiumoxide: profile, pool, hooks, HAR, dynamic run |
-| `webrev-report` | JSON report + summary counters |
+| `webrev-storage` | `Storage` port + process-local in-memory sessions |
+| `webrev-pipeline` | Crawl, static analysis, active security probes and in-memory storage |
+| `webrev-browser` | Browser interaction, request hooks, HAR and WebSocket capture |
+| `webrev-report` | JSON/JSONL/CSV/URL exports, grouped text triage + counters |
 | `webrev-cli` | The `webrev` binary (clap subcommands) |
 | `webrev-tui` | The `webrev-tui` binary + library (ratatui) |
 
@@ -228,12 +236,17 @@ store. A Cargo workspace keeps the layers honest:
 
 | | Doc | What it covers |
 | --- | --- | --- |
+| <img src="docs/assets/icons/pipe.svg" width="24" alt=""> | [docs/installation.md](docs/installation.md) | One-command install, portable bundles, build prerequisites |
 | <img src="docs/assets/icons/tui.svg" width="24" alt=""> | [docs/usage.md](docs/usage.md) | Commands, flags, env vars, TUI keys, worked examples |
 | <img src="docs/assets/icons/pipe.svg" width="24" alt=""> | [docs/architecture.md](docs/architecture.md) | Workspace layout, crate responsibilities, pipeline data flow |
 | <img src="docs/assets/icons/extract.svg" width="24" alt=""> | [docs/extractors.md](docs/extractors.md) | The extractor catalog, finding kinds, adding your own |
 | <img src="docs/assets/icons/scope.svg" width="24" alt=""> | [docs/security.md](docs/security.md) | Authorization, scope, secret handling, responsible use |
 
 ## Brand
+
+**Web security toolkit · Inspect. Probe. Investigate.** Static inspection, dynamic
+browser investigation and active security testing share the same visual identity.
+See [positioning and asset regeneration](docs/branding.md).
 
 Logo, icons and diagrams live in [docs/assets/](docs/assets/): authored SVGs, text
 outlined, no font dependency. The symbol is a blocky geometric "shifted tool",

@@ -1,6 +1,6 @@
 // crates/webrev-tui/src/events.rs
 //! Key → action mapping. Terminal events are read asynchronously via
-//! `crossterm::event::EventStream` in the event loop (`lib.rs`); this module
+//! `crossterm::event::EventStream` in the event loop (`runtime/mod.rs`); this module
 //! only decodes a key press into a high-level [`Action`].
 
 use crossterm::event::{KeyCode, KeyEvent};
@@ -18,6 +18,7 @@ pub enum Action {
     ScrollBottom,
     StartStatic,
     StartDynamic,
+    StartActive,
     ExportReport,
     /// Enter filter-input mode.
     Filter,
@@ -42,6 +43,7 @@ pub fn map_key(key: KeyEvent) -> Action {
         KeyCode::End | KeyCode::Char('G') => Action::ScrollBottom,
         KeyCode::Char('s') => Action::StartStatic,
         KeyCode::Char('d') => Action::StartDynamic,
+        KeyCode::Char('a') => Action::StartActive,
         KeyCode::Char('r') => Action::ExportReport,
         KeyCode::Char('/') => Action::Filter,
         KeyCode::Char('o') => Action::ToggleSort,
@@ -49,4 +51,15 @@ pub fn map_key(key: KeyEvent) -> Action {
         KeyCode::Enter => Action::ToggleDetail,
         _ => Action::None,
     }
+}
+
+/// Events that drive the UI, merged from the pipeline and background tasks.
+#[derive(Debug, Clone)]
+pub enum UiEvent {
+    /// Forwarded from the pipeline's broadcast channel.
+    Pipeline(webrev_pipeline::PipelineEvent),
+    /// A one-line status update (e.g. a scan starting or finishing).
+    Status(String),
+    /// A scan task finished, including forwarding all of its pipeline events.
+    ScanFinished(String),
 }

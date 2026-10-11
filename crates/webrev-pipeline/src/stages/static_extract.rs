@@ -58,9 +58,13 @@ impl Stage for StaticExtractStage {
                     kind,
                     body,
                     headers,
+                    bytes,
                 } => {
-                    let extract_input =
+                    let mut extract_input =
                         ExtractInput::new(ctx.session_id, url, kind, body).with_headers(headers);
+                    if let Some(bytes) = bytes {
+                        extract_input = extract_input.with_bytes(bytes);
+                    }
                     for finding in ctx.registry.run(&extract_input) {
                         if out.send(PipelineItem::Finding(finding)).await.is_err() {
                             // Downstream closed: nothing left to do.

@@ -16,42 +16,20 @@ host and its subdomains unless you widen it explicitly.
 Set `--exclude` to carve out sensitive subdomains (e.g. admin panels) that are
 out of scope even though they share a parent domain.
 
-## Secrets are never stored in plaintext
+## In-memory sessions and visible secrets
 
-Detected secrets are reduced to a truncated **HMAC-SHA256 fingerprint**
-(`fp:<16 hex>`) using a key that is:
+All sessions stay in memory until the process exits. There is no database or
+automatic disk-backed history. CLI scans write their report directly; the TUI
+writes a report when `r` is pressed. `scan --no-report` writes no report.
 
-- generated randomly **per run**, and
-- **never persisted** to disk or the database.
+Detected secrets are always retained in `Finding::plaintext` and displayed in
+the TUI and JSON/JSONL/CSV reports. No reveal option is required. A truncated
+HMAC-SHA256 fingerprint (`fp:<16 hex>`) remains the deduplication key, generated
+with a random per-run key that is never persisted.
 
-So the database and reports record *that* a secret was present and let you count
-or correlate duplicates **within a run**, without ever retaining the credential
-itself. Fingerprints are not comparable across runs (different key each time).
-
-### Revealing plaintext (opt-in, dangerous)
-
-Triaging or reporting a real leak sometimes needs the actual value. Pass
-`--reveal-secrets` (or set `WEBREV_REVEAL_SECRETS=1`) on `static` / `tui` to make
-the secret extractor **also** keep each detected secret in plaintext. When it is
-set:
-
-- the plaintext is shown in the TUI (the `[secret]` log line and the finding
-  detail overlay) **and persisted** to the `findings.plaintext` column, so it
-  flows into exported JSON/JSONL reports;
-- the fingerprint is still the finding's `value`, so dedup and counting are
-  unchanged.
-
-This deliberately drops the fingerprint-only guarantee above, so the database
-and any report now contain live credentials. It is **off by default**; enable it
-only for authorized work, and treat the resulting `webrev.db` and reports as
-secret material (see *Authentication material* below). `dynamic` scans capture
-network traffic rather than running the secret extractor, so the flag has no
-effect there.
-
-Captured HAR headers and URLs are passed through the `Sanitizer`, which redacts
-sensitive headers (`Authorization`, `Cookie`, `Set-Cookie`, `X-API-Key`,
-`Proxy-Authorization`) and scrubs secret-looking substrings before anything is
-stored or displayed.
+Dynamic capture preserves original request URLs, headers and WebSocket payloads
+instead of masking credential-looking substrings. Existing capture-size budgets
+still apply. Reports contain the values needed to triage the findings.
 
 ## Operational controls
 
@@ -70,8 +48,8 @@ stored or displayed.
 Cookies, headers, and bearer tokens you pass (`--cookie` / `--header` /
 `--bearer`, or `WEBREV_BEARER`) are applied to both the HTTP client and the
 headless browser. Treat these as sensitive: prefer environment variables over
-shell history, and remember the SQLite database may contain authenticated
-responses' findings — store and dispose of it accordingly.
+shell history. Exported reports can contain authenticated findings and detected
+credentials.
 
 ## Headless browser notes
 
@@ -79,40 +57,50 @@ The dynamic analyzer normalizes the most trivial headless-automation tells
 (`navigator.webdriver`, language list, a WebGL vendor string) so legitimate,
 authorized analysis is not blocked outright by basic bot checks. It does **not**
 impersonate any specific user or target identity, and it uses a disposable,
-per-run profile directory that is deleted afterwards. Active interaction is
-limited to scrolling and clicking buttons (never links), to avoid navigating
-away or triggering destructive actions.
+per-run profile directory that is deleted afterwards. Dynamic investigation
+scrolls and clicks buttons / role-button elements, records the requests they
+trigger and attributes calls to those interactions. It does not click links.
+Those interactions execute the target application's code and can trigger
+authenticated or state-changing requests: this is browser-driven investigation.
 
 ## Active scanning (opt-in, abnormal traffic)
 
-`webrev active` and `scan --active` are the only paths that intentionally send
-abnormal traffic rather than passively observing: injected characters in query
-parameters, a spoofed `Origin` header, and probes for a short list of
-well-known sensitive paths (`.env`, `.git/HEAD`, …). This is opt-in for a
-reason, and it is still bound by the same scope and `OpsecConfig` (jitter,
-egress policy) as every other request webrev sends.
+`webrev active`, `scan --active` and the TUI's `a` key launch active security
+probes: injected characters in query parameters, a spoofed `Origin` header,
+requests for sensitive paths (`.env`, `.git/HEAD`, …), and authenticated versus
+unauthenticated access comparisons. Active probes are selected explicitly and
+use the mission scope, authentication and `OpsecConfig` (jitter, egress policy).
+Static analysis, browser interaction and active probing are distinct modes of
+the same web security toolkit.
 
-Guardrails baked into the checks themselves:
+Probe behavior:
 
-- **Never mutates state.** Endpoints known to be `POST`/`PUT`/`DELETE`/`PATCH`
-  are skipped entirely; only GET-shaped requests are issued.
+- **GET-shaped probe requests.** Endpoints known to be `POST`/`PUT`/`DELETE`/`PATCH`
+  are skipped by the probe client. Browser interactions execute application
+  behavior independently of this restriction.
 - **Never follows an injected redirect.** The probe client disables redirect
   following outright, so an open-redirect check cannot itself send a request
   to the attacker-controlled-looking URL it injects.
-- **Hard per-category budgets** (≤15 targets each for fuzzing, redirects, and
-  IDOR-lite) bound the extra request volume regardless of how many endpoints
-  recon discovered.
+- **Shared request budget** counts every active request, including controls and
+  unsuccessful attempts (default 200; `--max-active-requests`). Per-category target
+  attempts are capped at 15; query positions at four; decoded bodies at 512 KiB.
+  Oversized/refused responses, errors, cancellations and reached limits are
+  recorded in `ScanCoverage`, rather than interpreted as a clean scan.
+- **Expression probes** perform two arithmetic evaluations and a payload-free
+  control. They do not execute OS commands, write files or trigger callbacks.
+  The resulting verdict establishes evaluation only.
 - **IDOR-lite only runs on an authenticated mission** — it compares "with the
-  mission's auth" against "with none at all," which is only meaningful once
+  mission's auth headers" against "with none of those headers," which is only meaningful once
   auth material is actually configured.
 
 Findings land as `FindingKind::Vulnerability` or `FindingKind::Idor`, with
 `Provenance::source == Source::Active` so they're always distinguishable from
-passively observed findings in a report.
+static discoveries and browser-captured findings in a report. Each active run
+also records `ScanCoverage`; structured evidence distinguishes observations,
+signals and confirmed expression evaluation. See [proof boundaries](active-research.md).
 
 ## Reporting scope
 
-A report reconstructs minimal mission metadata (scope and seeds are not
-persisted in the current schema); its substance is the findings, endpoints, and
-summary counters. Review a report before sharing it — while secrets are
-fingerprinted, discovered endpoints and parameters can still be sensitive.
+A report includes the original mission metadata, scope, seeds, findings,
+endpoints, summary counters and detected plaintext secrets. `webrev report`
+preserves this metadata when converting or filtering an existing JSON report.

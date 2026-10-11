@@ -20,8 +20,7 @@ use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 use tokio_util::sync::CancellationToken;
 use webrev_core::{
-    Confidence, Endpoint, Finding, FindingKind, Method, Provenance, Result, Sanitizer, SessionId,
-    Source,
+    Confidence, Endpoint, Finding, FindingKind, Method, Provenance, Result, SessionId, Source,
 };
 
 fn browser_err<E: Display>(e: E) -> webrev_core::WebrevError {
@@ -106,7 +105,7 @@ const CLEAR_TRIGGER_SCRIPT: &str = "window.__webrev_trigger = null;";
 ///
 /// Findings from the JS hooks are rated [`Confidence::High`] (the page invoked
 /// them); those seen only in CDP network traffic are [`Confidence::Medium`].
-/// All URLs and headers are sanitized before leaving this function.
+/// Captured URLs and payloads retain their original credential values.
 pub async fn run_dynamic(
     pool: &BrowserPool,
     profile: &BrowserProfile,
@@ -206,7 +205,11 @@ pub async fn run_dynamic(
         while let Some(event) = ws_sent_events.next().await {
             if let Ok(mut frames) = frames_sent.lock() {
                 if frames.len() < MAX_WS_FRAMES {
-                    frames.push((event.request_id.clone(), "sent", event.response.payload_data.clone()));
+                    frames.push((
+                        event.request_id.clone(),
+                        "sent",
+                        event.response.payload_data.clone(),
+                    ));
                 }
             }
         }
@@ -221,7 +224,11 @@ pub async fn run_dynamic(
         while let Some(event) = ws_recv_events.next().await {
             if let Ok(mut frames) = frames_recv.lock() {
                 if frames.len() < MAX_WS_FRAMES {
-                    frames.push((event.request_id.clone(), "received", event.response.payload_data.clone()));
+                    frames.push((
+                        event.request_id.clone(),
+                        "received",
+                        event.response.payload_data.clone(),
+                    ));
                 }
             }
         }
@@ -267,33 +274,29 @@ pub async fn run_dynamic(
     ws_sent_collector.abort();
     ws_recv_collector.abort();
 
-    let sanitizer = Sanitizer::with_default_patterns();
-    let mut har = match Arc::try_unwrap(har) {
+    let har = match Arc::try_unwrap(har) {
         Ok(lock) => lock.into_inner().unwrap_or_default(),
         Err(shared) => shared.lock().map(|g| g.clone()).unwrap_or_default(),
     };
-    har.sanitize(&sanitizer);
 
     // Merge hook records (high confidence) with HAR entries (medium),
-    // deduplicating on the sanitized URL.
+    // deduplicating on the original URL.
     let mut seen: BTreeSet<String> = BTreeSet::new();
     let mut findings: Vec<Finding> = Vec::new();
 
     if let Ok(records) = serde_json::from_str::<Vec<HookRecord>>(&raw) {
         for record in records {
-            let scrubbed = sanitizer.scrub(&record.url);
-            if seen.insert(scrubbed.clone()) {
-                let endpoint = Endpoint::new(scrubbed, Method::parse(&record.method), Source::Browser);
+            if seen.insert(record.url.clone()) {
+                let endpoint =
+                    Endpoint::new(record.url, Method::parse(&record.method), Source::Browser);
                 let mut finding = Finding::from_endpoint(session, &endpoint, Confidence::High);
                 // Attribute the call to the UI element whose click caused it,
                 // when the active-interaction driver recorded one: the
                 // before/after diff that turns a flat endpoint list into
                 // "clicking Delete Account calls DELETE /api/account".
                 if let Some(trigger) = record.trigger {
-                    finding.provenance = Provenance::new(
-                        Source::Browser,
-                        Some(format!("click: {trigger}")),
-                    );
+                    finding.provenance =
+                        Provenance::new(Source::Browser, Some(format!("click: {trigger}")));
                 }
                 findings.push(finding);
             }
@@ -301,16 +304,19 @@ pub async fn run_dynamic(
     }
     for endpoint in har.endpoints() {
         if seen.insert(endpoint.url.clone()) {
-            findings.push(Finding::from_endpoint(session, &endpoint, Confidence::Medium));
+            findings.push(Finding::from_endpoint(
+                session,
+                &endpoint,
+                Confidence::Medium,
+            ));
         }
     }
 
     // WebSocket endpoints the page opened.
     let sockets = ws_sockets.lock().map(|m| m.clone()).unwrap_or_default();
     for socket_url in sockets.values() {
-        let scrubbed = sanitizer.scrub(socket_url);
-        if seen.insert(scrubbed.clone()) {
-            let endpoint = Endpoint::new(scrubbed, Method::Get, Source::Browser);
+        if seen.insert(socket_url.clone()) {
+            let endpoint = Endpoint::new(socket_url.clone(), Method::Get, Source::Browser);
             findings.push(Finding::from_endpoint(session, &endpoint, Confidence::High));
         }
     }
@@ -322,10 +328,15 @@ pub async fn run_dynamic(
     for (request_id, direction, payload) in frames {
         let socket_url = sockets
             .get(&request_id)
-            .map_or_else(|| "unknown".to_owned(), |u| sanitizer.scrub(u));
-        let mut payload = sanitizer.scrub(&payload);
+            .cloned()
+            .unwrap_or_else(|| "unknown".to_owned());
+        let mut payload = payload;
         if payload.chars().count() > MAX_WS_PAYLOAD_CHARS {
-            payload = payload.chars().take(MAX_WS_PAYLOAD_CHARS).collect::<String>() + "…";
+            payload = payload
+                .chars()
+                .take(MAX_WS_PAYLOAD_CHARS)
+                .collect::<String>()
+                + "…";
         }
         findings.push(Finding::new(
             session,

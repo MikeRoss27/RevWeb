@@ -8,15 +8,30 @@ use std::path::PathBuf;
 /// `--help` colors: orange headings, cream literals, stone placeholders.
 /// clap drops them automatically for pipes and `NO_COLOR`.
 const STYLES: Styles = Styles::styled()
-    .header(Style::new().bold().fg_color(Some(Color::Rgb(RgbColor(229, 101, 63)))))
-    .usage(Style::new().bold().fg_color(Some(Color::Rgb(RgbColor(229, 101, 63)))))
-    .literal(Style::new().bold().fg_color(Some(Color::Rgb(RgbColor(250, 244, 232)))))
+    .header(
+        Style::new()
+            .bold()
+            .fg_color(Some(Color::Rgb(RgbColor(229, 101, 63)))),
+    )
+    .usage(
+        Style::new()
+            .bold()
+            .fg_color(Some(Color::Rgb(RgbColor(229, 101, 63)))),
+    )
+    .literal(
+        Style::new()
+            .bold()
+            .fg_color(Some(Color::Rgb(RgbColor(250, 244, 232)))),
+    )
     .placeholder(Style::new().fg_color(Some(Color::Rgb(RgbColor(163, 154, 146)))));
 
 /// Worked examples, shown at the bottom of `webrev --help`.
 const EXAMPLES: &str = "\
 EXAMPLES:
-  # One-shot: crawl, extract, and write a report (easiest start)
+  # Web security assessment: static + dynamic + active, then report
+  webrev scan --seed https://app.example.com/ --dynamic --active
+
+  # Static inspection: crawl, extract, and write a report
   webrev scan --seed https://app.example.com/
 
   # One-shot including a dynamic (headless Chromium) pass
@@ -32,25 +47,24 @@ EXAMPLES:
   # Sit at the end of a recon pipeline (seeds on stdin)
   subfinder -d example.com | httpx | webrev scan
 
-  # Reveal detected secrets in plaintext (authorized work only)
-  webrev scan --seed https://app.example.com/ --reveal-secrets
-
   # Interactive TUI (auto-runs a static scan; press ? for keys)
   webrev tui --seed https://app.example.com/
 
-  # Re-export the latest session as bare URLs for ffuf/nuclei
+  # Convert the JSON report to bare URLs for ffuf/nuclei
   webrev report --format urls | ffuf -u FUZZ -w -";
 
-/// `webrev` — a web reconnaissance and analysis toolkit.
+/// `webrev` — a web security analysis and testing toolkit.
 #[derive(Parser)]
 #[command(
     name = "webrev",
     version,
     styles = STYLES,
-    about = "webrev · web reconnaissance toolkit",
-    long_about = "webrev — map a web application's attack surface from static and \
-                  dynamic analysis.\n\nUse only against targets you are explicitly \
-                  authorized to test.",
+    about = "webrev · web security toolkit",
+    long_about = "webrev — investigate web applications with static code inspection, dynamic \
+                  browser analysis and scoped active security probes.\n\nExtract APIs, secrets \
+                  and technology fingerprints; inspect HTTP/WebSocket traffic; probe access \
+                  controls, CORS, redirects and injection signals.\n\nUse only against targets \
+                  you are explicitly authorized to test.",
     after_help = EXAMPLES,
     after_long_help = EXAMPLES
 )]
@@ -64,7 +78,7 @@ pub struct Cli {
 
 #[derive(Subcommand)]
 pub enum Command {
-    /// One-shot: static scan (optionally + dynamic) then write a report.
+    /// Analyze and test an application: static, optionally + dynamic/active, then report.
     Scan(ScanAllArgs),
     /// Static analysis: fetch seeds + their scripts and extract endpoints.
     Static(ScanArgs),
@@ -77,7 +91,7 @@ pub enum Command {
     Active(ScanArgs),
     /// Launch the interactive terminal UI.
     Tui(ScanArgs),
-    /// Export a stored session as a JSON report.
+    /// Convert or filter an existing JSON report.
     Report(ReportArgs),
 }
 
@@ -100,7 +114,8 @@ pub struct ScanAllArgs {
     /// Report format written at the end of the scan.
     #[arg(long, value_enum, default_value_t = Format::Json)]
     pub format: Format,
-    /// Skip writing the end-of-scan report (just populate the database).
+    /// Skip writing the end-of-scan report; discard the in-memory session
+    /// after printing the scan summary.
     #[arg(long)]
     pub no_report: bool,
 }
@@ -125,9 +140,6 @@ pub struct ScanArgs {
     /// Mission name.
     #[arg(long, env = "WEBREV_NAME", default_value = "webrev-mission")]
     pub name: String,
-    /// SQLite database path.
-    #[arg(long, env = "WEBREV_DB", default_value = "webrev.db")]
-    pub db: PathBuf,
     /// Optional egress proxy (e.g. http://127.0.0.1:8080).
     #[arg(long, env = "WEBREV_PROXY")]
     pub proxy: Option<String>,
@@ -149,6 +161,9 @@ pub struct ScanArgs {
     /// Maximum resources fetched per crawl (hard budget).
     #[arg(long, default_value_t = 50)]
     pub max_pages: usize,
+    /// Shared active request budget, including controls and failed requests.
+    #[arg(long, default_value_t = 200)]
+    pub max_active_requests: usize,
     /// Maximum link-following depth from the seeds (0 = seeds only).
     #[arg(long, default_value_t = 2)]
     pub max_depth: usize,
@@ -158,20 +173,16 @@ pub struct ScanArgs {
     /// Dynamic dwell time per seed, in seconds.
     #[arg(long, default_value_t = 8)]
     pub duration_secs: u64,
-    /// Report output path used by the TUI's 'r' key.
+    /// Report output path (or the TUI's 'r' key). Use '-' for stdout in CLI scans.
     #[arg(long, default_value = "webrev-report.json")]
     pub report: PathBuf,
-    /// Record and show detected secrets in PLAINTEXT instead of only their
-    /// fingerprint. Dangerous: real credentials are then written to the SQLite
-    /// database and included in exported reports. Off by default — enable only
-    /// for authorized work where you need the leaked value to triage or report.
-    #[arg(long, env = "WEBREV_REVEAL_SECRETS")]
-    pub reveal_secrets: bool,
 }
 
 /// Output serialization for `report`.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, ValueEnum)]
 pub enum Format {
+    /// Human-readable triage: vulnerabilities, secrets, technologies and surface.
+    Text,
     /// Full pretty JSON document (default).
     Json,
     /// One finding per line (JSON Lines) — stream into jq.
@@ -180,6 +191,22 @@ pub enum Format {
     Urls,
     /// Findings as a CSV table.
     Csv,
+    /// Reconstructed OpenAPI 3.1 spec of the discovered surface.
+    #[value(name = "openapi")]
+    OpenApi,
+}
+
+impl From<Format> for webrev_report::ReportFormat {
+    fn from(format: Format) -> Self {
+        match format {
+            Format::Text => Self::Text,
+            Format::Json => Self::Json,
+            Format::Jsonl => Self::Jsonl,
+            Format::Urls => Self::Urls,
+            Format::Csv => Self::Csv,
+            Format::OpenApi => Self::OpenApi,
+        }
+    }
 }
 
 /// Endpoint scope selector for `report`.
@@ -214,12 +241,9 @@ pub enum SeveritySel {
 /// Arguments for the `report` subcommand.
 #[derive(Args)]
 pub struct ReportArgs {
-    /// Session id (UUID) to export. Defaults to the most recent scan.
-    #[arg(long)]
-    pub session: Option<String>,
-    /// SQLite database path.
-    #[arg(long, env = "WEBREV_DB", default_value = "webrev.db")]
-    pub db: PathBuf,
+    /// JSON report to convert or filter.
+    #[arg(long, default_value = "webrev-report.json")]
+    pub input: PathBuf,
     /// Output file; prints to stdout when omitted.
     #[arg(long)]
     pub output: Option<PathBuf>,

@@ -62,7 +62,14 @@ mod tests {
     fn counts_by_kind_and_confidence() {
         let sid = SessionId::new();
         let mk = |kind, conf| {
-            Finding::new(sid, kind, Some("/x".into()), "v", conf, Provenance::new(Source::Html, None))
+            Finding::new(
+                sid,
+                kind,
+                Some("/x".into()),
+                "v",
+                conf,
+                Provenance::new(Source::Html, None),
+            )
         };
         let findings = vec![
             mk(FindingKind::Endpoint, Confidence::High),

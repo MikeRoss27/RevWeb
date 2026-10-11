@@ -1,4 +1,4 @@
-// crates/webrev-core/src/opsec.rs
+// crates/webrev-core/src/security/opsec.rs
 //! Operational configuration shared by the fetch stage and the browser.
 //!
 //! These settings keep legitimate authorized testing from being trivially
@@ -83,6 +83,28 @@ impl RotationPolicy {
 
 /// Request-cadence and egress configuration.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct ActiveLimits {
+    /// Shared by every active check, including controls and failed requests.
+    pub max_requests: usize,
+    /// Decoded response body limit; larger responses remain inconclusive.
+    pub max_body_bytes: usize,
+    /// Individual query positions per endpoint (duplicate names stay distinct).
+    pub max_parameters: usize,
+}
+
+impl Default for ActiveLimits {
+    fn default() -> Self {
+        Self {
+            max_requests: 200,
+            max_body_bytes: 512 * 1024,
+            max_parameters: 4,
+        }
+    }
+}
+
+/// Request-cadence and egress configuration.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct OpsecConfig {
     pub egress: EgressPolicy,
     pub dns: DnsPolicy,
@@ -99,6 +121,8 @@ pub struct OpsecConfig {
     pub max_depth: usize,
     /// Authentication material applied to in-scope requests.
     pub auth: AuthConfig,
+    #[serde(default)]
+    pub active: ActiveLimits,
 }
 
 impl Default for OpsecConfig {
@@ -113,6 +137,7 @@ impl Default for OpsecConfig {
             max_pages: 50,
             max_depth: 2,
             auth: AuthConfig::default(),
+            active: ActiveLimits::default(),
         }
     }
 }

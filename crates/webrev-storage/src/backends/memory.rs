@@ -1,5 +1,5 @@
 // crates/webrev-storage/src/backends/memory.rs
-//! An in-memory [`Storage`] backend used by tests and dry runs.
+//! Process-local [`Storage`] for all scans and the TUI.
 
 use crate::port::Storage;
 use async_trait::async_trait;
@@ -18,7 +18,7 @@ struct State {
 }
 
 /// A `BTreeMap`-backed store. Cheap to construct, deterministic iteration
-/// order, no external dependencies — ideal for the pipeline integration test.
+/// order, no filesystem writes.
 #[derive(Default)]
 pub struct InMemoryStorage {
     state: Mutex<State>,
@@ -132,13 +132,22 @@ mod tests {
         );
         store.insert_finding(&f).await.unwrap();
         store
-            .insert_endpoint(mission.id, &Endpoint::new("/api/x", Method::Get, Source::JsAst))
+            .insert_endpoint(
+                mission.id,
+                &Endpoint::new("/api/x", Method::Get, Source::JsAst),
+            )
             .await
             .unwrap();
         store.insert_secret(mission.id, "fp:abc").await.unwrap();
 
-        assert_eq!(store.findings_by_session(mission.id).await.unwrap().len(), 1);
-        assert_eq!(store.endpoints_by_session(mission.id).await.unwrap().len(), 1);
+        assert_eq!(
+            store.findings_by_session(mission.id).await.unwrap().len(),
+            1
+        );
+        assert_eq!(
+            store.endpoints_by_session(mission.id).await.unwrap().len(),
+            1
+        );
 
         store.cleanup_session(mission.id).await.unwrap();
         let remaining = store.findings_by_session(mission.id).await.unwrap();

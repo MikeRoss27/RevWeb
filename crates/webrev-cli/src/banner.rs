@@ -12,7 +12,7 @@ use webrev_tui::brand::{self, Rgb, Tone};
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// One-line description of the tool, reused by `--help` and the banner.
-pub const TAGLINE: &str = "web reconnaissance toolkit";
+pub const TAGLINE: &str = brand::TAGLINE;
 
 const RESET: &str = "\x1b[0m";
 const BOLD: &str = "\x1b[1m";

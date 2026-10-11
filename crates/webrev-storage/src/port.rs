@@ -4,7 +4,7 @@
 use async_trait::async_trait;
 use webrev_core::{Endpoint, Finding, Mission, Result, SessionId};
 
-/// Persistence operations required by the pipeline and report crates.
+/// Session operations required by the pipeline and applications.
 ///
 /// All methods return [`webrev_core::Result`]; backends map their native
 /// errors into [`webrev_core::WebrevError::Storage`]. Implementations must be
@@ -14,13 +14,13 @@ pub trait Storage: Send + Sync {
     /// Record a session so findings can reference it. Idempotent.
     async fn create_session(&self, mission: &Mission) -> Result<()>;
 
-    /// Persist one finding.
+    /// Record one finding in memory, including detected secret values.
     async fn insert_finding(&self, finding: &Finding) -> Result<()>;
 
-    /// Persist one concrete endpoint for a session.
+    /// Record one concrete endpoint for a session.
     async fn insert_endpoint(&self, session: SessionId, endpoint: &Endpoint) -> Result<()>;
 
-    /// Persist a secret **fingerprint** (never plaintext) for a session.
+    /// Index a secret fingerprint for a session. Its plaintext lives in the finding.
     async fn insert_secret(&self, session: SessionId, fingerprint: &str) -> Result<()>;
 
     /// The most recently created session, if any. Lets the UX default to "the
@@ -33,7 +33,7 @@ pub trait Storage: Send + Sync {
     /// All endpoints recorded for a session.
     async fn endpoints_by_session(&self, session: SessionId) -> Result<Vec<Endpoint>>;
 
-    /// Remove every row belonging to a session (findings, endpoints, secrets,
+    /// Remove every entry belonging to a session (findings, endpoints, secrets,
     /// and the session itself).
     async fn cleanup_session(&self, session: SessionId) -> Result<()>;
 }

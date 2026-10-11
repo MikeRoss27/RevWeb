@@ -21,10 +21,13 @@ use webrev_core::{Confidence, EndpointScope, Finding, Result, Severity, WebrevEr
 /// The serialization shape requested on the command line.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ReportFormat {
+    Text,
     Json,
     Jsonl,
     Urls,
     Csv,
+    /// Reconstructed `OpenAPI` 3.1 document (reverse the API from the consumer).
+    OpenApi,
 }
 
 /// Which endpoints the URL list should include.
@@ -36,7 +39,7 @@ pub enum ScopeFilter {
 }
 
 impl ScopeFilter {
-    fn matches(self, scope: EndpointScope) -> bool {
+    pub(crate) fn matches(self, scope: EndpointScope) -> bool {
         match self {
             ScopeFilter::All => true,
             ScopeFilter::Internal => scope == EndpointScope::Internal,
@@ -71,15 +74,17 @@ impl SessionReport {
     /// Render the report in the requested format, applying the filters.
     pub fn render(&self, opts: RenderOptions) -> Result<String> {
         match opts.format {
+            ReportFormat::Text => Ok(self.render_text(opts)),
             ReportFormat::Json => self.render_json(opts),
             ReportFormat::Jsonl => self.render_jsonl(opts),
             ReportFormat::Urls => Ok(self.render_urls(opts)),
             ReportFormat::Csv => Ok(self.render_csv(opts)),
+            ReportFormat::OpenApi => self.render_openapi(opts),
         }
     }
 
     /// Findings passing both floors, in stored order.
-    fn kept_findings(&self, opts: RenderOptions) -> impl Iterator<Item = &Finding> {
+    pub(crate) fn kept_findings(&self, opts: RenderOptions) -> impl Iterator<Item = &Finding> {
         self.findings.iter().filter(move |f| {
             f.confidence >= opts.min_confidence && f.severity() >= opts.min_severity
         })
@@ -152,15 +157,21 @@ impl SessionReport {
     }
 
     fn render_csv(&self, opts: RenderOptions) -> String {
-        let mut out = String::from("severity,kind,confidence,url,value,source\n");
+        let mut out = String::from("severity,kind,confidence,url,value,source,evidence,coverage\n");
         for f in self.ranked_findings(opts) {
             let row = [
                 f.severity().slug().to_owned(),
                 f.kind.slug().to_owned(),
                 f.confidence.slug().to_owned(),
                 f.url.clone().unwrap_or_default(),
-                f.value.clone(),
+                f.plaintext.as_ref().unwrap_or(&f.value).clone(),
                 f.provenance.source.to_string(),
+                f.evidence.as_ref().map_or_else(String::new, |e| {
+                    serde_json::to_string(e).expect("serializable evidence")
+                }),
+                f.coverage.as_ref().map_or_else(String::new, |c| {
+                    serde_json::to_string(c).expect("serializable coverage")
+                }),
             ];
             let line: Vec<String> = row.iter().map(|c| csv_field(c)).collect();
             out.push_str(&line.join(","));
@@ -183,10 +194,12 @@ fn csv_field(value: &str) -> String {
 impl fmt::Display for ReportFormat {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(match self {
+            ReportFormat::Text => "text",
             ReportFormat::Json => "json",
             ReportFormat::Jsonl => "jsonl",
             ReportFormat::Urls => "urls",
             ReportFormat::Csv => "csv",
+            ReportFormat::OpenApi => "openapi",
         })
     }
 }
@@ -194,16 +207,28 @@ impl fmt::Display for ReportFormat {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use webrev_core::{
-        Endpoint, Finding, FindingKind, Method, Mission, Provenance, Scope, Source,
-    };
+    use webrev_core::{Endpoint, Finding, FindingKind, Method, Mission, Provenance, Scope, Source};
 
     fn report() -> SessionReport {
         let mission = Mission::new("t", Scope::new(vec!["x.test".into()], vec![]), vec![]);
         let sid = mission.id;
         let findings = vec![
-            Finding::new(sid, FindingKind::Endpoint, Some("https://x.test/api/v1/users".into()), "GET https://x.test/api/v1/users", Confidence::High, Provenance::new(Source::JsAst, None)),
-            Finding::new(sid, FindingKind::Parameter, None, "noisyParam", Confidence::Low, Provenance::new(Source::JsRegex, None)),
+            Finding::new(
+                sid,
+                FindingKind::Endpoint,
+                Some("https://x.test/api/v1/users".into()),
+                "GET https://x.test/api/v1/users",
+                Confidence::High,
+                Provenance::new(Source::JsAst, None),
+            ),
+            Finding::new(
+                sid,
+                FindingKind::Parameter,
+                None,
+                "noisyParam",
+                Confidence::Low,
+                Provenance::new(Source::JsRegex, None),
+            ),
         ];
         let endpoints = vec![
             Endpoint::new("https://x.test/a", Method::Get, Source::JsAst),
@@ -214,27 +239,54 @@ mod tests {
     }
 
     fn opts(format: ReportFormat, scope: ScopeFilter, min: Confidence) -> RenderOptions {
-        RenderOptions { format, scope, min_confidence: min, min_severity: Severity::Info }
+        RenderOptions {
+            format,
+            scope,
+            min_confidence: min,
+            min_severity: Severity::Info,
+        }
     }
 
     #[test]
     fn urls_are_scope_filtered_and_sorted() {
-        let all = report().render(opts(ReportFormat::Urls, ScopeFilter::All, Confidence::Low)).unwrap();
+        let all = report()
+            .render(opts(ReportFormat::Urls, ScopeFilter::All, Confidence::Low))
+            .unwrap();
         assert_eq!(all.lines().count(), 2);
 
-        let internal = report().render(opts(ReportFormat::Urls, ScopeFilter::Internal, Confidence::Low)).unwrap();
+        let internal = report()
+            .render(opts(
+                ReportFormat::Urls,
+                ScopeFilter::Internal,
+                Confidence::Low,
+            ))
+            .unwrap();
         assert_eq!(internal, "https://x.test/a");
 
-        let external = report().render(opts(ReportFormat::Urls, ScopeFilter::External, Confidence::Low)).unwrap();
+        let external = report()
+            .render(opts(
+                ReportFormat::Urls,
+                ScopeFilter::External,
+                Confidence::Low,
+            ))
+            .unwrap();
         assert_eq!(external, "https://cdn.other/x.js");
     }
 
     #[test]
     fn min_confidence_drops_low_findings_from_jsonl() {
         let r = report();
-        let all = r.render(opts(ReportFormat::Jsonl, ScopeFilter::All, Confidence::Low)).unwrap();
+        let all = r
+            .render(opts(ReportFormat::Jsonl, ScopeFilter::All, Confidence::Low))
+            .unwrap();
         assert_eq!(all.lines().count(), 2);
-        let high = r.render(opts(ReportFormat::Jsonl, ScopeFilter::All, Confidence::High)).unwrap();
+        let high = r
+            .render(opts(
+                ReportFormat::Jsonl,
+                ScopeFilter::All,
+                Confidence::High,
+            ))
+            .unwrap();
         assert_eq!(high.lines().count(), 1);
         assert!(high.contains("x.test/api/v1/users"));
     }
@@ -242,10 +294,12 @@ mod tests {
     #[test]
     fn csv_has_header_and_quotes_commas() {
         let r = report();
-        let csv = r.render(opts(ReportFormat::Csv, ScopeFilter::All, Confidence::Low)).unwrap();
-        assert!(csv.starts_with("severity,kind,confidence,url,value,source\n"));
+        let csv = r
+            .render(opts(ReportFormat::Csv, ScopeFilter::All, Confidence::Low))
+            .unwrap();
+        assert!(csv.starts_with("severity,kind,confidence,url,value,source,evidence,coverage\n"));
         assert_eq!(csv.lines().count(), 3); // header + 2 findings
-        // Ranked: the medium-severity endpoint precedes the info-level param.
+                                            // Ranked: the medium-severity endpoint precedes the info-level param.
         let first = csv.lines().nth(1).unwrap();
         assert!(first.starts_with("medium,endpoint"));
     }
@@ -275,7 +329,13 @@ mod tests {
     #[test]
     fn filtered_json_recounts_summary() {
         let r = report();
-        let json = r.render(opts(ReportFormat::Json, ScopeFilter::Internal, Confidence::High)).unwrap();
+        let json = r
+            .render(opts(
+                ReportFormat::Json,
+                ScopeFilter::Internal,
+                Confidence::High,
+            ))
+            .unwrap();
         // Only the high-confidence endpoint finding survives.
         assert!(json.contains("\"total\": 1"));
         assert!(json.contains("\"internal\": 1"));

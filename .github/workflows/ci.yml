@@ -21,8 +21,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # ubuntu-latest ships gcc, so the bundled SQLite and rustls/ring (which
-      # compile C) build without extra packages. No Chromium is installed:
+      # ubuntu-latest ships gcc/cmake, so rustls/aws-lc build
+      # without extra packages. No Chromium is installed:
       # the browser tests are #[ignore] and never run here.
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -31,6 +31,9 @@ jobs:
 
       - name: Cache cargo artifacts
         uses: Swatinem/rust-cache@v2
+
+      - name: Check source file size
+        run: python3 scripts/check_source_size.py
 
       - name: Clippy (all targets, warnings = errors)
         run: cargo clippy --workspace --all-targets -- -D warnings

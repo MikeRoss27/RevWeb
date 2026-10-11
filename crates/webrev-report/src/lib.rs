@@ -12,7 +12,9 @@
 
 pub mod format;
 pub mod json;
+pub mod openapi;
 pub mod summary;
+pub mod text;
 
 pub use format::{RenderOptions, ReportFormat, ScopeFilter};
 pub use json::SessionReport;

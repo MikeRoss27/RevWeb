@@ -102,7 +102,10 @@ mod tests {
 
     #[test]
     fn collapses_ids_uuids_and_hashes() {
-        assert_eq!(normalize_url("https://x/api/users/123"), "https://x/api/users/{id}");
+        assert_eq!(
+            normalize_url("https://x/api/users/123"),
+            "https://x/api/users/{id}"
+        );
         assert_eq!(
             normalize_url("/api/users/550e8400-e29b-41d4-a716-446655440000/posts"),
             "/api/users/{uuid}/posts"
@@ -115,7 +118,10 @@ mod tests {
 
     #[test]
     fn drops_query_and_trailing_slash() {
-        assert_eq!(normalize_url("https://x/search/?q=1&p=2"), "https://x/search");
+        assert_eq!(
+            normalize_url("https://x/search/?q=1&p=2"),
+            "https://x/search"
+        );
         assert_eq!(normalize_url("/a/b/"), "/a/b");
         assert_eq!(normalize_url("https://x/"), "https://x/");
     }
@@ -128,7 +134,10 @@ mod tests {
     #[test]
     fn keeps_year_like_segments() {
         // Years are dates, not resource ids.
-        assert_eq!(normalize_url("http://www.w3.org/2000/svg"), "http://www.w3.org/2000/svg");
+        assert_eq!(
+            normalize_url("http://www.w3.org/2000/svg"),
+            "http://www.w3.org/2000/svg"
+        );
         assert_eq!(normalize_url("/blog/2024/launch"), "/blog/2024/launch");
         // Non-year numerics still collapse.
         assert_eq!(normalize_url("/users/123"), "/users/{id}");
