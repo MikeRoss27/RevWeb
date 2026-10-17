@@ -1,0 +1,61 @@
+{
+  "run_date_utc": "2026-10-16",
+  "webrev_commit": "61b843daf845946060abae026b43349170ff177b",
+  "webrev_worktree_dirty": true,
+  "vulnerableapp_source_commit": "8003daf8e13044802fdeb4b665f0c9cc6d09096b",
+  "docker_images": {
+    "VulnerableApp-base": "sasanlabs/owasp-vulnerableapp@sha256:831aa0930edf92ad875037db28c8320a36783f4e47a905b903ba664a6b60a160",
+    "VulnerableApp-jsp": "sasanlabs/owasp-vulnerableapp-jsp@sha256:9996c002138bdc362cedbe3fff9be8347833c19297317457d6a9bf22a795f6b0",
+    "VulnerableApp-php": "sasanlabs/owasp-vulnerableapp-php@sha256:1e8aa11127e659fb18b80dea8246f840c5119af16de9451f2f50709fb052efcc",
+    "VulnerableApp-facade": "sasanlabs/owasp-vulnerableapp-facade@sha256:2630d7a09962458aa6bd974f696773e3d9cfa9bbed471964e03a184d304eda5b",
+    "mongo": "mongo@sha256:95a98776f273721a295b03098578b06bc10281bb56aa828c77e9f60ecc70b150",
+    "mailpit": "axllent/mailpit@sha256:3bd7c2f2696deb35a4780d152b404dceec99cb041b942c0877b3b22384714f85"
+  },
+  "scope": "172.20.0.7 only (Docker private address; lab network internal)",
+  "request_controls": {
+    "max_pages": 12,
+    "max_depth": 0,
+    "max_concurrency": 1,
+    "max_active_requests": 160,
+    "active_requests_used": 146,
+    "delay_ms": 50
+  },
+  "active_coverage": {
+    "open_redirect_attempted": 12,
+    "executed": 12,
+    "not_executed": 0,
+    "not_selected": 0,
+    "negative": 8,
+    "refused": 1,
+    "scope_refused": 0,
+    "errors": 0,
+    "findings": 3,
+    "inconclusive": 0
+  },
+  "ground_truth": {
+    "total_unsecure_cases_all_types": 168,
+    "open_redirect_unsecure_cases": 9,
+    "open_redirect_secure_cases_in_benchmark": 2
+  },
+  "lab_host_control_probes": [
+    {
+      "level": 8,
+      "ground_truth": "no row (manual secure control)",
+      "request_status": 200,
+      "location": "absent"
+    },
+    {
+      "level": 11,
+      "ground_truth": "SECURE",
+      "request_status": 403,
+      "location": "absent"
+    },
+    {
+      "level": 12,
+      "ground_truth": "SECURE",
+      "request_status": 400,
+      "location": "absent"
+    }
+  ],
+  "result_interpretation": "category slice: 3 TP, 6 FN, 0 FP, 1 TN, 1 refused secure case (excluded from specificity). Full application comparator result is not detector-only precision/recall."
+}

@@ -1,0 +1,11 @@
+{
+  "allocated_parent_heap_bytes": 67108864,
+  "command": "/usr/bin/true",
+  "direct_python_posix_spawn_max_rss_kib": 78020,
+  "native_parent_scanner_measurement": {
+    "wall_seconds": 0.00619232,
+    "max_rss_kib": 1468,
+    "exit_code": 0
+  },
+  "purpose": "Verify scanner RSS excludes Python parent high-water mark; this is a measurement-method diagnostic, not a scanner benchmark."
+}

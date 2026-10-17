@@ -1,0 +1,435 @@
+{
+  "schema": 1,
+  "timestamp_utc": "2026-10-16T23:06:12.976992+00:00",
+  "baseline_ref": "61b843daf845946060abae026b43349170ff177b",
+  "baseline_commit": "61b843daf845946060abae026b43349170ff177b",
+  "current_commit": "61b843daf845946060abae026b43349170ff177b",
+  "worktree_dirty": true,
+  "environment": {
+    "os": "Linux-7.2.9-arch1-1-x86_64-with-glibc2.44",
+    "machine": "x86_64",
+    "processor": "x86_64",
+    "cpu_count": 16,
+    "rustc": "rustc 1.98.1 (48a229cea 2026-09-01)",
+    "cargo": "cargo 1.98.1 (797e8a9bc 2026-08-05)"
+  },
+  "fixture": {
+    "kind": "deterministic SPA-like multi-asset local site",
+    "profile": "site",
+    "pages": 120,
+    "assets": 24,
+    "max_depth": 2,
+    "concurrency": 4,
+    "delay_ms": 0,
+    "scope": "127.0.0.1"
+  },
+  "method": {
+    "runs_each": 20,
+    "order": "seeded shuffled pairs; randomized order within each pair",
+    "runtime": "wall clock includes process startup, excludes build",
+    "p95": "nearest rank",
+    "rss": "wait4 ru_maxrss, per-process maximum RSS in KiB"
+  },
+  "lockfiles": {
+    "candidate_lock_sha256_before_build": "9e34e028ad08cd1ed6d0d99632ace8428cb3df33cbb5acb768ca479843aaa8c7",
+    "candidate_lock_sha256_after_build": "9e34e028ad08cd1ed6d0d99632ace8428cb3df33cbb5acb768ca479843aaa8c7",
+    "baseline_lock_sha256_before_build": "9e34e028ad08cd1ed6d0d99632ace8428cb3df33cbb5acb768ca479843aaa8c7",
+    "baseline_lock_sha256_after_build": "2772e2b0e0137ac42463e2ddec8b6205d967f085d9e788bf581bb3994204472e",
+    "baseline_started_from_candidate_lock": true,
+    "lockfiles_identical_after_build": false
+  },
+  "summaries": {
+    "baseline": {
+      "runs": 20,
+      "runtime_median_seconds": 0.02910586400048487,
+      "runtime_p95_seconds": 0.032352362999517936,
+      "max_rss_kib_max": 22976,
+      "finding_counts": [
+        574
+      ],
+      "failures": 0
+    },
+    "current": {
+      "runs": 20,
+      "runtime_median_seconds": 0.03528989550068218,
+      "runtime_p95_seconds": 0.039816728998630424,
+      "max_rss_kib_max": 22976,
+      "finding_counts": [
+        760
+      ],
+      "failures": 0
+    }
+  },
+  "relative_change": {
+    "runtime_p95_percent": 23.072089044079135,
+    "max_rss_percent": 0.0
+  },
+  "raw_runs": [
+    {
+      "order": 0,
+      "revision": "current",
+      "exit_code": 0,
+      "wall_seconds": 0.04277127600107633,
+      "max_rss_kib": 21132,
+      "report_valid": true,
+      "finding_count": 760
+    },
+    {
+      "order": 1,
+      "revision": "baseline",
+      "exit_code": 0,
+      "wall_seconds": 0.029103377999490476,
+      "max_rss_kib": 20432,
+      "report_valid": true,
+      "finding_count": 574
+    },
+    {
+      "order": 2,
+      "revision": "current",
+      "exit_code": 0,
+      "wall_seconds": 0.03558092799903534,
+      "max_rss_kib": 21736,
+      "report_valid": true,
+      "finding_count": 760
+    },
+    {
+      "order": 3,
+      "revision": "baseline",
+      "exit_code": 0,
+      "wall_seconds": 0.028544095999677666,
+      "max_rss_kib": 21576,
+      "report_valid": true,
+      "finding_count": 574
+    },
+    {
+      "order": 4,
+      "revision": "current",
+      "exit_code": 0,
+      "wall_seconds": 0.03617271400071331,
+      "max_rss_kib": 22028,
+      "report_valid": true,
+      "finding_count": 760
+    },
+    {
+      "order": 5,
+      "revision": "baseline",
+      "exit_code": 0,
+      "wall_seconds": 0.031477382999582915,
+      "max_rss_kib": 21588,
+      "report_valid": true,
+      "finding_count": 574
+    },
+    {
+      "order": 6,
+      "revision": "current",
+      "exit_code": 0,
+      "wall_seconds": 0.03458923499965749,
+      "max_rss_kib": 22028,
+      "report_valid": true,
+      "finding_count": 760
+    },
+    {
+      "order": 7,
+      "revision": "baseline",
+      "exit_code": 0,
+      "wall_seconds": 0.031456614000489935,
+      "max_rss_kib": 21600,
+      "report_valid": true,
+      "finding_count": 574
+    },
+    {
+      "order": 8,
+      "revision": "current",
+      "exit_code": 0,
+      "wall_seconds": 0.039816728998630424,
+      "max_rss_kib": 22032,
+      "report_valid": true,
+      "finding_count": 760
+    },
+    {
+      "order": 9,
+      "revision": "baseline",
+      "exit_code": 0,
+      "wall_seconds": 0.028395855999406194,
+      "max_rss_kib": 21600,
+      "report_valid": true,
+      "finding_count": 574
+    },
+    {
+      "order": 10,
+      "revision": "baseline",
+      "exit_code": 0,
+      "wall_seconds": 0.029108350001479266,
+      "max_rss_kib": 22032,
+      "report_valid": true,
+      "finding_count": 574
+    },
+    {
+      "order": 11,
+      "revision": "current",
+      "exit_code": 0,
+      "wall_seconds": 0.035390232000281685,
+      "max_rss_kib": 22032,
+      "report_valid": true,
+      "finding_count": 760
+    },
+    {
+      "order": 12,
+      "revision": "current",
+      "exit_code": 0,
+      "wall_seconds": 0.03548020100060967,
+      "max_rss_kib": 21600,
+      "report_valid": true,
+      "finding_count": 760
+    },
+    {
+      "order": 13,
+      "revision": "baseline",
+      "exit_code": 0,
+      "wall_seconds": 0.029697259999011294,
+      "max_rss_kib": 22428,
+      "report_valid": true,
+      "finding_count": 574
+    },
+    {
+      "order": 14,
+      "revision": "current",
+      "exit_code": 0,
+      "wall_seconds": 0.035762229999818373,
+      "max_rss_kib": 22884,
+      "report_valid": true,
+      "finding_count": 760
+    },
+    {
+      "order": 15,
+      "revision": "baseline",
+      "exit_code": 0,
+      "wall_seconds": 0.028358403000311228,
+      "max_rss_kib": 22468,
+      "report_valid": true,
+      "finding_count": 574
+    },
+    {
+      "order": 16,
+      "revision": "current",
+      "exit_code": 0,
+      "wall_seconds": 0.03530167100143444,
+      "max_rss_kib": 22772,
+      "report_valid": true,
+      "finding_count": 760
+    },
+    {
+      "order": 17,
+      "revision": "baseline",
+      "exit_code": 0,
+      "wall_seconds": 0.028180342000268865,
+      "max_rss_kib": 22348,
+      "report_valid": true,
+      "finding_count": 574
+    },
+    {
+      "order": 18,
+      "revision": "baseline",
+      "exit_code": 0,
+      "wall_seconds": 0.027158373999554897,
+      "max_rss_kib": 22900,
+      "report_valid": true,
+      "finding_count": 574
+    },
+    {
+      "order": 19,
+      "revision": "current",
+      "exit_code": 0,
+      "wall_seconds": 0.03434887399998843,
+      "max_rss_kib": 22900,
+      "report_valid": true,
+      "finding_count": 760
+    },
+    {
+      "order": 20,
+      "revision": "baseline",
+      "exit_code": 0,
+      "wall_seconds": 0.027721295000446844,
+      "max_rss_kib": 22352,
+      "report_valid": true,
+      "finding_count": 574
+    },
+    {
+      "order": 21,
+      "revision": "current",
+      "exit_code": 0,
+      "wall_seconds": 0.03425319999951171,
+      "max_rss_kib": 22912,
+      "report_valid": true,
+      "finding_count": 760
+    },
+    {
+      "order": 22,
+      "revision": "baseline",
+      "exit_code": 0,
+      "wall_seconds": 0.027258561000053305,
+      "max_rss_kib": 22480,
+      "report_valid": true,
+      "finding_count": 574
+    },
+    {
+      "order": 23,
+      "revision": "current",
+      "exit_code": 0,
+      "wall_seconds": 0.03332325100018352,
+      "max_rss_kib": 22784,
+      "report_valid": true,
+      "finding_count": 760
+    },
+    {
+      "order": 24,
+      "revision": "current",
+      "exit_code": 0,
+      "wall_seconds": 0.0335420579995116,
+      "max_rss_kib": 22480,
+      "report_valid": true,
+      "finding_count": 760
+    },
+    {
+      "order": 25,
+      "revision": "baseline",
+      "exit_code": 0,
+      "wall_seconds": 0.032352362999517936,
+      "max_rss_kib": 22488,
+      "report_valid": true,
+      "finding_count": 574
+    },
+    {
+      "order": 26,
+      "revision": "baseline",
+      "exit_code": 0,
+      "wall_seconds": 0.030319976000100723,
+      "max_rss_kib": 22920,
+      "report_valid": true,
+      "finding_count": 574
+    },
+    {
+      "order": 27,
+      "revision": "current",
+      "exit_code": 0,
+      "wall_seconds": 0.03879599600077199,
+      "max_rss_kib": 22920,
+      "report_valid": true,
+      "finding_count": 760
+    },
+    {
+      "order": 28,
+      "revision": "current",
+      "exit_code": 0,
+      "wall_seconds": 0.03429310700084898,
+      "max_rss_kib": 22500,
+      "report_valid": true,
+      "finding_count": 760
+    },
+    {
+      "order": 29,
+      "revision": "baseline",
+      "exit_code": 0,
+      "wall_seconds": 0.03244499500033271,
+      "max_rss_kib": 22488,
+      "report_valid": true,
+      "finding_count": 574
+    },
+    {
+      "order": 30,
+      "revision": "baseline",
+      "exit_code": 0,
+      "wall_seconds": 0.030672074999529286,
+      "max_rss_kib": 22956,
+      "report_valid": true,
+      "finding_count": 574
+    },
+    {
+      "order": 31,
+      "revision": "current",
+      "exit_code": 0,
+      "wall_seconds": 0.03355597100016894,
+      "max_rss_kib": 22828,
+      "report_valid": true,
+      "finding_count": 760
+    },
+    {
+      "order": 32,
+      "revision": "baseline",
+      "exit_code": 0,
+      "wall_seconds": 0.030640198001492536,
+      "max_rss_kib": 22524,
+      "report_valid": true,
+      "finding_count": 574
+    },
+    {
+      "order": 33,
+      "revision": "current",
+      "exit_code": 0,
+      "wall_seconds": 0.034165152001151,
+      "max_rss_kib": 22948,
+      "report_valid": true,
+      "finding_count": 760
+    },
+    {
+      "order": 34,
+      "revision": "current",
+      "exit_code": 0,
+      "wall_seconds": 0.03527811999992991,
+      "max_rss_kib": 22524,
+      "report_valid": true,
+      "finding_count": 760
+    },
+    {
+      "order": 35,
+      "revision": "baseline",
+      "exit_code": 0,
+      "wall_seconds": 0.02846606899947801,
+      "max_rss_kib": 22536,
+      "report_valid": true,
+      "finding_count": 574
+    },
+    {
+      "order": 36,
+      "revision": "baseline",
+      "exit_code": 0,
+      "wall_seconds": 0.031111020000025746,
+      "max_rss_kib": 22976,
+      "report_valid": true,
+      "finding_count": 574
+    },
+    {
+      "order": 37,
+      "revision": "current",
+      "exit_code": 0,
+      "wall_seconds": 0.03789889399922686,
+      "max_rss_kib": 22976,
+      "report_valid": true,
+      "finding_count": 760
+    },
+    {
+      "order": 38,
+      "revision": "baseline",
+      "exit_code": 0,
+      "wall_seconds": 0.028930729000421707,
+      "max_rss_kib": 22544,
+      "report_valid": true,
+      "finding_count": 574
+    },
+    {
+      "order": 39,
+      "revision": "current",
+      "exit_code": 0,
+      "wall_seconds": 0.03452357099922665,
+      "max_rss_kib": 22976,
+      "report_valid": true,
+      "finding_count": 760
+    }
+  ],
+  "fixture_sha256": "0c5087cf802db6baaa341f099ef03a19dba4a5a3db7807bd2dd8f708e0b6f45d",
+  "limitations": [
+    "This is a local crawl microbenchmark, not a representative production workload.",
+    "HEAD and the dirty worktree may differ in source, manifests, features and lockfile; this measures the combined revision delta, not an isolated detector cost.",
+    "Peak RSS is per process; the threaded fixture server is excluded."
+  ]
+}

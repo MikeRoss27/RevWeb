@@ -1,0 +1,34 @@
+{
+  "build_command": [
+    "rustc",
+    "--edition",
+    "2021",
+    "-O",
+    "benchmarks/performance/2026-10-17/spa-site-optimized/regex-compile.rs",
+    "--extern",
+    "regex=target/release/deps/libregex-fc6c4047236202d8.rlib",
+    "-L",
+    "dependency=target/release/deps",
+    "-o",
+    "/tmp/webrev-perf-oct17/regex-compile"
+  ],
+  "results": [
+    {
+      "pattern": "http_client",
+      "iterations": 100,
+      "legacy_mean_ns": 326990,
+      "optimized_mean_ns": 66356
+    },
+    {
+      "pattern": "network_url",
+      "iterations": 100,
+      "legacy_mean_ns": 441729,
+      "optimized_mean_ns": 111968
+    }
+  ],
+  "limitations": [
+    "Compiled-regex construction only, not end-to-end scanner runtime.",
+    "100 alternating pairs per pattern; same cached regex dependency as scanner release.",
+    "Timer excludes dropping the compiled regex; results measure construction only."
+  ]
+}

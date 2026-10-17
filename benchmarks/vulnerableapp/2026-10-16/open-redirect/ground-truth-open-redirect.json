@@ -1,0 +1,90 @@
+[
+  {
+    "url": "http://VulnerableApp-base:9090/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_1",
+    "variant": "UNSECURE",
+    "method": "GET",
+    "vulnerabilityTypes": [
+      "OPEN_REDIRECT_3XX_STATUS_CODE"
+    ]
+  },
+  {
+    "url": "http://VulnerableApp-base:9090/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_2",
+    "variant": "UNSECURE",
+    "method": "GET",
+    "vulnerabilityTypes": [
+      "OPEN_REDIRECT_3XX_STATUS_CODE"
+    ]
+  },
+  {
+    "url": "http://VulnerableApp-base:9090/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_3",
+    "variant": "UNSECURE",
+    "method": "GET",
+    "vulnerabilityTypes": [
+      "OPEN_REDIRECT_3XX_STATUS_CODE"
+    ]
+  },
+  {
+    "url": "http://VulnerableApp-base:9090/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_4",
+    "variant": "UNSECURE",
+    "method": "GET",
+    "vulnerabilityTypes": [
+      "OPEN_REDIRECT_3XX_STATUS_CODE"
+    ]
+  },
+  {
+    "url": "http://VulnerableApp-base:9090/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_5",
+    "variant": "UNSECURE",
+    "method": "GET",
+    "vulnerabilityTypes": [
+      "OPEN_REDIRECT_3XX_STATUS_CODE"
+    ]
+  },
+  {
+    "url": "http://VulnerableApp-base:9090/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_6",
+    "variant": "UNSECURE",
+    "method": "GET",
+    "vulnerabilityTypes": [
+      "OPEN_REDIRECT_3XX_STATUS_CODE"
+    ]
+  },
+  {
+    "url": "http://VulnerableApp-base:9090/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_7",
+    "variant": "UNSECURE",
+    "method": "GET",
+    "vulnerabilityTypes": [
+      "OPEN_REDIRECT_3XX_STATUS_CODE"
+    ]
+  },
+  {
+    "url": "http://VulnerableApp-base:9090/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_9",
+    "variant": "UNSECURE",
+    "method": "GET",
+    "vulnerabilityTypes": [
+      "OPEN_REDIRECT_3XX_STATUS_CODE"
+    ]
+  },
+  {
+    "url": "http://VulnerableApp-base:9090/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_10",
+    "variant": "UNSECURE",
+    "method": "GET",
+    "vulnerabilityTypes": [
+      "OPEN_REDIRECT_3XX_STATUS_CODE"
+    ]
+  },
+  {
+    "url": "http://VulnerableApp-base:9090/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_11",
+    "variant": "SECURE",
+    "method": "GET",
+    "vulnerabilityTypes": [
+      "OPEN_REDIRECT_3XX_STATUS_CODE"
+    ]
+  },
+  {
+    "url": "http://VulnerableApp-base:9090/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_12",
+    "variant": "SECURE",
+    "method": "GET",
+    "vulnerabilityTypes": [
+      "OPEN_REDIRECT_3XX_STATUS_CODE"
+    ]
+  }
+]

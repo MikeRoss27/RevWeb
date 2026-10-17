@@ -1,0 +1,27 @@
+{
+  "probe": "GET returnTo=https://webrev-redirect-probe.invalid/0123456789abcdef; redirects not followed",
+  "observations": [
+    {
+      "level": 8,
+      "variant": "SECURE manual control",
+      "status": 200,
+      "redirect_url": "",
+      "result": "no Location redirect"
+    },
+    {
+      "level": 11,
+      "variant": "SECURE ground-truth row",
+      "status": 403,
+      "redirect_url": "",
+      "result": "HTTP refusal; excluded from TN"
+    },
+    {
+      "level": 12,
+      "variant": "SECURE ground-truth row",
+      "status": 400,
+      "redirect_url": "",
+      "result": "no Location redirect"
+    }
+  ],
+  "command": "curl --get --data-urlencode returnTo=https://webrev-redirect-probe.invalid/0123456789abcdef <scoped-lab-route>; one request per level; curl did not follow redirects"
+}

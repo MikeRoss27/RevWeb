@@ -1,0 +1,625 @@
+{
+  "schema": 1,
+  "timestamp_utc": "2026-10-17T18:46:24.723234+00:00",
+  "baseline_ref": "61b843daf845946060abae026b43349170ff177b",
+  "baseline_commit": "61b843daf845946060abae026b43349170ff177b",
+  "current_commit": "61b843daf845946060abae026b43349170ff177b",
+  "worktree_dirty": true,
+  "environment": {
+    "os": "Linux-7.2.9-arch1-1-x86_64-with-glibc2.44",
+    "machine": "x86_64",
+    "processor": "x86_64",
+    "cpu_count": 16,
+    "rustc": "rustc 1.98.1 (48a229cea 2026-09-01)",
+    "cargo": "cargo 1.98.1 (797e8a9bc 2026-08-05)"
+  },
+  "fixture": {
+    "kind": "deterministic SPA-like multi-asset local site",
+    "profile": "site",
+    "pages": 120,
+    "assets": 24,
+    "max_depth": 2,
+    "concurrency": 4,
+    "delay_ms": 0,
+    "scope": "127.0.0.1"
+  },
+  "method": {
+    "runs_each": 30,
+    "order": "seeded shuffled pairs; randomized order within each pair",
+    "runtime": "wall clock includes process startup, excludes build",
+    "p95": "nearest rank",
+    "rss": "posix_spawn + wait4; contaminated by inherited Python RSS, not a scanner memory measurement"
+  },
+  "lockfiles": {
+    "candidate_lock_sha256_before_build": "74b4a49634588d22d22ad3f3069d765cd71315baf78ba2a84f5c6aec00a81135",
+    "candidate_lock_sha256_after_build": "74b4a49634588d22d22ad3f3069d765cd71315baf78ba2a84f5c6aec00a81135",
+    "baseline_lock_sha256_before_build": "74b4a49634588d22d22ad3f3069d765cd71315baf78ba2a84f5c6aec00a81135",
+    "baseline_lock_sha256_after_build": "2772e2b0e0137ac42463e2ddec8b6205d967f085d9e788bf581bb3994204472e",
+    "baseline_started_from_candidate_lock": true,
+    "lockfiles_identical_after_build": false
+  },
+  "summaries": {
+    "baseline": {
+      "runs": 30,
+      "runtime_median_seconds": 0.02979608549992463,
+      "runtime_p95_seconds": 0.034577042000137226,
+      "max_rss_kib_max": 36016,
+      "finding_counts": [
+        574
+      ],
+      "failures": 0
+    },
+    "current": {
+      "runs": 30,
+      "runtime_median_seconds": 0.03531323049992352,
+      "runtime_p95_seconds": 0.0383211680000386,
+      "max_rss_kib_max": 36016,
+      "finding_counts": [
+        760
+      ],
+      "failures": 0
+    }
+  },
+  "relative_change": {
+    "runtime_p95_percent": 10.828358307476126,
+    "max_rss_percent": 0.0
+  },
+  "binaries": {
+    "baseline": {
+      "sha256": "4259e069d09bff32d6465156c7fffe6ecc9c4a35e91987636f8bb395e3176807"
+    },
+    "current": {
+      "sha256": "22be706ee94366fa68bce2490a13594afc9aa94317bda76b8ab3904067cc3194"
+    }
+  },
+  "raw_runs": [
+    {
+      "order": 0,
+      "revision": "current",
+      "exit_code": 0,
+      "wall_seconds": 0.037747200000012526,
+      "max_rss_kib": 29360,
+      "report_valid": true,
+      "finding_count": 760
+    },
+    {
+      "order": 1,
+      "revision": "baseline",
+      "exit_code": 0,
+      "wall_seconds": 0.03241915799981143,
+      "max_rss_kib": 32816,
+      "report_valid": true,
+      "finding_count": 574
+    },
+    {
+      "order": 2,
+      "revision": "baseline",
+      "exit_code": 0,
+      "wall_seconds": 0.027764627999886216,
+      "max_rss_kib": 33328,
+      "report_valid": true,
+      "finding_count": 574
+    },
+    {
+      "order": 3,
+      "revision": "current",
+      "exit_code": 0,
+      "wall_seconds": 0.0383211680000386,
+      "max_rss_kib": 33456,
+      "report_valid": true,
+      "finding_count": 760
+    },
+    {
+      "order": 4,
+      "revision": "current",
+      "exit_code": 0,
+      "wall_seconds": 0.03576972000018941,
+      "max_rss_kib": 34352,
+      "report_valid": true,
+      "finding_count": 760
+    },
+    {
+      "order": 5,
+      "revision": "baseline",
+      "exit_code": 0,
+      "wall_seconds": 0.032293152999955055,
+      "max_rss_kib": 34736,
+      "report_valid": true,
+      "finding_count": 574
+    },
+    {
+      "order": 6,
+      "revision": "current",
+      "exit_code": 0,
+      "wall_seconds": 0.034468874000140204,
+      "max_rss_kib": 34992,
+      "report_valid": true,
+      "finding_count": 760
+    },
+    {
+      "order": 7,
+      "revision": "baseline",
+      "exit_code": 0,
+      "wall_seconds": 0.03341048599986607,
+      "max_rss_kib": 35248,
+      "report_valid": true,
+      "finding_count": 574
+    },
+    {
+      "order": 8,
+      "revision": "current",
+      "exit_code": 0,
+      "wall_seconds": 0.034768372999906205,
+      "max_rss_kib": 35376,
+      "report_valid": true,
+      "finding_count": 760
+    },
+    {
+      "order": 9,
+      "revision": "baseline",
+      "exit_code": 0,
+      "wall_seconds": 0.03136844599998767,
+      "max_rss_kib": 35376,
+      "report_valid": true,
+      "finding_count": 574
+    },
+    {
+      "order": 10,
+      "revision": "baseline",
+      "exit_code": 0,
+      "wall_seconds": 0.028972530999908486,
+      "max_rss_kib": 35376,
+      "report_valid": true,
+      "finding_count": 574
+    },
+    {
+      "order": 11,
+      "revision": "current",
+      "exit_code": 0,
+      "wall_seconds": 0.0344294000001355,
+      "max_rss_kib": 35376,
+      "report_valid": true,
+      "finding_count": 760
+    },
+    {
+      "order": 12,
+      "revision": "baseline",
+      "exit_code": 0,
+      "wall_seconds": 0.034006051000005755,
+      "max_rss_kib": 35504,
+      "report_valid": true,
+      "finding_count": 574
+    },
+    {
+      "order": 13,
+      "revision": "current",
+      "exit_code": 0,
+      "wall_seconds": 0.03455202200007079,
+      "max_rss_kib": 35504,
+      "report_valid": true,
+      "finding_count": 760
+    },
+    {
+      "order": 14,
+      "revision": "baseline",
+      "exit_code": 0,
+      "wall_seconds": 0.03180862600015644,
+      "max_rss_kib": 35504,
+      "report_valid": true,
+      "finding_count": 574
+    },
+    {
+      "order": 15,
+      "revision": "current",
+      "exit_code": 0,
+      "wall_seconds": 0.0344431450000684,
+      "max_rss_kib": 35504,
+      "report_valid": true,
+      "finding_count": 760
+    },
+    {
+      "order": 16,
+      "revision": "current",
+      "exit_code": 0,
+      "wall_seconds": 0.03545315499991375,
+      "max_rss_kib": 35504,
+      "report_valid": true,
+      "finding_count": 760
+    },
+    {
+      "order": 17,
+      "revision": "baseline",
+      "exit_code": 0,
+      "wall_seconds": 0.034577042000137226,
+      "max_rss_kib": 35504,
+      "report_valid": true,
+      "finding_count": 574
+    },
+    {
+      "order": 18,
+      "revision": "baseline",
+      "exit_code": 0,
+      "wall_seconds": 0.028019497000059346,
+      "max_rss_kib": 35504,
+      "report_valid": true,
+      "finding_count": 574
+    },
+    {
+      "order": 19,
+      "revision": "current",
+      "exit_code": 0,
+      "wall_seconds": 0.033800381999981255,
+      "max_rss_kib": 35504,
+      "report_valid": true,
+      "finding_count": 760
+    },
+    {
+      "order": 20,
+      "revision": "current",
+      "exit_code": 0,
+      "wall_seconds": 0.03600049800002125,
+      "max_rss_kib": 35504,
+      "report_valid": true,
+      "finding_count": 760
+    },
+    {
+      "order": 21,
+      "revision": "baseline",
+      "exit_code": 0,
+      "wall_seconds": 0.03173020299982454,
+      "max_rss_kib": 35504,
+      "report_valid": true,
+      "finding_count": 574
+    },
+    {
+      "order": 22,
+      "revision": "baseline",
+      "exit_code": 0,
+      "wall_seconds": 0.029405859000007695,
+      "max_rss_kib": 35504,
+      "report_valid": true,
+      "finding_count": 574
+    },
+    {
+      "order": 23,
+      "revision": "current",
+      "exit_code": 0,
+      "wall_seconds": 0.03593578200002412,
+      "max_rss_kib": 35504,
+      "report_valid": true,
+      "finding_count": 760
+    },
+    {
+      "order": 24,
+      "revision": "baseline",
+      "exit_code": 0,
+      "wall_seconds": 0.03198671100017236,
+      "max_rss_kib": 35632,
+      "report_valid": true,
+      "finding_count": 574
+    },
+    {
+      "order": 25,
+      "revision": "current",
+      "exit_code": 0,
+      "wall_seconds": 0.035692896000000474,
+      "max_rss_kib": 35632,
+      "report_valid": true,
+      "finding_count": 760
+    },
+    {
+      "order": 26,
+      "revision": "current",
+      "exit_code": 0,
+      "wall_seconds": 0.03418361400008507,
+      "max_rss_kib": 35632,
+      "report_valid": true,
+      "finding_count": 760
+    },
+    {
+      "order": 27,
+      "revision": "baseline",
+      "exit_code": 0,
+      "wall_seconds": 0.02960443300003135,
+      "max_rss_kib": 35632,
+      "report_valid": true,
+      "finding_count": 574
+    },
+    {
+      "order": 28,
+      "revision": "baseline",
+      "exit_code": 0,
+      "wall_seconds": 0.028726960000085455,
+      "max_rss_kib": 35632,
+      "report_valid": true,
+      "finding_count": 574
+    },
+    {
+      "order": 29,
+      "revision": "current",
+      "exit_code": 0,
+      "wall_seconds": 0.03452007599980789,
+      "max_rss_kib": 35760,
+      "report_valid": true,
+      "finding_count": 760
+    },
+    {
+      "order": 30,
+      "revision": "baseline",
+      "exit_code": 0,
+      "wall_seconds": 0.03671103199985737,
+      "max_rss_kib": 35888,
+      "report_valid": true,
+      "finding_count": 574
+    },
+    {
+      "order": 31,
+      "revision": "current",
+      "exit_code": 0,
+      "wall_seconds": 0.03443117599999823,
+      "max_rss_kib": 35888,
+      "report_valid": true,
+      "finding_count": 760
+    },
+    {
+      "order": 32,
+      "revision": "current",
+      "exit_code": 0,
+      "wall_seconds": 0.0414347020000605,
+      "max_rss_kib": 35888,
+      "report_valid": true,
+      "finding_count": 760
+    },
+    {
+      "order": 33,
+      "revision": "baseline",
+      "exit_code": 0,
+      "wall_seconds": 0.02921652300005917,
+      "max_rss_kib": 35888,
+      "report_valid": true,
+      "finding_count": 574
+    },
+    {
+      "order": 34,
+      "revision": "current",
+      "exit_code": 0,
+      "wall_seconds": 0.03676668000002792,
+      "max_rss_kib": 35888,
+      "report_valid": true,
+      "finding_count": 760
+    },
+    {
+      "order": 35,
+      "revision": "baseline",
+      "exit_code": 0,
+      "wall_seconds": 0.02943999699982669,
+      "max_rss_kib": 35888,
+      "report_valid": true,
+      "finding_count": 574
+    },
+    {
+      "order": 36,
+      "revision": "current",
+      "exit_code": 0,
+      "wall_seconds": 0.033323779000056675,
+      "max_rss_kib": 35888,
+      "report_valid": true,
+      "finding_count": 760
+    },
+    {
+      "order": 37,
+      "revision": "baseline",
+      "exit_code": 0,
+      "wall_seconds": 0.030652493999923536,
+      "max_rss_kib": 35888,
+      "report_valid": true,
+      "finding_count": 574
+    },
+    {
+      "order": 38,
+      "revision": "baseline",
+      "exit_code": 0,
+      "wall_seconds": 0.02942985699996825,
+      "max_rss_kib": 35888,
+      "report_valid": true,
+      "finding_count": 574
+    },
+    {
+      "order": 39,
+      "revision": "current",
+      "exit_code": 0,
+      "wall_seconds": 0.035646262000000206,
+      "max_rss_kib": 36016,
+      "report_valid": true,
+      "finding_count": 760
+    },
+    {
+      "order": 40,
+      "revision": "current",
+      "exit_code": 0,
+      "wall_seconds": 0.035275834999993094,
+      "max_rss_kib": 36016,
+      "report_valid": true,
+      "finding_count": 760
+    },
+    {
+      "order": 41,
+      "revision": "baseline",
+      "exit_code": 0,
+      "wall_seconds": 0.031010841000124856,
+      "max_rss_kib": 36016,
+      "report_valid": true,
+      "finding_count": 574
+    },
+    {
+      "order": 42,
+      "revision": "baseline",
+      "exit_code": 0,
+      "wall_seconds": 0.03235668699994676,
+      "max_rss_kib": 36016,
+      "report_valid": true,
+      "finding_count": 574
+    },
+    {
+      "order": 43,
+      "revision": "current",
+      "exit_code": 0,
+      "wall_seconds": 0.03687947699995675,
+      "max_rss_kib": 36016,
+      "report_valid": true,
+      "finding_count": 760
+    },
+    {
+      "order": 44,
+      "revision": "baseline",
+      "exit_code": 0,
+      "wall_seconds": 0.028613673000108975,
+      "max_rss_kib": 36016,
+      "report_valid": true,
+      "finding_count": 574
+    },
+    {
+      "order": 45,
+      "revision": "current",
+      "exit_code": 0,
+      "wall_seconds": 0.035350625999853946,
+      "max_rss_kib": 36016,
+      "report_valid": true,
+      "finding_count": 760
+    },
+    {
+      "order": 46,
+      "revision": "baseline",
+      "exit_code": 0,
+      "wall_seconds": 0.029951476999940496,
+      "max_rss_kib": 36016,
+      "report_valid": true,
+      "finding_count": 574
+    },
+    {
+      "order": 47,
+      "revision": "current",
+      "exit_code": 0,
+      "wall_seconds": 0.033863590000009935,
+      "max_rss_kib": 36016,
+      "report_valid": true,
+      "finding_count": 760
+    },
+    {
+      "order": 48,
+      "revision": "current",
+      "exit_code": 0,
+      "wall_seconds": 0.036308085999962714,
+      "max_rss_kib": 36016,
+      "report_valid": true,
+      "finding_count": 760
+    },
+    {
+      "order": 49,
+      "revision": "baseline",
+      "exit_code": 0,
+      "wall_seconds": 0.02903530599996884,
+      "max_rss_kib": 36016,
+      "report_valid": true,
+      "finding_count": 574
+    },
+    {
+      "order": 50,
+      "revision": "current",
+      "exit_code": 0,
+      "wall_seconds": 0.036919812000178354,
+      "max_rss_kib": 36016,
+      "report_valid": true,
+      "finding_count": 760
+    },
+    {
+      "order": 51,
+      "revision": "baseline",
+      "exit_code": 0,
+      "wall_seconds": 0.0292671300001075,
+      "max_rss_kib": 36016,
+      "report_valid": true,
+      "finding_count": 574
+    },
+    {
+      "order": 52,
+      "revision": "baseline",
+      "exit_code": 0,
+      "wall_seconds": 0.031037126999990505,
+      "max_rss_kib": 36016,
+      "report_valid": true,
+      "finding_count": 574
+    },
+    {
+      "order": 53,
+      "revision": "current",
+      "exit_code": 0,
+      "wall_seconds": 0.03294699399998535,
+      "max_rss_kib": 36016,
+      "report_valid": true,
+      "finding_count": 760
+    },
+    {
+      "order": 54,
+      "revision": "current",
+      "exit_code": 0,
+      "wall_seconds": 0.035601195000026564,
+      "max_rss_kib": 36016,
+      "report_valid": true,
+      "finding_count": 760
+    },
+    {
+      "order": 55,
+      "revision": "baseline",
+      "exit_code": 0,
+      "wall_seconds": 0.028973364999956175,
+      "max_rss_kib": 36016,
+      "report_valid": true,
+      "finding_count": 574
+    },
+    {
+      "order": 56,
+      "revision": "current",
+      "exit_code": 0,
+      "wall_seconds": 0.03405736700005946,
+      "max_rss_kib": 36016,
+      "report_valid": true,
+      "finding_count": 760
+    },
+    {
+      "order": 57,
+      "revision": "baseline",
+      "exit_code": 0,
+      "wall_seconds": 0.029640693999908763,
+      "max_rss_kib": 36016,
+      "report_valid": true,
+      "finding_count": 574
+    },
+    {
+      "order": 58,
+      "revision": "baseline",
+      "exit_code": 0,
+      "wall_seconds": 0.029024811999988742,
+      "max_rss_kib": 36016,
+      "report_valid": true,
+      "finding_count": 574
+    },
+    {
+      "order": 59,
+      "revision": "current",
+      "exit_code": 0,
+      "wall_seconds": 0.033538227999997616,
+      "max_rss_kib": 36016,
+      "report_valid": true,
+      "finding_count": 760
+    }
+  ],
+  "fixture_sha256": "0c5087cf802db6baaa341f099ef03a19dba4a5a3db7807bd2dd8f708e0b6f45d",
+  "limitations": [
+    "This is a local crawl microbenchmark, not a representative production workload.",
+    "HEAD and the dirty worktree may differ in source, manifests, features and lockfile; this measures the combined revision delta, not an isolated detector cost.",
+    "Peak RSS is per process; the threaded fixture server is excluded.",
+    "Diagnostic run: posix_spawn inherits the Python launcher RSS high-water mark on this Linux host. Its RSS is invalid for scanner attribution; superseded by the native wait4 launcher run.",
+    "Original diagnostic tar stream was re-created for the native run; its tar digest is not retained. Rust source hashes in source-snapshot.json describe both unchanged scanner builds."
+  ]
+}

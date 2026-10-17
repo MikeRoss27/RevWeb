@@ -1,0 +1,94 @@
+{
+  "status": "independent_review_pending",
+  "prediction_blinding": "predictions already visible to maintainers; an independent reviewer must adjudicate without these reports",
+  "cases": [
+    {
+      "id": "TS-SECRET-001-reachable",
+      "maintainer_label": "positive",
+      "source": "upstream/cases/typescript/src/reachable_hardcoded_secret.ts",
+      "source_sha256": "9ffc1bdd1c9976c67cc2712fda2c08e3b84a1d45722372d9074f2dfe3fec3700",
+      "evidence": "Synthetic payment API credential is a literal assigned to apiKey and returned by the exported function.",
+      "independent_reviewer": null,
+      "independent_decision": null,
+      "independent_evidence": null,
+      "reviewed_at": null
+    },
+    {
+      "id": "TS-SECRET-001-unreachable",
+      "maintainer_label": "negative",
+      "source": "upstream/cases/typescript/src/unreachable_hardcoded_secret.ts",
+      "source_sha256": "aa29e1514cc2f262fb568f6bd033163eee4af3df2371b7af77632597c89c895f",
+      "evidence": "Credential comes from env.PAYMENT_API_KEY; the only credential-shaped literal is an explicitly documented test placeholder.",
+      "independent_reviewer": null,
+      "independent_decision": null,
+      "independent_evidence": null,
+      "reviewed_at": null
+    },
+    {
+      "id": "NODE-BACKDOOR-OPKEY-001-reachable",
+      "maintainer_label": "positive",
+      "source": "upstream/cases/nodejs/src/reachable_hardcoded_operator_key.js",
+      "source_sha256": "90770468accddc63f2d17a6be204b61b9bccb29da5e39c4a74b86a605113281a",
+      "evidence": "operator-maintenance-key is embedded as OPERATOR_KEY and compared with the authentication header.",
+      "independent_reviewer": null,
+      "independent_decision": null,
+      "independent_evidence": null,
+      "reviewed_at": null
+    },
+    {
+      "id": "NODE-BACKDOOR-OPKEY-001-unreachable",
+      "maintainer_label": "positive",
+      "source": "upstream/cases/nodejs/src/unreachable_hardcoded_operator_key.js",
+      "source_sha256": "ccf04bcefc24c201f848d90149500971093510bc768b3fe7f677d52b5f3bd6a4",
+      "evidence": "The same embedded authentication key remains in retired code. Static secret presence is positive despite upstream reachability=false.",
+      "independent_reviewer": null,
+      "independent_decision": null,
+      "independent_evidence": null,
+      "reviewed_at": null
+    },
+    {
+      "id": "NODE-BACKDOOR-OPKEY-001-fixed",
+      "maintainer_label": "negative",
+      "source": "upstream/fixed/NODE-BACKDOOR-OPKEY-001/fixed_hardcoded_operator_key.js",
+      "source_sha256": "2eada6dc79e9b7dea994753c1ad0c4a4153428f4944c2932e2d4761098f84d63",
+      "evidence": "Authentication-key literal and operator override are removed; only role names and an error string remain.",
+      "independent_reviewer": null,
+      "independent_decision": null,
+      "independent_evidence": null,
+      "reviewed_at": null
+    },
+    {
+      "id": "NODE-BACKDOOR-MAGIC-001-reachable",
+      "maintainer_label": "positive",
+      "source": "upstream/cases/nodejs/src/reachable_magic_credential_backdoor.js",
+      "source_sha256": "f31e8dc6c7614650228187420cc17eb6c4b70c9fa9572786ece7e32d5d1a39f8",
+      "evidence": "debug-open-sesame is a hardcoded password alternative granting administrator access.",
+      "independent_reviewer": null,
+      "independent_decision": null,
+      "independent_evidence": null,
+      "reviewed_at": null
+    },
+    {
+      "id": "NODE-BACKDOOR-MAGIC-001-unreachable",
+      "maintainer_label": "positive",
+      "source": "upstream/cases/nodejs/src/unreachable_magic_credential_backdoor.js",
+      "source_sha256": "48ec4aa4a585c08a5ff072848917404e813e1a88c239dec5ef1d8156a4017bfd",
+      "evidence": "The same password remains in a retired function. Static secret presence is positive despite upstream reachability=false.",
+      "independent_reviewer": null,
+      "independent_decision": null,
+      "independent_evidence": null,
+      "reviewed_at": null
+    },
+    {
+      "id": "NODE-BACKDOOR-MAGIC-001-fixed",
+      "maintainer_label": "negative",
+      "source": "upstream/fixed/NODE-BACKDOOR-MAGIC-001/fixed_magic_credential_backdoor.js",
+      "source_sha256": "e7ac8a18212434725da4e12bd28ea22e3b780f6ec1718d5fd7694e4c55265fa9",
+      "evidence": "Hardcoded password alternative is removed; authentication delegates to passwordVerifier.",
+      "independent_reviewer": null,
+      "independent_decision": null,
+      "independent_evidence": null,
+      "reviewed_at": null
+    }
+  ]
+}

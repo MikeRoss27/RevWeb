@@ -1,0 +1,19 @@
+    Finished `test` profile [unoptimized] target(s) in 0.08s
+     Running unittests src/lib.rs (/home/na/.cache/webrev-validation-target/debug/deps/webrev_browser-3ba34ad283f22c65)
+
+running 1 test
+CDP ws/wss catch-all guard loopback evidence: ["GET /websocket-probe", "GET /probe-control", "UPGRADE /ws-in-scope", "UPGRADE /ws-out-of-scope", "GET /favicon.ico"]
+
+thread 'dynamic::tests::diagnostic_websocket_cdp_block_patterns' (252128) panicked at crates/webrev-browser/src/dynamic_tests.rs:394:5:
+network guard must block every WS handshake
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test dynamic::tests::diagnostic_websocket_cdp_block_patterns ... FAILED
+
+failures:
+
+failures:
+    dynamic::tests::diagnostic_websocket_cdp_block_patterns
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 9 filtered out; finished in 2.24s
+
+error: test failed, to rerun pass `-p webrev-browser --lib`

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en-US">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Choose your preferred language</title>
+</head>
+
+<body>
+Select your language:
+
+<select><script>
+
+var s = location.href.substring(document.location.href.indexOf("default=")+8);
+
+if (s.charCodeAt(4) === 105) {
+    document.write("<OPTION value=1>"+"English"+"</OPTION>");    
+    document.write("<OPTION value=2>Spanish</OPTION>");
+    document.write("<OPTION value=3>French</OPTION>");
+}
+else if (s.charCodeAt(0) === 74) {
+    document.write("<OPTION value=1>"+"Japanese"+"</OPTION>");
+    document.write("<OPTION value=2>Korean</OPTION>");
+    document.write("<OPTION value=3>Vietnamese</OPTION>");
+}
+else {
+    document.write("<OPTION value=1>Urdu</OPTION>");
+    document.write("<OPTION value=2>Khmer</OPTION>");
+}
+
+</script></select>
+</body>
+
+
+</html>

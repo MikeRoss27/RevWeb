@@ -1,0 +1,56 @@
+{
+  "runtime": "Chromium 154.0.8037.97 Arch Linux",
+  "mode": "offline URL parsing only; no navigation or fetch",
+  "base_url": "http://lab.internal:9090/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_1",
+  "cases": {
+    "level3_documented": {
+      "input": "/%09/webrev-redirect-probe.invalid/0123456789abcdef",
+      "resolved": "http://lab.internal:9090/%09/webrev-redirect-probe.invalid/0123456789abcdef",
+      "host": "lab.internal",
+      "path": "/%09/webrev-redirect-probe.invalid/0123456789abcdef",
+      "external": false
+    },
+    "level3_tab_bypass": {
+      "input": "\t//webrev-redirect-probe.invalid/0123456789abcdef",
+      "resolved": "http://webrev-redirect-probe.invalid/0123456789abcdef",
+      "host": "webrev-redirect-probe.invalid",
+      "path": "/0123456789abcdef",
+      "external": true
+    },
+    "level4_documented": {
+      "input": "/%09/webrev-redirect-probe.invalid/0123456789abcdef",
+      "resolved": "http://lab.internal:9090/%09/webrev-redirect-probe.invalid/0123456789abcdef",
+      "host": "lab.internal",
+      "path": "/%09/webrev-redirect-probe.invalid/0123456789abcdef",
+      "external": false
+    },
+    "level4_tab_bypass": {
+      "input": "\t//webrev-redirect-probe.invalid/0123456789abcdef",
+      "resolved": "http://webrev-redirect-probe.invalid/0123456789abcdef",
+      "host": "webrev-redirect-probe.invalid",
+      "path": "/0123456789abcdef",
+      "external": true
+    },
+    "level5_documented": {
+      "input": "\\/webrev-redirect-probe.invalid/0123456789abcdef",
+      "resolved": "http://webrev-redirect-probe.invalid/0123456789abcdef",
+      "host": "webrev-redirect-probe.invalid",
+      "path": "/0123456789abcdef",
+      "external": true
+    },
+    "level7_documented_after_prefix": {
+      "input": "http://lab.internal:9090/\\/webrev-redirect-probe.invalid/0123456789abcdef",
+      "resolved": "http://lab.internal:9090///webrev-redirect-probe.invalid/0123456789abcdef",
+      "host": "lab.internal",
+      "path": "///webrev-redirect-probe.invalid/0123456789abcdef",
+      "external": false
+    },
+    "level7_two_backslashes_after_prefix": {
+      "input": "http://lab.internal:9090/\\\\/webrev-redirect-probe.invalid/0123456789abcdef",
+      "resolved": "http://lab.internal:9090////webrev-redirect-probe.invalid/0123456789abcdef",
+      "host": "lab.internal",
+      "path": "////webrev-redirect-probe.invalid/0123456789abcdef",
+      "external": false
+    }
+  }
+}

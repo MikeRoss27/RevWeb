@@ -1,0 +1,75 @@
+{
+  "adapter": "vulnerableapp_adapter.py",
+  "mapping": "Webrev open_redirect exact randomized Location proof -> OPEN_REDIRECT_3XX_STATUS_CODE",
+  "submitted_count": 3,
+  "skipped_count": 9,
+  "open_redirect_coverage": {
+    "attempted": 12,
+    "executed": 12,
+    "not_executed": 0,
+    "not_selected": 0,
+    "negative": 8,
+    "refused": 1,
+    "scope_refused": 0,
+    "errors": 0,
+    "findings": 3,
+    "inconclusive": 0
+  },
+  "coverage_note": "the comparator may count VulnerableApp cases outside the executed or selected target set as missed; use this result as an end-to-end run score, not detector-only recall",
+  "skipped": [
+    {
+      "finding_id": "1cd68899-3d52-4360-9768-28bc13356903",
+      "kind": "Script",
+      "status": "observed",
+      "reason": "not an active vulnerability finding"
+    },
+    {
+      "finding_id": "01df850c-50f8-4e1f-be3a-8de26b6022f3",
+      "kind": "Script",
+      "status": "observed",
+      "reason": "not an active vulnerability finding"
+    },
+    {
+      "finding_id": "f19cbd9e-225a-444c-934c-1d0e64fa8028",
+      "kind": "Script",
+      "status": "observed",
+      "reason": "not an active vulnerability finding"
+    },
+    {
+      "finding_id": "bf4234d9-bca3-44f9-8deb-55d810edd2ba",
+      "kind": "Technology",
+      "status": "observed",
+      "reason": "not an active vulnerability finding"
+    },
+    {
+      "finding_id": "cd1b9f2e-665b-4142-952c-07a0ab54fddb",
+      "kind": "Parameter",
+      "status": "observed",
+      "reason": "not an active vulnerability finding"
+    },
+    {
+      "finding_id": "72319a5a-45c8-443a-ae80-f761d6a4a905",
+      "kind": "Config",
+      "status": "observed",
+      "reason": "not an active vulnerability finding"
+    },
+    {
+      "finding_id": "39ac8ea0-884e-4ba2-8ab6-7ca508498cfd",
+      "kind": "Config",
+      "status": "observed",
+      "reason": "not an active vulnerability finding"
+    },
+    {
+      "finding_id": "a060f8bf-cb76-40f3-89c6-f92f3d2adcf6",
+      "kind": "Config",
+      "status": "observed",
+      "reason": "not an active vulnerability finding"
+    },
+    {
+      "finding_id": "e1eaf18b-cbb4-4e84-9615-a35bbcf60770",
+      "kind": "Vulnerability",
+      "status": "observed",
+      "reason": "no open_redirect check evidence"
+    }
+  ]
+}

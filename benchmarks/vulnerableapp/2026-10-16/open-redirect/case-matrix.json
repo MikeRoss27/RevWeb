@@ -1,0 +1,89 @@
+{
+  "selection": "all nine vulnerable redirect labels and two labeled secure controls; level 12 ran as a supplemental control because the main batch exhausted its request budget",
+  "cases": [
+    {
+      "level": 1,
+      "ground_truth": "UNSECURE OPEN_REDIRECT_3XX_STATUS_CODE",
+      "scanner_finding": true,
+      "result": "TP",
+      "batch_run": true
+    },
+    {
+      "level": 2,
+      "ground_truth": "UNSECURE OPEN_REDIRECT_3XX_STATUS_CODE",
+      "scanner_finding": true,
+      "result": "TP",
+      "batch_run": true
+    },
+    {
+      "level": 3,
+      "ground_truth": "UNSECURE OPEN_REDIRECT_3XX_STATUS_CODE",
+      "scanner_finding": true,
+      "result": "TP",
+      "batch_run": true
+    },
+    {
+      "level": 4,
+      "ground_truth": "UNSECURE OPEN_REDIRECT_3XX_STATUS_CODE",
+      "scanner_finding": true,
+      "result": "TP",
+      "batch_run": true
+    },
+    {
+      "level": 5,
+      "ground_truth": "UNSECURE OPEN_REDIRECT_3XX_STATUS_CODE",
+      "scanner_finding": true,
+      "result": "TP",
+      "batch_run": true
+    },
+    {
+      "level": 6,
+      "ground_truth": "UNSECURE OPEN_REDIRECT_3XX_STATUS_CODE",
+      "scanner_finding": true,
+      "result": "TP",
+      "batch_run": true
+    },
+    {
+      "level": 7,
+      "ground_truth": "UNSECURE OPEN_REDIRECT_3XX_STATUS_CODE",
+      "scanner_finding": false,
+      "result": "FN",
+      "batch_run": true
+    },
+    {
+      "level": 9,
+      "ground_truth": "UNSECURE OPEN_REDIRECT_3XX_STATUS_CODE",
+      "scanner_finding": true,
+      "result": "TP",
+      "batch_run": true
+    },
+    {
+      "level": 10,
+      "ground_truth": "UNSECURE OPEN_REDIRECT_3XX_STATUS_CODE",
+      "scanner_finding": true,
+      "result": "TP",
+      "batch_run": true
+    },
+    {
+      "level": 8,
+      "ground_truth": "no DAST row (manual secure control)",
+      "scanner_finding": false,
+      "result": "negative control; excluded from metrics",
+      "batch_run": true
+    },
+    {
+      "level": 11,
+      "ground_truth": "SECURE",
+      "scanner_finding": false,
+      "result": "HTTP refusal; excluded from TN",
+      "batch_run": true
+    },
+    {
+      "level": 12,
+      "ground_truth": "SECURE",
+      "scanner_finding": false,
+      "result": "TN in supplemental one-route active scan",
+      "batch_run": false
+    }
+  ]
+}

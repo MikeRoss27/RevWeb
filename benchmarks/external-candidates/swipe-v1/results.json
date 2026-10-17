@@ -1,0 +1,72 @@
+{
+  "source": "SWIPE selected fixture diagnostic",
+  "run_date": "2026-10-17",
+  "command": "cargo test -p webrev-extract --test swipe_domxss_external -- --nocapture",
+  "cases": 30,
+  "counts": {
+    "tp": 14,
+    "fp": 0,
+    "fn": 2,
+    "tn": 13,
+    "inconclusive": 1
+  },
+  "rates_percent": {
+    "precision": 100.0,
+    "recall": 87.5,
+    "false_positive_rate": 0.0,
+    "false_negative_rate": 12.5
+  },
+  "denominators": {
+    "positives": 16,
+    "negatives": 13
+  },
+  "mismatches": {
+    "false_positive": [],
+    "false_negatives": [
+      "swipe-simpleDOMXSS1-index",
+      "swipe-testFields3-index"
+    ]
+  },
+  "interpretation": "Maintainer-reviewed pilot labels over selected external fixtures; diagnostic only, not an independent or representative accuracy estimate.",
+  "inconclusive_cases_excluded_from_binary_metrics": 1,
+  "live_targets_scanned": 0,
+  "previous_run": {
+    "counts": {
+      "tp": 13,
+      "fp": 1,
+      "fn": 3,
+      "tn": 12,
+      "inconclusive": 1
+    },
+    "mismatches": {
+      "false_positive": [
+        "swipe-testStrSearch-index"
+      ],
+      "false_negatives": [
+        "swipe-simpleDOMXSS1-index",
+        "swipe-sinks-onclick",
+        "swipe-testFields3-index"
+      ]
+    }
+  },
+  "applied_changes": [
+    "Treat numeric and boolean string-method results as untainted for HTML/code sinks.",
+    "Recognize dynamic event-handler sinks through setAttribute(on*) and direct on* properties."
+  ],
+  "regression_validation": {
+    "run_date": "2026-10-17",
+    "command": "CARGO_TARGET_DIR=/home/na/.cache/webrev-validation-target CARGO_PROFILE_DEV_DEBUG=0 CARGO_PROFILE_TEST_DEBUG=0 cargo test -p webrev-extract --test swipe_domxss_external -- --nocapture",
+    "tests_passed": 1,
+    "tests_failed": 0,
+    "source_files_exercised": 32,
+    "counts": {
+      "tp": 14,
+      "fp": 0,
+      "fn": 2,
+      "tn": 13,
+      "inconclusive": 1
+    },
+    "assertions": "Per-case non-regression, fixed label counts, unique IDs and inventoried paths, byte lengths and exact manifest/inventory source coverage.",
+    "note": "Linux target directory avoids the workspace NTFS3 executable artifact issue. Same labels and byte-preserved sources; hero.js companion is now included in its case. Cases are still run through independent per-file extraction, not ES-module linking."
+  }
+}

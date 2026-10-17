@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en-US">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Parse foo</title>
+</head>
+
+<body>
+
+<script>
+
+var s = location.href.substring(document.location.href.indexOf("?a=")+3);
+
+// var str = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+var str = s;
+var regexp = /[A-C]/g;
+var matches_array = str.match(regexp);
+
+console.log(matches_array);
+
+// ['A', 'B', 'C']
+
+console.log('matches_array !== null', matches_array !== null);
+
+if (matches_array != null &&
+    matches_array[0] === 'A' &&
+    matches_array[1] === 'B' &&
+    matches_array[2] === 'C' ) 
+{
+	document.write('<h2>A-C matched</h2>');
+} else {
+	document.write('<h1>:(</h1>');
+}
+
+
+</script>
+</body>
+
+
+</html>

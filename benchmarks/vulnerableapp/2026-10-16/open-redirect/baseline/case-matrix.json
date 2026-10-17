@@ -1,0 +1,83 @@
+{
+  "selection": "all 9 UNSECURE ground-truth open-redirect levels plus secure/manual controls",
+  "cases": [
+    {
+      "level": 1,
+      "ground_truth": "UNSECURE OPEN_REDIRECT_3XX_STATUS_CODE",
+      "scanner_finding": true,
+      "result": "TP"
+    },
+    {
+      "level": 2,
+      "ground_truth": "UNSECURE OPEN_REDIRECT_3XX_STATUS_CODE",
+      "scanner_finding": false,
+      "result": "FN"
+    },
+    {
+      "level": 3,
+      "ground_truth": "UNSECURE OPEN_REDIRECT_3XX_STATUS_CODE",
+      "scanner_finding": false,
+      "result": "FN"
+    },
+    {
+      "level": 4,
+      "ground_truth": "UNSECURE OPEN_REDIRECT_3XX_STATUS_CODE",
+      "scanner_finding": false,
+      "result": "FN"
+    },
+    {
+      "level": 5,
+      "ground_truth": "UNSECURE OPEN_REDIRECT_3XX_STATUS_CODE",
+      "scanner_finding": false,
+      "result": "FN"
+    },
+    {
+      "level": 6,
+      "ground_truth": "UNSECURE OPEN_REDIRECT_3XX_STATUS_CODE",
+      "scanner_finding": false,
+      "result": "FN"
+    },
+    {
+      "level": 7,
+      "ground_truth": "UNSECURE OPEN_REDIRECT_3XX_STATUS_CODE",
+      "scanner_finding": false,
+      "result": "FN"
+    },
+    {
+      "level": 9,
+      "ground_truth": "UNSECURE OPEN_REDIRECT_3XX_STATUS_CODE",
+      "scanner_finding": true,
+      "result": "TP"
+    },
+    {
+      "level": 10,
+      "ground_truth": "UNSECURE OPEN_REDIRECT_3XX_STATUS_CODE",
+      "scanner_finding": true,
+      "result": "TP"
+    },
+    {
+      "level": 8,
+      "ground_truth": "no row (manual secure control)",
+      "scanner_finding": false,
+      "http_status_control_observation": 200,
+      "location": "absent",
+      "result": "negative control"
+    },
+    {
+      "level": 11,
+      "ground_truth": "SECURE",
+      "scanner_finding": false,
+      "http_status_control_observation": 403,
+      "location": "absent",
+      "result": "refused control; excluded from TN"
+    },
+    {
+      "level": 12,
+      "ground_truth": "SECURE",
+      "scanner_finding": false,
+      "http_status_control_observation": 400,
+      "location": "absent",
+      "result": "negative control"
+    }
+  ]
+}

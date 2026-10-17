@@ -1,0 +1,18 @@
+{
+  "snapshot_timing": "captured after benchmark; not guaranteed identical to inputs read during candidate compilation",
+  "workspace_source_manifest_sha256": "89ce06ca70d9cd72bd17a824734908949475fc12a4a2cc39bec7bd457f5b3805",
+  "source_file_count": 150,
+  "cargo_lock_sha256": "9e34e028ad08cd1ed6d0d99632ace8428cb3df33cbb5acb768ca479843aaa8c7",
+  "rustc_vv": "rustc 1.98.1 (48a229cea 2026-09-01)\nbinary: rustc\ncommit-hash: 48a229ceaefd4985c50990b14116b6d856af0985\ncommit-date: 2026-09-01\nhost: x86_64-unknown-linux-gnu\nrelease: 1.98.1\nLLVM version: 22.1.8",
+  "cargo_version": "cargo 1.98.1 (797e8a9bc 2026-08-05)",
+  "files": {
+    "crates/webrev-storage/src/backends/memory.rs": "8496afd6e05143e90fbd478583555dec04a0fe9be65c8826329eef042348c348",
+    "crates/webrev-extract/src/extractors/endpoints/js_regex.rs": "c415b2df978c77c72265e1fa731a31965c161f8224861342655cafa4b38d8e87",
+    "benchmarks/performance/2026-10-16/spa-site-dom-prefilter/harness.py": "c9e580fa63b8c0a33723f468ddc8efbd5e1f529da7c476724dcba75bff761770",
+    "benchmarks/performance/2026-10-16/spa-storage-index/results.json": "26aba9567da01b4276bc9fd3ade3f0a6daf8be5d9d84402dc023e3275c4abbda",
+    "benchmarks/performance/2026-10-16/spa-storage-index/fixture-manifest.json": "cc22610900a211a98a1763eb41f0971f04631d7f3fb52343294db89c3231f8cc"
+  },
+  "fixture_digest": "0c5087cf802db6baaa341f099ef03a19dba4a5a3db7807bd2dd8f708e0b6f45d",
+  "benchmark_completed_at": "2026-10-16T22:12:10.348603+00:00",
+  "candidate_source_limit": "js_regex.rs mtime falls within candidate compilation window; compiled source revision cannot be reconstructed from this dirty shared workspace."
+}
