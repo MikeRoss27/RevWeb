@@ -62,6 +62,8 @@ impl Fixture {
                     }
                     Err(e) => panic!("accept: {e}"),
                 };
+                // Accepted sockets inherit the listener's non-blocking mode on Windows and BSD.
+                socket.set_nonblocking(false).unwrap();
                 socket
                     .set_read_timeout(Some(Duration::from_secs(1)))
                     .unwrap();
