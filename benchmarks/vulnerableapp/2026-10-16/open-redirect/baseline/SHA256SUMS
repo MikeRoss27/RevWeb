@@ -1,0 +1,11 @@
+034a7a44576a22093bdca94deadee29f229cbdccbaed3cd672195f635000cb3c  ./README.md
+5f6d9b63c70630268e9ff588817ab7e78eff9b9c0704a3806baa51e6bad32f41  ./adapter-review.json
+7b2205053212b753b1b015f63629972211e75f41c02949399362343f3bf7839e  ./case-matrix.json
+ff2049df19f287e3db425da06f964485a6775b94308715d3f4942a8e5404feef  ./comparator-input.json
+2fc7b2ce72a3d81b7fae81fe50e3a31ace624b44ed8bfe8f4e9e7aacfb566001  ./comparator-result.json
+ad965145ed0c5dac94219041b0369a51015e535e218cd6c8fa5bd0c98e6f9b7b  ./compose.override.yml
+8706df297b036dc65a0a2ff296afd29eb3070c22010f52f2e72dd8bb0b6e2c6d  ./control-observations.json
+81d525d36421942c20d32b2233914bcfec013983c34b53c50a12115add12dc7f  ./ground-truth-full.json
+fccc43e08f7dc5657847102ede57f061bf55a7508b5d93c9afa6fe1a6420f42e  ./ground-truth-open-redirect.json
+478c29691fac6e2ef92873ff59372a4a628036a0743e18a05bb45062646cac00  ./metadata.json
+bc6ee6a35e388c56f3edd9e12b205b4871ab7db9909e3f34c2fde949c7ff530f  ./webrev-report.json

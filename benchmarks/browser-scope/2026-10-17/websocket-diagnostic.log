@@ -1,0 +1,10 @@
+    Finished `test` profile [unoptimized] target(s) in 0.09s
+     Running unittests src/lib.rs (/home/na/.cache/webrev-validation-target/debug/deps/webrev_browser-3ba34ad283f22c65)
+
+running 1 test
+websocket scope diagnostic: out_of_scope_handshake_received=true; interception_refusals=0; exported_out_of_scope_endpoints=0
+loopback request evidence: ["GET /websocket-probe", "GET /probe-executed", "UPGRADE /ws-in-scope", "UPGRADE /ws-out-of-scope", "GET /favicon.ico"]
+test dynamic::tests::diagnostic_websocket_scope_egress ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 8 filtered out; finished in 3.33s
+

@@ -1,0 +1,2464 @@
+{
+  "schema_version": "1.0",
+  "corpus_name": "security-defect-corpus",
+  "cases": [
+    {
+      "id": "JS-XSS-001",
+      "ecosystem": "javascript",
+      "language": "JavaScript",
+      "defect_class": "cross_site_scripting",
+      "cwe": [
+        "CWE-79"
+      ],
+      "reachable_file": "cases/javascript/src/reachable_xss.js",
+      "unreachable_file": "cases/javascript/src/unreachable_xss.js",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "high",
+      "data_flow": "request.query.name -> renderGreeting -> html response",
+      "expected_remediation": "HTML-escape untrusted output or use a safe templating path.",
+      "expected_tests": [
+        "malicious name is encoded",
+        "safe name still renders"
+      ],
+      "false_positive_boundary": "unreachable_xss.js contains unsafe-looking code behind a disabled legacy route.",
+      "fixed_file": "fixed/JS-XSS-001/fixed_xss.js"
+    },
+    {
+      "id": "TS-IDOR-001",
+      "ecosystem": "typescript",
+      "language": "TypeScript",
+      "defect_class": "insecure_direct_object_reference",
+      "cwe": [
+        "CWE-639",
+        "CWE-862"
+      ],
+      "reachable_file": "cases/typescript/src/reachable_idor.ts",
+      "unreachable_file": "cases/typescript/src/unreachable_idor.ts",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "high",
+      "data_flow": "authenticated user id + arbitrary account id -> getAccountById without ownership check",
+      "expected_remediation": "Require ownership/authorization check before returning account data.",
+      "expected_tests": [
+        "owner can read account",
+        "non-owner is rejected"
+      ],
+      "false_positive_boundary": "unreachable_idor.ts has an admin-only internal helper not exposed through a route.",
+      "fixed_file": "fixed/TS-IDOR-001/fixed_idor.ts"
+    },
+    {
+      "id": "NODE-CMD-001",
+      "ecosystem": "nodejs",
+      "language": "JavaScript / Node.js",
+      "defect_class": "command_injection",
+      "cwe": [
+        "CWE-78"
+      ],
+      "reachable_file": "cases/nodejs/src/reachable_command_injection.js",
+      "unreachable_file": "cases/nodejs/src/unreachable_command_injection.js",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "critical",
+      "data_flow": "request.query.host -> child_process.exec",
+      "expected_remediation": "Avoid shell interpolation; use spawn/execFile with fixed command and validated arguments.",
+      "expected_tests": [
+        "semicolon payload is rejected",
+        "valid hostname executes safe path"
+      ],
+      "false_positive_boundary": "unreachable_command_injection.js contains a retired diagnostic function that is not exported or routed.",
+      "fixed_file": "fixed/NODE-CMD-001/fixed_command_injection.js"
+    },
+    {
+      "id": "C-BOF-001",
+      "ecosystem": "c",
+      "language": "C",
+      "defect_class": "stack_buffer_overflow",
+      "cwe": [
+        "CWE-120"
+      ],
+      "reachable_file": "cases/c/src/reachable_buffer_overflow.c",
+      "unreachable_file": "cases/c/src/unreachable_buffer_overflow.c",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "critical",
+      "data_flow": "argv[1] -> strcpy into fixed stack buffer",
+      "expected_remediation": "Use bounded copy/formatting, validate length, and preserve null termination.",
+      "expected_tests": [
+        "long input is rejected/truncated safely",
+        "normal input succeeds"
+      ],
+      "false_positive_boundary": "unreachable_buffer_overflow.c has a vulnerable helper not called from main.",
+      "fixed_file": "fixed/C-BOF-001/fixed_buffer_overflow.c"
+    },
+    {
+      "id": "CPP-PATH-001",
+      "ecosystem": "cpp",
+      "language": "C++",
+      "defect_class": "path_traversal",
+      "cwe": [
+        "CWE-22"
+      ],
+      "reachable_file": "cases/cpp/src/reachable_path_traversal.cpp",
+      "unreachable_file": "cases/cpp/src/unreachable_path_traversal.cpp",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "high",
+      "data_flow": "argv[1] -> base_dir + relative path -> file read",
+      "expected_remediation": "Canonicalize path and enforce that it remains inside the allowed base directory.",
+      "expected_tests": [
+        "../ traversal is rejected",
+        "allowed file path succeeds"
+      ],
+      "false_positive_boundary": "unreachable_path_traversal.cpp validates path before use despite suspicious concatenation helper.",
+      "fixed_file": "fixed/CPP-PATH-001/fixed_path_traversal.cpp"
+    },
+    {
+      "id": "CS-SQLI-001",
+      "ecosystem": "csharp",
+      "language": "C# / .NET",
+      "defect_class": "sql_injection",
+      "cwe": [
+        "CWE-89"
+      ],
+      "reachable_file": "cases/csharp/src/ReachableSqlInjection.cs",
+      "unreachable_file": "cases/csharp/src/UnreachableSqlInjection.cs",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "critical",
+      "data_flow": "route email parameter -> SQL string concatenation -> ExecuteReader",
+      "expected_remediation": "Use parameterized queries and validate expected email shape.",
+      "expected_tests": [
+        "injection payload returns no extra rows",
+        "normal email lookup works"
+      ],
+      "false_positive_boundary": "unreachable C# example uses a constant query path and a dead legacy method.",
+      "fixed_file": "fixed/CS-SQLI-001/FixedSqlInjection.cs"
+    },
+    {
+      "id": "DEP-UPSTREAM-001",
+      "ecosystem": "dotnet-dependency",
+      "language": "C# / .NET dependency simulation",
+      "defect_class": "dependency_vulnerability_patch_in_place",
+      "cwe": [
+        "CWE-20"
+      ],
+      "reachable_file": "cases/dotnet-dependency/src/ConsumerUsesVulnerableParser.cs",
+      "unreachable_file": "cases/dotnet-dependency/src/PatchedParserSimulation.cs",
+      "reachable": true,
+      "unreachable_pair": false,
+      "expected_severity": "high",
+      "data_flow": "consumer input -> vulnerable dependency parser accepts traversal-like tenant id",
+      "expected_remediation": "Prepare upstream-style parser validation patch, regression tests, and internal artifact traceability until upstream accepts fix.",
+      "expected_tests": [
+        "invalid tenant id rejected",
+        "valid tenant id accepted",
+        "patched artifact version recorded"
+      ],
+      "false_positive_boundary": "patched simulation demonstrates expected fixed behaviour for agent comparison.",
+      "fixed_file": "fixed/DEP-UPSTREAM-001/PatchedParserSimulation.cs"
+    },
+    {
+      "id": "JAVA-XXE-001",
+      "ecosystem": "java",
+      "language": "Java",
+      "defect_class": "xml_external_entity",
+      "cwe": [
+        "CWE-611"
+      ],
+      "reachable_file": "cases/java/src/ReachableXxe.java",
+      "unreachable_file": "cases/java/src/UnreachableXxe.java",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "high",
+      "data_flow": "uploaded XML body -> default DocumentBuilderFactory -> external entity resolution",
+      "expected_remediation": "Disable DTDs and external entity resolution; restrict external DTD/schema access.",
+      "expected_tests": [
+        "XXE payload is rejected",
+        "normal XML still parses"
+      ],
+      "false_positive_boundary": "UnreachableXxe.java contains a private unsafe legacy parser but public parsing path disables XXE.",
+      "fixed_file": "fixed/JAVA-XXE-001/FixedXxe.java"
+    },
+    {
+      "id": "C-MEM-001",
+      "ecosystem": "c",
+      "language": "C",
+      "defect_class": "memory_leak",
+      "cwe": [
+        "CWE-401"
+      ],
+      "reachable_file": "cases/c/src/reachable_memory_leak.c",
+      "unreachable_file": "cases/c/src/unreachable_memory_leak.c",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "medium",
+      "data_flow": "argv[1] -> malloc in make_message -> printed without free",
+      "expected_remediation": "Free allocated memory on all paths or redesign ownership to avoid heap allocation.",
+      "expected_tests": [
+        "normal path frees allocation",
+        "leak checker reports no definitely-lost bytes"
+      ],
+      "false_positive_boundary": "unreachable_memory_leak.c has a legacy allocator helper that is not called; reachable path frees allocation.",
+      "fixed_file": "fixed/C-MEM-001/fixed_memory_leak.c"
+    },
+    {
+      "id": "CPP-MEM-001",
+      "ecosystem": "cpp",
+      "language": "C++",
+      "defect_class": "memory_leak",
+      "cwe": [
+        "CWE-401"
+      ],
+      "reachable_file": "cases/cpp/src/reachable_memory_leak.cpp",
+      "unreachable_file": "cases/cpp/src/unreachable_memory_leak.cpp",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "medium",
+      "data_flow": "argv[1] -> new Session in handleLogin -> no delete before return",
+      "expected_remediation": "Use RAII/smart pointers or stack allocation to make ownership deterministic.",
+      "expected_tests": [
+        "login path releases Session",
+        "leak checker reports no definitely-lost bytes"
+      ],
+      "false_positive_boundary": "unreachable_memory_leak.cpp keeps a legacy raw-pointer factory private while reachable path uses unique_ptr.",
+      "fixed_file": "fixed/CPP-MEM-001/fixed_memory_leak.cpp"
+    },
+    {
+      "id": "NODE-SSRF-001",
+      "ecosystem": "nodejs",
+      "language": "JavaScript / Node.js",
+      "defect_class": "server_side_request_forgery",
+      "cwe": [
+        "CWE-918"
+      ],
+      "reachable_file": "cases/nodejs/src/reachable_ssrf.js",
+      "unreachable_file": "cases/nodejs/src/unreachable_ssrf.js",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "high",
+      "data_flow": "request.query.url -> http.get arbitrary URL",
+      "expected_remediation": "Validate/allowlist outbound destinations and block metadata/private networks.",
+      "expected_tests": [
+        "metadata URL blocked",
+        "allowed URL accepted"
+      ],
+      "false_positive_boundary": "Safe pair allowlists api.example.test and leaves legacy arbitrary fetch unexported.",
+      "fixed_file": "fixed/NODE-SSRF-001/fixed_ssrf.js"
+    },
+    {
+      "id": "JS-CSRF-001",
+      "ecosystem": "javascript",
+      "language": "JavaScript",
+      "defect_class": "cross_site_request_forgery",
+      "cwe": [
+        "CWE-352"
+      ],
+      "reachable_file": "cases/javascript/src/reachable_csrf.js",
+      "unreachable_file": "cases/javascript/src/unreachable_csrf.js",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "medium",
+      "data_flow": "browser session request -> state-changing email update without CSRF token",
+      "expected_remediation": "Require CSRF token validation or equivalent browser-session protection.",
+      "expected_tests": [
+        "missing token rejected",
+        "valid token accepted"
+      ],
+      "false_positive_boundary": "Safe pair validates req.body.csrfToken against session token.",
+      "fixed_file": "fixed/JS-CSRF-001/fixed_csrf.js"
+    },
+    {
+      "id": "JAVA-DESER-001",
+      "ecosystem": "java",
+      "language": "Java",
+      "defect_class": "unsafe_deserialization",
+      "cwe": [
+        "CWE-502"
+      ],
+      "reachable_file": "cases/java/src/ReachableDeserialization.java",
+      "unreachable_file": "cases/java/src/UnreachableDeserialization.java",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "critical",
+      "data_flow": "request body bytes -> ObjectInputStream.readObject",
+      "expected_remediation": "Avoid native deserialization or enforce strict allowlist filters.",
+      "expected_tests": [
+        "gadget-like payload rejected",
+        "allowed type accepted"
+      ],
+      "false_positive_boundary": "Safe pair uses ObjectInputFilter on public path.",
+      "fixed_file": "fixed/JAVA-DESER-001/FixedDeserialization.java"
+    },
+    {
+      "id": "C-UAF-001",
+      "ecosystem": "c",
+      "language": "C",
+      "defect_class": "use_after_free",
+      "cwe": [
+        "CWE-416"
+      ],
+      "reachable_file": "cases/c/src/reachable_use_after_free.c",
+      "unreachable_file": "cases/c/src/unreachable_use_after_free.c",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "critical",
+      "data_flow": "malloc token -> free -> printf dereference",
+      "expected_remediation": "Do not dereference freed memory; preserve ownership until final use.",
+      "expected_tests": [
+        "sanitizer detects no UAF after fix"
+      ],
+      "false_positive_boundary": "Safe pair prints before free; legacy UAF helper not called.",
+      "fixed_file": "fixed/C-UAF-001/fixed_use_after_free.c"
+    },
+    {
+      "id": "C-DFREE-001",
+      "ecosystem": "c",
+      "language": "C",
+      "defect_class": "double_free",
+      "cwe": [
+        "CWE-415"
+      ],
+      "reachable_file": "cases/c/src/reachable_double_free.c",
+      "unreachable_file": "cases/c/src/unreachable_double_free.c",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "high",
+      "data_flow": "malloc buffer -> free -> free again",
+      "expected_remediation": "Ensure each allocation is freed exactly once.",
+      "expected_tests": [
+        "sanitizer detects no double free after fix"
+      ],
+      "false_positive_boundary": "Safe pair frees once and nulls pointer.",
+      "fixed_file": "fixed/C-DFREE-001/fixed_double_free.c"
+    },
+    {
+      "id": "C-INT-001",
+      "ecosystem": "c",
+      "language": "C",
+      "defect_class": "integer_overflow",
+      "cwe": [
+        "CWE-190"
+      ],
+      "reachable_file": "cases/c/src/reachable_integer_overflow.c",
+      "unreachable_file": "cases/c/src/unreachable_integer_overflow.c",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "high",
+      "data_flow": "count * 64 overflows before malloc",
+      "expected_remediation": "Check multiplication bounds before allocation.",
+      "expected_tests": [
+        "oversized count rejected",
+        "normal count allocates"
+      ],
+      "false_positive_boundary": "Safe pair checks SIZE_MAX / 64.",
+      "fixed_file": "fixed/C-INT-001/fixed_integer_overflow.c"
+    },
+    {
+      "id": "C-FMT-001",
+      "ecosystem": "c",
+      "language": "C",
+      "defect_class": "format_string",
+      "cwe": [
+        "CWE-134"
+      ],
+      "reachable_file": "cases/c/src/reachable_format_string.c",
+      "unreachable_file": "cases/c/src/unreachable_format_string.c",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "high",
+      "data_flow": "argv[1] -> printf format parameter",
+      "expected_remediation": "Use constant format string and pass input as data.",
+      "expected_tests": [
+        "%n/%x payload printed literally"
+      ],
+      "false_positive_boundary": "Safe pair uses printf(\"%s\", argv[1]).",
+      "fixed_file": "fixed/C-FMT-001/fixed_format_string.c"
+    },
+    {
+      "id": "TS-SECRET-001",
+      "ecosystem": "typescript",
+      "language": "TypeScript",
+      "defect_class": "hardcoded_secret",
+      "cwe": [
+        "CWE-798"
+      ],
+      "reachable_file": "cases/typescript/src/reachable_hardcoded_secret.ts",
+      "unreachable_file": "cases/typescript/src/unreachable_hardcoded_secret.ts",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "high",
+      "data_flow": "hardcoded payment API key in buildPaymentClient",
+      "expected_remediation": "Use secret manager/env config and rotate exposed key.",
+      "expected_tests": [
+        "secret scanner clean",
+        "missing env rejected"
+      ],
+      "false_positive_boundary": "Safe pair uses env var; placeholder is documented test key.",
+      "fixed_file": "fixed/TS-SECRET-001/fixed_hardcoded_secret.ts"
+    },
+    {
+      "id": "CS-RAND-001",
+      "ecosystem": "csharp",
+      "language": "C# / .NET",
+      "defect_class": "weak_randomness",
+      "cwe": [
+        "CWE-338"
+      ],
+      "reachable_file": "cases/csharp/src/ReachableWeakRandom.cs",
+      "unreachable_file": "cases/csharp/src/UnreachableWeakRandom.cs",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "high",
+      "data_flow": "System.Random -> password reset token",
+      "expected_remediation": "Use cryptographic random number generator for security tokens.",
+      "expected_tests": [
+        "token generated by CSPRNG",
+        "System.Random absent from public path"
+      ],
+      "false_positive_boundary": "Safe pair uses RandomNumberGenerator.GetBytes.",
+      "fixed_file": "fixed/CS-RAND-001/FixedWeakRandom.cs"
+    },
+    {
+      "id": "JAVA-ZIP-001",
+      "ecosystem": "java",
+      "language": "Java",
+      "defect_class": "unsafe_archive_extraction",
+      "cwe": [
+        "CWE-22"
+      ],
+      "reachable_file": "cases/java/src/ReachableZipSlip.java",
+      "unreachable_file": "cases/java/src/UnreachableZipSlip.java",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "high",
+      "data_flow": "ZipEntry name -> new File output path without canonical boundary check",
+      "expected_remediation": "Canonicalize and enforce destination remains under output directory.",
+      "expected_tests": [
+        "../ entry rejected",
+        "normal entry accepted"
+      ],
+      "false_positive_boundary": "Safe pair checks canonical path starts with base.",
+      "fixed_file": "fixed/JAVA-ZIP-001/FixedZipSlip.java"
+    },
+    {
+      "id": "CLOUD-BUCKET-001",
+      "ecosystem": "cloud",
+      "language": "Cloud configuration",
+      "defect_class": "public_bucket_policy",
+      "cwe": [
+        "CWE-732"
+      ],
+      "reachable_file": "cases/cloud/src/reachable_public_bucket.json",
+      "unreachable_file": "cases/cloud/src/unreachable_public_bucket.json",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "critical",
+      "data_flow": "bucket policy Principal * grants s3:GetObject",
+      "expected_remediation": "Restrict bucket policy to approved identities and verify public access blocks.",
+      "expected_tests": [
+        "public principal absent",
+        "approved role present"
+      ],
+      "false_positive_boundary": "Safe pair restricts principal to named IAM role.",
+      "fixed_file": "fixed/CLOUD-BUCKET-001/fixed_public_bucket.json"
+    },
+    {
+      "id": "CPP-TOCTOU-001",
+      "ecosystem": "cpp",
+      "language": "C++",
+      "defect_class": "time_of_check_time_of_use",
+      "cwe": [
+        "CWE-367"
+      ],
+      "reachable_file": "cases/cpp/src/reachable_toctou.cpp",
+      "unreachable_file": "cases/cpp/src/unreachable_toctou.cpp",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "medium",
+      "data_flow": "filesystem.exists check -> later ofstream open",
+      "expected_remediation": "Avoid check-then-act race; use atomic create/open semantics where possible.",
+      "expected_tests": [
+        "race scenario mitigated",
+        "no separate exists gate"
+      ],
+      "false_positive_boundary": "Safe pair avoids exists check before open.",
+      "fixed_file": "fixed/CPP-TOCTOU-001/fixed_toctou.cpp"
+    },
+    {
+      "id": "NODE-LOG-001",
+      "ecosystem": "nodejs",
+      "language": "JavaScript / Node.js",
+      "defect_class": "sensitive_data_logging",
+      "cwe": [
+        "CWE-532"
+      ],
+      "reachable_file": "cases/nodejs/src/reachable_sensitive_logging.js",
+      "unreachable_file": "cases/nodejs/src/unreachable_sensitive_logging.js",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "medium",
+      "data_flow": "req.body password/token -> console.log",
+      "expected_remediation": "Redact sensitive fields before logging.",
+      "expected_tests": [
+        "password/token absent from logs"
+      ],
+      "false_positive_boundary": "Safe pair redacts sensitive fields.",
+      "fixed_file": "fixed/NODE-LOG-001/fixed_sensitive_logging.js"
+    },
+    {
+      "id": "NODE-CRLF-001",
+      "ecosystem": "nodejs",
+      "language": "JavaScript / Node.js",
+      "defect_class": "crlf_header_injection",
+      "cwe": [
+        "CWE-93",
+        "CWE-113"
+      ],
+      "reachable_file": "cases/nodejs/src/reachable_crlf_header_injection.js",
+      "unreachable_file": "cases/nodejs/src/unreachable_crlf_header_injection.js",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "high",
+      "data_flow": "request.query.next containing CRLF -> Location response header",
+      "expected_remediation": "Reject CR/LF/NUL/control characters before setting headers.",
+      "expected_tests": [
+        "CRLF payload rejected",
+        "normal redirect accepted"
+      ],
+      "false_positive_boundary": "Safe pair rejects CR, LF, NUL, C0 controls, and DEL.",
+      "payload_family": "non_printing_or_invisible_characters",
+      "fixed_file": "fixed/NODE-CRLF-001/fixed_crlf_header_injection.js"
+    },
+    {
+      "id": "NODE-LOGCTRL-001",
+      "ecosystem": "nodejs",
+      "language": "JavaScript / Node.js",
+      "defect_class": "log_control_character_injection",
+      "cwe": [
+        "CWE-117"
+      ],
+      "reachable_file": "cases/nodejs/src/reachable_log_control_chars.js",
+      "unreachable_file": "cases/nodejs/src/unreachable_log_control_chars.js",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "medium",
+      "data_flow": "request body user containing newline/control chars -> audit log",
+      "expected_remediation": "Escape control characters before logging user input.",
+      "expected_tests": [
+        "newline payload escaped",
+        "normal username readable"
+      ],
+      "false_positive_boundary": "Safe pair emits escaped unicode sequences for controls.",
+      "payload_family": "non_printing_or_invisible_characters",
+      "fixed_file": "fixed/NODE-LOGCTRL-001/fixed_log_control_chars.js"
+    },
+    {
+      "id": "TS-ZWSP-001",
+      "ecosystem": "typescript",
+      "language": "TypeScript",
+      "defect_class": "zero_width_identifier_confusion",
+      "cwe": [
+        "CWE-180",
+        "CWE-178"
+      ],
+      "reachable_file": "cases/typescript/src/reachable_zero_width_username.ts",
+      "unreachable_file": "cases/typescript/src/unreachable_zero_width_username.ts",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "medium",
+      "data_flow": "username with zero-width characters -> uniqueness/auth confusion",
+      "expected_remediation": "Normalize identifiers and reject/remove zero-width characters before comparison.",
+      "expected_tests": [
+        "admin+ZWSP treated as duplicate",
+        "normal name accepted"
+      ],
+      "false_positive_boundary": "Safe pair normalizes and strips zero-width characters.",
+      "payload_family": "non_printing_or_invisible_characters",
+      "fixed_file": "fixed/TS-ZWSP-001/fixed_zero_width_username.ts"
+    },
+    {
+      "id": "JAVA-NULPATH-001",
+      "ecosystem": "java",
+      "language": "Java",
+      "defect_class": "null_byte_path_validation_bypass",
+      "cwe": [
+        "CWE-158",
+        "CWE-22"
+      ],
+      "reachable_file": "cases/java/src/ReachableNullBytePath.java",
+      "unreachable_file": "cases/java/src/UnreachableNullBytePath.java",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "high",
+      "data_flow": "filename with NUL/control characters -> suffix validation confusion",
+      "expected_remediation": "Reject NUL/control characters and canonicalize before extension checks.",
+      "expected_tests": [
+        "evil.php\\0.png rejected",
+        "image.png accepted"
+      ],
+      "false_positive_boundary": "Safe pair rejects NUL/control characters before suffix checks.",
+      "payload_family": "non_printing_or_invisible_characters",
+      "fixed_file": "fixed/JAVA-NULPATH-001/FixedNullBytePath.java"
+    },
+    {
+      "id": "JAVA-BIDI-001",
+      "ecosystem": "java",
+      "language": "Java",
+      "defect_class": "unicode_bidi_filename_deception",
+      "cwe": [
+        "CWE-451"
+      ],
+      "reachable_file": "cases/java/src/ReachableBidiFilename.java",
+      "unreachable_file": "cases/java/src/UnreachableBidiFilename.java",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "medium",
+      "data_flow": "filename with bidi controls -> display/source/log deception",
+      "expected_remediation": "Reject bidi control characters in display/security-sensitive identifiers.",
+      "expected_tests": [
+        "bidi filename rejected",
+        "normal filename accepted"
+      ],
+      "false_positive_boundary": "Safe pair rejects U+202A-U+202E and isolate controls.",
+      "payload_family": "non_printing_or_invisible_characters",
+      "fixed_file": "fixed/JAVA-BIDI-001/FixedBidiFilename.java"
+    },
+    {
+      "id": "JS-UWS-001",
+      "ecosystem": "javascript",
+      "language": "JavaScript",
+      "defect_class": "unicode_whitespace_token_parsing",
+      "cwe": [
+        "CWE-180"
+      ],
+      "reachable_file": "cases/javascript/src/reachable_unicode_whitespace_token.js",
+      "unreachable_file": "cases/javascript/src/unreachable_unicode_whitespace_token.js",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "medium",
+      "data_flow": "role header with NBSP/line separator -> parser sees different token boundary",
+      "expected_remediation": "Normalize and split on full expected whitespace classes.",
+      "expected_tests": [
+        "NBSP-separated roles split correctly",
+        "ASCII roles still split"
+      ],
+      "false_positive_boundary": "Safe pair normalizes and splits on Unicode whitespace classes.",
+      "payload_family": "non_printing_or_invisible_characters",
+      "fixed_file": "fixed/JS-UWS-001/fixed_unicode_whitespace_token.js"
+    },
+    {
+      "id": "CPP-ENC-PATH-001",
+      "ecosystem": "cpp",
+      "language": "C++",
+      "defect_class": "encoded_path_traversal_bypass",
+      "cwe": [
+        "CWE-22",
+        "CWE-180"
+      ],
+      "reachable_file": "cases/cpp/src/reachable_encoded_path_traversal.cpp",
+      "unreachable_file": "cases/cpp/src/unreachable_encoded_path_traversal.cpp",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "high",
+      "data_flow": "encoded traversal such as %2e%2e%2f bypasses pre-decode .. check",
+      "expected_remediation": "Decode/canonicalize before traversal checks and enforce path boundary after decoding.",
+      "expected_tests": [
+        "encoded traversal rejected",
+        "allowed filename accepted"
+      ],
+      "false_positive_boundary": "Safe pair performs decode/canonicalization step before traversal checks.",
+      "payload_family": "non_printing_or_invisible_characters",
+      "fixed_file": "fixed/CPP-ENC-PATH-001/fixed_encoded_path_traversal.cpp"
+    },
+    {
+      "id": "NODE-INSTALL-NET-001",
+      "ecosystem": "nodejs",
+      "language": "JavaScript / Node.js",
+      "defect_class": "unexpected_install_time_network",
+      "cwe": [
+        "CWE-913",
+        "CWE-200"
+      ],
+      "reachable_file": "cases/nodejs/src/reachable_install_hook_network.js",
+      "unreachable_file": "cases/nodejs/src/unreachable_install_hook_network.js",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "high",
+      "data_flow": "package postinstall -> HTTPS request containing host/user context",
+      "expected_remediation": "Remove install-time network calls and keep installation side-effect local.",
+      "expected_tests": [
+        "postinstall contains no http/https request",
+        "local metadata write allowed"
+      ],
+      "false_positive_boundary": "Safe pair uses fs.writeFileSync only, no http/https imports or requests.",
+      "payload_family": "unexpected_network_connections",
+      "fixed_file": "fixed/NODE-INSTALL-NET-001/fixed_install_hook_network.js"
+    },
+    {
+      "id": "PY-IMPORT-NET-001",
+      "ecosystem": "python",
+      "language": "Python",
+      "defect_class": "unexpected_import_time_network",
+      "cwe": [
+        "CWE-913",
+        "CWE-668"
+      ],
+      "reachable_file": "cases/python/src/reachable_import_time_callback.py",
+      "unreachable_file": "cases/python/src/unreachable_import_time_callback.py",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "high",
+      "data_flow": "module import -> urllib.request.urlopen callback with local user context",
+      "expected_remediation": "Remove import-time network side effects; require explicit caller-injected network client.",
+      "expected_tests": [
+        "import has no urlopen",
+        "explicit fetch function requires injected client"
+      ],
+      "false_positive_boundary": "Safe pair has no top-level network call and only uses caller-supplied urlopen.",
+      "payload_family": "unexpected_network_connections",
+      "fixed_file": "fixed/PY-IMPORT-NET-001/fixed_import_time_callback.py"
+    },
+    {
+      "id": "JAVA-METADATA-NET-001",
+      "ecosystem": "java",
+      "language": "Java",
+      "defect_class": "unexpected_metadata_service_access",
+      "cwe": [
+        "CWE-918"
+      ],
+      "reachable_file": "cases/java/src/ReachableMetadataServiceAccess.java",
+      "unreachable_file": "cases/java/src/UnreachableMetadataServiceAccess.java",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "critical",
+      "data_flow": "runtime path -> HTTP request to 169.254.169.254 metadata service",
+      "expected_remediation": "Block metadata/link-local endpoint access unless explicitly approved.",
+      "expected_tests": [
+        "169.254.169.254 rejected",
+        "approved HTTPS endpoint accepted"
+      ],
+      "false_positive_boundary": "Safe pair rejects metadata-service host and non-HTTPS endpoints.",
+      "payload_family": "unexpected_network_connections",
+      "fixed_file": "fixed/JAVA-METADATA-NET-001/FixedMetadataServiceAccess.java"
+    },
+    {
+      "id": "GO-DNS-EXFIL-001",
+      "ecosystem": "go",
+      "language": "Go",
+      "defect_class": "unexpected_dns_exfiltration",
+      "cwe": [
+        "CWE-200",
+        "CWE-201"
+      ],
+      "reachable_file": "cases/go/src/reachable_dns_exfiltration.go",
+      "unreachable_file": "cases/go/src/unreachable_dns_exfiltration.go",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "high",
+      "data_flow": "local USER env var -> DNS label in net.LookupHost",
+      "expected_remediation": "Remove DNS lookups derived from local sensitive values and unexpected reporting paths.",
+      "expected_tests": [
+        "net.LookupHost absent from safe path",
+        "local metadata remains local"
+      ],
+      "false_positive_boundary": "Safe pair records local string only, no net import or DNS lookup.",
+      "payload_family": "unexpected_network_connections",
+      "fixed_file": "fixed/GO-DNS-EXFIL-001/fixed_dns_exfiltration.go"
+    },
+    {
+      "id": "TS-TELEMETRY-NET-001",
+      "ecosystem": "typescript",
+      "language": "TypeScript",
+      "defect_class": "undeclared_telemetry_beacon",
+      "cwe": [
+        "CWE-359",
+        "CWE-200"
+      ],
+      "reachable_file": "cases/typescript/src/reachable_telemetry_beacon.ts",
+      "unreachable_file": "cases/typescript/src/unreachable_telemetry_beacon.ts",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "medium",
+      "data_flow": "document processing -> undeclared fetch telemetry beacon with document/user-agent data",
+      "expected_remediation": "Remove undeclared telemetry or route through approved explicit telemetry client.",
+      "expected_tests": [
+        "normal processing makes no fetch",
+        "telemetry option requires approved client"
+      ],
+      "false_positive_boundary": "Safe pair has no fetch call and rejects ad hoc telemetry.",
+      "payload_family": "unexpected_network_connections",
+      "fixed_file": "fixed/TS-TELEMETRY-NET-001/fixed_telemetry_beacon.ts"
+    },
+    {
+      "id": "NODE-RUNTIME-EGRESS-001",
+      "ecosystem": "nodejs",
+      "language": "JavaScript / Node.js",
+      "defect_class": "unexpected_runtime_egress",
+      "cwe": [
+        "CWE-918",
+        "CWE-441"
+      ],
+      "reachable_file": "cases/nodejs/src/reachable_runtime_egress.js",
+      "unreachable_file": "cases/nodejs/src/unreachable_runtime_egress.js",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "high",
+      "data_flow": "customer enrichment -> HTTPS request to unknown third-party host",
+      "expected_remediation": "Allowlist runtime egress and route through approved clients.",
+      "expected_tests": [
+        "unknown host rejected",
+        "approved host accepted via injected client"
+      ],
+      "false_positive_boundary": "Safe pair validates approved egress hosts and uses injected client.",
+      "payload_family": "unexpected_network_connections",
+      "fixed_file": "fixed/NODE-RUNTIME-EGRESS-001/fixed_runtime_egress.js"
+    },
+    {
+      "id": "CVE-LODASH-PP-001",
+      "ecosystem": "javascript",
+      "language": "JavaScript",
+      "defect_class": "known_cve_fix_in_place_dependency",
+      "cwe": [
+        "CWE-1321"
+      ],
+      "cve": [
+        "CVE-2019-10744"
+      ],
+      "scanner_listed": true,
+      "scanner_input": "scanner-inputs/breaking-upgrade-cve-list.json",
+      "breaking_upgrade_risk": "lodash 3 to 4 removes/renames APIs relied on by downstream code, including lodash-3-style pluck behaviour exposed by this package",
+      "expected_fix_strategy": "fix-in-place",
+      "reachable_file": "cases/javascript/src/reachable_lodash_defaultsdeep_cve_2019_10744.js",
+      "unreachable_file": "cases/javascript/src/unreachable_lodash_defaultsdeep_cve_2019_10744.js",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "high",
+      "data_flow": "scanner CVE list -> lodash@3.10.1 defaultsDeep merge of tenant options -> prototype pollution risk",
+      "expected_remediation": "Patch reachable merge logic in place by rejecting prototype-pollution keys and preserving downstream API compatibility.",
+      "expected_tests": [
+        "__proto__/constructor/prototype keys rejected",
+        "normal nested options still merge",
+        "public getDisplayNames API preserved"
+      ],
+      "false_positive_boundary": "unreachable pair retains old defaultsDeep only in a disabled migration helper while exported merge rejects prototype keys.",
+      "fixed_file": "fixed/CVE-LODASH-PP-001/fixed_lodash_defaultsdeep_cve_2019_10744.js"
+    },
+    {
+      "id": "CVE-JQUERY-HTML-001",
+      "ecosystem": "javascript",
+      "language": "JavaScript",
+      "defect_class": "known_cve_fix_in_place_dependency",
+      "cwe": [
+        "CWE-79"
+      ],
+      "cve": [
+        "CVE-2020-11023"
+      ],
+      "scanner_listed": true,
+      "scanner_input": "scanner-inputs/breaking-upgrade-cve-list.json",
+      "breaking_upgrade_risk": "jQuery 1.x to 3.5+ can break legacy GUI plugins that depend on removed .size()/.andSelf() surfaces",
+      "expected_fix_strategy": "fix-in-place",
+      "reachable_file": "cases/javascript/src/reachable_jquery_htmlprefilter_cve_2020_11023.js",
+      "unreachable_file": "cases/javascript/src/unreachable_jquery_htmlprefilter_cve_2020_11023.js",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "medium",
+      "data_flow": "scanner CVE list -> jquery@1.12.4 -> untrusted option preview passed through .html() DOM insertion",
+      "expected_remediation": "Avoid untrusted HTML-string DOM insertion for option preview rendering while preserving legacy GUI plugin API.",
+      "expected_tests": [
+        "attacker-controlled option label rendered as text",
+        "legacy wizard plugin surface preserved",
+        "no direct .html(untrustedOptionHtml) sink remains"
+      ],
+      "false_positive_boundary": "unreachable pair keeps the legacy plugin API but renders option labels via text-node construction.",
+      "fixed_file": "fixed/CVE-JQUERY-HTML-001/fixed_jquery_htmlprefilter_cve_2020_11023.js"
+    },
+    {
+      "id": "CVE-LODASH-TEMPLATE-UNLISTED-001",
+      "ecosystem": "javascript",
+      "language": "JavaScript",
+      "defect_class": "opportunistic_unlisted_known_cve",
+      "cwe": [
+        "CWE-94"
+      ],
+      "cve": [
+        "CVE-2021-23337"
+      ],
+      "scanner_listed": false,
+      "scanner_input": "scanner-inputs/breaking-upgrade-cve-list.json",
+      "breaking_upgrade_risk": "not listed by the scanner export; should be reported and fixed opportunistically if safe",
+      "expected_fix_strategy": "report-and-fix-if-safe",
+      "reachable_file": "cases/javascript/src/reachable_lodash_template_cve_2021_23337_unlisted.js",
+      "unreachable_file": "cases/javascript/src/unreachable_lodash_template_cve_2021_23337_unlisted.js",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "high",
+      "data_flow": "untrusted template source and variable name -> lodash.template compilation surface",
+      "expected_remediation": "Report the additional CVE and constrain template compilation to vetted templates with application-controlled variable names.",
+      "expected_tests": [
+        "unlisted CVE reported despite scanner omission",
+        "unknown template id rejected",
+        "compiled templates use fixed application-controlled variable name"
+      ],
+      "false_positive_boundary": "unreachable pair compiles only vetted templates with fixed variable name.",
+      "fixed_file": "fixed/CVE-LODASH-TEMPLATE-UNLISTED-001/fixed_lodash_template_cve_2021_23337.js"
+    },
+    {
+      "id": "JS-OPENREDIR-001",
+      "ecosystem": "javascript",
+      "language": "JavaScript",
+      "defect_class": "open_redirect",
+      "cwe": [
+        "CWE-601"
+      ],
+      "reachable_file": "cases/javascript/src/reachable_open_redirect.js",
+      "unreachable_file": "cases/javascript/src/unreachable_open_redirect.js",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "medium",
+      "data_flow": "request.query.next -> res.redirect",
+      "expected_remediation": "Allow only local relative redirects or explicitly approved return URLs.",
+      "expected_tests": [
+        "external URL rejected",
+        "protocol-relative URL rejected",
+        "local return path accepted"
+      ],
+      "false_positive_boundary": "unreachable_open_redirect.js keeps unsafe-looking retired redirect code unexported and validates the exported path.",
+      "fixed_file": "fixed/JS-OPENREDIR-001/fixed_open_redirect.js"
+    },
+    {
+      "id": "JAVA-LDAP-001",
+      "ecosystem": "java",
+      "language": "Java",
+      "defect_class": "ldap_injection",
+      "cwe": [
+        "CWE-90"
+      ],
+      "reachable_file": "cases/java/src/ReachableLdapInjection.java",
+      "unreachable_file": "cases/java/src/UnreachableLdapInjection.java",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "high",
+      "data_flow": "username -> LDAP filter string concatenation -> directory.search",
+      "expected_remediation": "Escape LDAP filter metacharacters and keep filter structure application-controlled.",
+      "expected_tests": [
+        "asterisk payload escaped",
+        "parenthesis payload escaped",
+        "normal username still searches"
+      ],
+      "false_positive_boundary": "UnreachableLdapInjection.java keeps the unsafe helper private and escapes input in the exported lookup.",
+      "fixed_file": "fixed/JAVA-LDAP-001/FixedLdapInjection.java"
+    },
+    {
+      "id": "JS-TEMPLATE-001",
+      "ecosystem": "javascript",
+      "language": "JavaScript",
+      "defect_class": "template_expression_injection",
+      "cwe": [
+        "CWE-94",
+        "CWE-1336"
+      ],
+      "reachable_file": "cases/javascript/src/reachable_template_injection.js",
+      "unreachable_file": "cases/javascript/src/unreachable_template_injection.js",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "critical",
+      "data_flow": "template parameter -> new Function template compilation",
+      "expected_remediation": "Use vetted template identifiers and encode untrusted values instead of compiling attacker-controlled template source.",
+      "expected_tests": [
+        "unknown template rejected",
+        "expression payload not executed",
+        "known template renders encoded data"
+      ],
+      "false_positive_boundary": "unreachable_template_injection.js has a retired compiler helper but exported rendering selects vetted templates only.",
+      "fixed_file": "fixed/JS-TEMPLATE-001/fixed_template_injection.js"
+    },
+    {
+      "id": "NODE-NOSQL-001",
+      "ecosystem": "nodejs",
+      "language": "JavaScript / Node.js",
+      "defect_class": "nosql_injection",
+      "cwe": [
+        "CWE-943"
+      ],
+      "reachable_file": "cases/nodejs/src/reachable_nosql_injection.js",
+      "unreachable_file": "cases/nodejs/src/unreachable_nosql_injection.js",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "high",
+      "data_flow": "request body email/password -> Mongo-style findOne query object",
+      "expected_remediation": "Validate credential fields as strings and reject operator objects before building database predicates.",
+      "expected_tests": [
+        "$ne password object rejected",
+        "object email rejected",
+        "normal login lookup still works"
+      ],
+      "false_positive_boundary": "unreachable_nosql_injection.js keeps unsafe raw-object query in a retired helper and validates exported credentials.",
+      "fixed_file": "fixed/NODE-NOSQL-001/fixed_nosql_injection.js"
+    },
+    {
+      "id": "NODE-COOKIE-001",
+      "ecosystem": "nodejs",
+      "language": "JavaScript / Node.js",
+      "defect_class": "insecure_cookie",
+      "cwe": [
+        "CWE-614",
+        "CWE-1004",
+        "CWE-1275"
+      ],
+      "reachable_file": "cases/nodejs/src/reachable_insecure_cookie.js",
+      "unreachable_file": "cases/nodejs/src/unreachable_insecure_cookie.js",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "medium",
+      "data_flow": "session id -> res.cookie without HttpOnly/Secure/SameSite protection",
+      "expected_remediation": "Set session cookies with HttpOnly, Secure, and an appropriate SameSite policy.",
+      "expected_tests": [
+        "cookie has HttpOnly",
+        "cookie has Secure",
+        "cookie has SameSite lax or strict"
+      ],
+      "false_positive_boundary": "unreachable_insecure_cookie.js keeps the insecure settings in a retired helper and exports secure cookie issuance.",
+      "fixed_file": "fixed/NODE-COOKIE-001/fixed_insecure_cookie.js"
+    },
+    {
+      "id": "NODE-CORS-001",
+      "ecosystem": "nodejs",
+      "language": "JavaScript / Node.js",
+      "defect_class": "cors_misconfiguration",
+      "cwe": [
+        "CWE-942",
+        "CWE-346"
+      ],
+      "reachable_file": "cases/nodejs/src/reachable_cors_misconfiguration.js",
+      "unreachable_file": "cases/nodejs/src/unreachable_cors_misconfiguration.js",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "medium",
+      "data_flow": "Origin header -> Access-Control-Allow-Origin reflection with credentials",
+      "expected_remediation": "Allow only approved origins and do not combine arbitrary origin reflection with credentials.",
+      "expected_tests": [
+        "approved origin allowed",
+        "unapproved origin omitted",
+        "wildcard plus credentials never emitted"
+      ],
+      "false_positive_boundary": "unreachable_cors_misconfiguration.js keeps reflective CORS in a retired helper and exports allowlisted CORS only.",
+      "fixed_file": "fixed/NODE-CORS-001/fixed_cors_misconfiguration.js"
+    },
+    {
+      "id": "PY-CRYPTO-001",
+      "ecosystem": "python",
+      "language": "Python",
+      "defect_class": "broken_crypto",
+      "cwe": [
+        "CWE-327",
+        "CWE-916"
+      ],
+      "reachable_file": "cases/python/src/reachable_broken_crypto.py",
+      "unreachable_file": "cases/python/src/unreachable_broken_crypto.py",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "high",
+      "data_flow": "password -> hashlib.md5 digest",
+      "expected_remediation": "Use a slow salted password hashing construction such as PBKDF2-HMAC-SHA256 with policy-approved iterations.",
+      "expected_tests": [
+        "md5 no longer used",
+        "same salt verifies deterministically",
+        "different salts produce different digests"
+      ],
+      "false_positive_boundary": "unreachable_broken_crypto.py keeps MD5 only in a retired helper and exports PBKDF2-HMAC-SHA256.",
+      "fixed_file": "fixed/PY-CRYPTO-001/fixed_broken_crypto.py"
+    },
+    {
+      "id": "CLOUD-IAM-001",
+      "ecosystem": "cloud",
+      "language": "Cloud policy JSON",
+      "defect_class": "overbroad_iam_policy",
+      "cwe": [
+        "CWE-266",
+        "CWE-732"
+      ],
+      "reachable_file": "cases/cloud/src/reachable_overbroad_iam_policy.json",
+      "unreachable_file": "cases/cloud/src/unreachable_overbroad_iam_policy.json",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "high",
+      "data_flow": "application role policy -> Allow Action * on Resource *",
+      "expected_remediation": "Replace wildcard allow permissions with least-privilege actions and scoped resources.",
+      "expected_tests": [
+        "allow statement has no Action wildcard",
+        "allow statement has no Resource wildcard",
+        "required S3 object actions remain scoped"
+      ],
+      "false_positive_boundary": "unreachable_overbroad_iam_policy.json contains a deny-only wildcard retired statement and scoped allow permissions.",
+      "fixed_file": "fixed/CLOUD-IAM-001/fixed_overbroad_iam_policy.json"
+    },
+    {
+      "id": "TS-KEY-EXPOSURE-001",
+      "ecosystem": "typescript",
+      "language": "TypeScript",
+      "defect_class": "key_exposure",
+      "cwe": [
+        "CWE-200",
+        "CWE-522"
+      ],
+      "reachable_file": "cases/typescript/src/reachable_key_exposure.ts",
+      "unreachable_file": "cases/typescript/src/unreachable_key_exposure.ts",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "high",
+      "data_flow": "secrets.getApiKey(user.id) -> account settings JSON response -> exposed credential",
+      "expected_remediation": "Do not serialize full API keys; return only redacted previews or non-sensitive metadata.",
+      "expected_tests": [
+        "full API key is absent from response",
+        "non-sensitive account settings still render"
+      ],
+      "false_positive_boundary": "unreachable_key_exposure.ts keeps a retired debug helper that returns a key, but the exported settings route returns only a redacted preview.",
+      "fixed_file": "fixed/TS-KEY-EXPOSURE-001/fixed_key_exposure.ts"
+    },
+    {
+      "id": "NODE-CONFUSED-DEPUTY-001",
+      "ecosystem": "nodejs",
+      "language": "JavaScript / Node.js",
+      "defect_class": "confused_deputy",
+      "cwe": [
+        "CWE-441",
+        "CWE-862"
+      ],
+      "reachable_file": "cases/nodejs/src/reachable_confused_deputy.js",
+      "unreachable_file": "cases/nodejs/src/unreachable_confused_deputy.js",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "high",
+      "data_flow": "request.query.tenantId -> service-account storage download -> cross-tenant export",
+      "expected_remediation": "Bind delegated storage actions to the authenticated user's tenant and reject caller-supplied tenant delegation.",
+      "expected_tests": [
+        "cross-tenant export is rejected",
+        "same-tenant export still succeeds"
+      ],
+      "false_positive_boundary": "unreachable_confused_deputy.js contains a retired cross-tenant service-account helper, but the exported path uses the user's tenant identity.",
+      "fixed_file": "fixed/NODE-CONFUSED-DEPUTY-001/fixed_confused_deputy.js"
+    },
+    {
+      "id": "NODE-PRIVESC-001",
+      "ecosystem": "nodejs",
+      "language": "JavaScript / Node.js",
+      "defect_class": "privilege_escalation",
+      "cwe": [
+        "CWE-269",
+        "CWE-915"
+      ],
+      "reachable_file": "cases/nodejs/src/reachable_privilege_escalation.js",
+      "unreachable_file": "cases/nodejs/src/unreachable_privilege_escalation.js",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "high",
+      "data_flow": "request.body.role -> profile update mass assignment -> user privilege change",
+      "expected_remediation": "Remove privileged fields from self-service update binding and require an explicitly authorized admin path for role changes.",
+      "expected_tests": [
+        "normal user cannot promote themselves",
+        "allowed profile fields still update"
+      ],
+      "false_positive_boundary": "unreachable_privilege_escalation.js keeps a retired bulk-admin import helper, but the exported profile update path ignores role input.",
+      "fixed_file": "fixed/NODE-PRIVESC-001/fixed_privilege_escalation.js"
+    },
+    {
+      "id": "NODE-BACKDOOR-MAGIC-001",
+      "ecosystem": "nodejs",
+      "language": "JavaScript / Node.js",
+      "defect_class": "surplus_capability_hidden_backdoor",
+      "cwe": [
+        "CWE-912",
+        "CWE-798"
+      ],
+      "reachable_file": "cases/nodejs/src/reachable_magic_credential_backdoor.js",
+      "unreachable_file": "cases/nodejs/src/unreachable_magic_credential_backdoor.js",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "critical",
+      "data_flow": "req.body.password -> magic credential branch -> admin session role",
+      "expected_remediation": "Remove the magic credential branch and require the normal password verifier for every login.",
+      "expected_tests": [
+        "magic password rejected",
+        "valid password still logs in",
+        "user role is not elevated by password value"
+      ],
+      "false_positive_boundary": "unreachable_magic_credential_backdoor.js keeps the magic credential in a retired helper and exports only verifier-based login.",
+      "fixed_file": "fixed/NODE-BACKDOOR-MAGIC-001/fixed_magic_credential_backdoor.js",
+      "capability_envelope": {
+        "category": "surplus_capability",
+        "subtypes": [
+          "hidden_backdoor"
+        ],
+        "external_expected_behavior": "Login may authenticate a known user through the supplied password verifier and return that user's existing role.",
+        "allowed_capabilities": [
+          "lookup user by email",
+          "verify supplied password through the injected verifier",
+          "return the authenticated user's existing role"
+        ],
+        "disallowed_capabilities": [
+          "accept magic credentials",
+          "grant administrator role based on a password literal",
+          "bypass the password verifier"
+        ],
+        "evidence_sources": [
+          {
+            "type": "external_contract",
+            "reference": "case metadata",
+            "summary": "The expected login capability is password-verifier authentication only.",
+            "trust": "strong"
+          },
+          {
+            "type": "code_assertion",
+            "reference": "reachable fixture",
+            "summary": "The implementation labels the literal as debug behavior, which is not authoritative permission.",
+            "trust": "untrusted"
+          }
+        ],
+        "repo_local_claims_authoritative": false,
+        "expected_detection_reasoning": [
+          "Compare the login behavior against the external capability envelope.",
+          "Reject the magic credential even if it is framed as debug or maintenance behavior.",
+          "Report role elevation through a password literal as unauthorized hidden functionality."
+        ]
+      }
+    },
+    {
+      "id": "NODE-BACKDOOR-AUTHBYPASS-001",
+      "ecosystem": "nodejs",
+      "language": "JavaScript / Node.js",
+      "defect_class": "surplus_capability_hidden_backdoor",
+      "cwe": [
+        "CWE-306",
+        "CWE-912"
+      ],
+      "reachable_file": "cases/nodejs/src/reachable_header_auth_bypass.js",
+      "unreachable_file": "cases/nodejs/src/unreachable_header_auth_bypass.js",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "critical",
+      "data_flow": "x-maintenance-mode header -> requireUser bypass -> synthetic admin user",
+      "expected_remediation": "Remove the header-triggered bypass and require the normal authenticated session path.",
+      "expected_tests": [
+        "maintenance header rejected without session",
+        "valid session accepted",
+        "synthetic admin user cannot be created from headers"
+      ],
+      "false_positive_boundary": "unreachable_header_auth_bypass.js keeps the header bypass in a retired helper and exports session-only authentication.",
+      "fixed_file": "fixed/NODE-BACKDOOR-AUTHBYPASS-001/fixed_header_auth_bypass.js",
+      "capability_envelope": {
+        "category": "surplus_capability",
+        "subtypes": [
+          "hidden_backdoor",
+          "dormant_activation_trigger"
+        ],
+        "external_expected_behavior": "Request authentication may return only the user stored in an existing authenticated session.",
+        "allowed_capabilities": [
+          "read authenticated session user",
+          "reject requests without a session"
+        ],
+        "disallowed_capabilities": [
+          "authenticate from undocumented headers",
+          "create synthetic administrator identities",
+          "activate privileged behavior through maintenance flags"
+        ],
+        "evidence_sources": [
+          {
+            "type": "external_contract",
+            "reference": "case metadata",
+            "summary": "The route guard capability is session authentication only.",
+            "trust": "strong"
+          },
+          {
+            "type": "code_assertion",
+            "reference": "reachable fixture",
+            "summary": "The bypass is named maintenance mode, but no external requirement permits it.",
+            "trust": "untrusted"
+          }
+        ],
+        "repo_local_claims_authoritative": false,
+        "expected_detection_reasoning": [
+          "Identify the privileged branch that bypasses normal session authentication.",
+          "Treat the maintenance header as a hidden activation trigger.",
+          "Report synthetic admin creation as unauthorized surplus capability."
+        ]
+      }
+    },
+    {
+      "id": "NODE-BACKDOOR-ADMIN-001",
+      "ecosystem": "nodejs",
+      "language": "JavaScript / Node.js",
+      "defect_class": "surplus_capability_hidden_network_surface",
+      "cwe": [
+        "CWE-489",
+        "CWE-912"
+      ],
+      "reachable_file": "cases/nodejs/src/reachable_undocumented_admin_endpoint.js",
+      "unreachable_file": "cases/nodejs/src/unreachable_undocumented_admin_endpoint.js",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "high",
+      "data_flow": "route registration -> undocumented /__private/admin/retry-all endpoint -> privileged job retry",
+      "expected_remediation": "Remove the undocumented privileged route from the exported route registration surface.",
+      "expected_tests": [
+        "status route still registered",
+        "hidden admin route not registered",
+        "job retry cannot be triggered through public routes"
+      ],
+      "false_positive_boundary": "unreachable_undocumented_admin_endpoint.js keeps the admin route in a retired registration helper and exports only public route registration.",
+      "fixed_file": "fixed/NODE-BACKDOOR-ADMIN-001/fixed_undocumented_admin_endpoint.js",
+      "capability_envelope": {
+        "category": "surplus_capability",
+        "subtypes": [
+          "hidden_backdoor",
+          "hidden_network_surface"
+        ],
+        "external_expected_behavior": "Route registration may expose only the public status endpoint.",
+        "allowed_capabilities": [
+          "register GET /status",
+          "return service health status"
+        ],
+        "disallowed_capabilities": [
+          "register undocumented privileged routes",
+          "trigger administrative job actions from public route registration",
+          "expose hidden admin URL paths"
+        ],
+        "evidence_sources": [
+          {
+            "type": "external_contract",
+            "reference": "case metadata",
+            "summary": "The route surface is limited to status reporting.",
+            "trust": "strong"
+          },
+          {
+            "type": "code_assertion",
+            "reference": "reachable fixture",
+            "summary": "The path name claims privacy, but path naming is not an authorization control.",
+            "trust": "untrusted"
+          }
+        ],
+        "repo_local_claims_authoritative": false,
+        "expected_detection_reasoning": [
+          "Compare exported route registration against the externally allowed route surface.",
+          "Treat private-looking path names as untrusted code assertions.",
+          "Report the hidden privileged route as surplus network surface."
+        ]
+      }
+    },
+    {
+      "id": "NODE-BACKDOOR-OPKEY-001",
+      "ecosystem": "nodejs",
+      "language": "JavaScript / Node.js",
+      "defect_class": "surplus_capability_hardcoded_operator_key",
+      "cwe": [
+        "CWE-798",
+        "CWE-912"
+      ],
+      "reachable_file": "cases/nodejs/src/reachable_hardcoded_operator_key.js",
+      "unreachable_file": "cases/nodejs/src/unreachable_hardcoded_operator_key.js",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "critical",
+      "data_flow": "x-operator-key header -> hardcoded operator key comparison -> tenant key rotation",
+      "expected_remediation": "Remove the hardcoded operator-key override and require the documented tenant-admin authorization path.",
+      "expected_tests": [
+        "operator key rejected",
+        "tenant admin can rotate owned tenant key",
+        "non-admin cannot rotate tenant key"
+      ],
+      "false_positive_boundary": "unreachable_hardcoded_operator_key.js keeps the operator-key override in a retired helper and exports tenant-admin authorization only.",
+      "fixed_file": "fixed/NODE-BACKDOOR-OPKEY-001/fixed_hardcoded_operator_key.js",
+      "capability_envelope": {
+        "category": "surplus_capability",
+        "subtypes": [
+          "hidden_backdoor",
+          "superfluous_privilege"
+        ],
+        "external_expected_behavior": "Tenant key rotation may be performed only by a tenant administrator through the documented user authorization path.",
+        "allowed_capabilities": [
+          "check authenticated user role",
+          "rotate tenant key for an authorized tenant administrator"
+        ],
+        "disallowed_capabilities": [
+          "authorize through hardcoded operator keys",
+          "rotate keys from undocumented headers",
+          "bypass tenant ownership checks"
+        ],
+        "evidence_sources": [
+          {
+            "type": "external_contract",
+            "reference": "case metadata",
+            "summary": "The key-rotation capability is scoped to tenant administrators.",
+            "trust": "strong"
+          },
+          {
+            "type": "code_assertion",
+            "reference": "reachable fixture",
+            "summary": "The operator-key name implies maintenance intent, but the codebase cannot authorize its own bypass.",
+            "trust": "untrusted"
+          }
+        ],
+        "repo_local_claims_authoritative": false,
+        "expected_detection_reasoning": [
+          "Detect the hardcoded key comparison as an undocumented authority source.",
+          "Compare it with the external tenant-admin-only capability envelope.",
+          "Report tenant key rotation through an operator header as unauthorized privilege."
+        ]
+      }
+    },
+    {
+      "id": "NODE-BACKDOOR-DORMANT-001",
+      "ecosystem": "nodejs",
+      "language": "JavaScript / Node.js",
+      "defect_class": "surplus_capability_dormant_activation_trigger",
+      "cwe": [
+        "CWE-912",
+        "CWE-863"
+      ],
+      "reachable_file": "cases/nodejs/src/reachable_dormant_trigger_backdoor.js",
+      "unreachable_file": "cases/nodejs/src/unreachable_dormant_trigger_backdoor.js",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "high",
+      "data_flow": "hostname and query trigger -> all-tenants report export scope",
+      "expected_remediation": "Remove the dormant hostname/query trigger and delegate export authorization only to the policy object.",
+      "expected_tests": [
+        "special hostname and query rejected",
+        "policy-approved export allowed",
+        "all-tenants scope cannot be granted by request shape"
+      ],
+      "false_positive_boundary": "unreachable_dormant_trigger_backdoor.js keeps the dormant trigger in a retired helper and exports policy-only authorization.",
+      "fixed_file": "fixed/NODE-BACKDOOR-DORMANT-001/fixed_dormant_trigger_backdoor.js",
+      "capability_envelope": {
+        "category": "surplus_capability",
+        "subtypes": [
+          "dormant_activation_trigger",
+          "hidden_backdoor"
+        ],
+        "external_expected_behavior": "Report export authorization may be decided only by the supplied policy object for the requested tenant.",
+        "allowed_capabilities": [
+          "call policy.canExportReports for the authenticated user and requested tenant",
+          "return the policy decision"
+        ],
+        "disallowed_capabilities": [
+          "grant all-tenant export scope from hostname",
+          "activate privileged behavior from query strings",
+          "bypass the policy object"
+        ],
+        "evidence_sources": [
+          {
+            "type": "external_contract",
+            "reference": "case metadata",
+            "summary": "The export capability is policy-object authorization only.",
+            "trust": "strong"
+          },
+          {
+            "type": "code_assertion",
+            "reference": "reachable fixture",
+            "summary": "The preview naming suggests a feature flag, but no external source permits all-tenant export scope.",
+            "trust": "untrusted"
+          }
+        ],
+        "repo_local_claims_authoritative": false,
+        "expected_detection_reasoning": [
+          "Find the dormant request-shape trigger before the policy call.",
+          "Compare the all-tenants scope with the external policy-only capability envelope.",
+          "Report the trigger as a hidden authorization bypass even though it looks like preview behavior."
+        ]
+      }
+    },
+    {
+      "id": "NODE-CALLHOME-TELEMETRY-001",
+      "ecosystem": "nodejs",
+      "language": "JavaScript / Node.js",
+      "defect_class": "surplus_capability_call_home_beacon",
+      "cwe": [
+        "CWE-201",
+        "CWE-912"
+      ],
+      "reachable_file": "cases/nodejs/src/reachable_callhome_telemetry.js",
+      "unreachable_file": "cases/nodejs/src/unreachable_callhome_telemetry.js",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "high",
+      "data_flow": "order.user.email and account ID -> undeclared telemetry HTTPS request",
+      "expected_remediation": "Remove undeclared checkout telemetry and preserve checkout completion without outbound egress.",
+      "expected_tests": [
+        "checkout returns success",
+        "no telemetry host is contacted",
+        "user email and account ID are not sent"
+      ],
+      "false_positive_boundary": "unreachable_callhome_telemetry.js keeps telemetry in a retired helper and exports local checkout completion only.",
+      "fixed_file": "fixed/NODE-CALLHOME-TELEMETRY-001/fixed_callhome_telemetry.js",
+      "capability_envelope": {
+        "category": "surplus_capability",
+        "subtypes": [
+          "call_home_beacon"
+        ],
+        "external_expected_behavior": "Checkout completion may return a local success result for the order; it has no externally permitted telemetry egress.",
+        "allowed_capabilities": [
+          "read order ID and total for local checkout completion",
+          "return local checkout status"
+        ],
+        "disallowed_capabilities": [
+          "send checkout telemetry",
+          "disclose user email or account ID to telemetry hosts",
+          "make outbound network calls during checkout completion"
+        ],
+        "evidence_sources": [
+          {
+            "type": "external_contract",
+            "reference": "case metadata",
+            "summary": "The checkout capability is local completion only.",
+            "trust": "strong"
+          },
+          {
+            "type": "code_assertion",
+            "reference": "reachable fixture",
+            "summary": "The endpoint name frames the callback as telemetry, but no external source permits it.",
+            "trust": "untrusted"
+          }
+        ],
+        "repo_local_claims_authoritative": false,
+        "expected_detection_reasoning": [
+          "Compare checkout behavior against the local-only external capability envelope.",
+          "Treat telemetry naming as weak in-code justification.",
+          "Report disclosure of user and account identifiers through undeclared egress."
+        ]
+      }
+    },
+    {
+      "id": "NODE-CALLHOME-LICENSE-001",
+      "ecosystem": "nodejs",
+      "language": "JavaScript / Node.js",
+      "defect_class": "surplus_capability_call_home_activation",
+      "cwe": [
+        "CWE-201",
+        "CWE-912"
+      ],
+      "reachable_file": "cases/nodejs/src/reachable_callhome_license_activation.js",
+      "unreachable_file": "cases/nodejs/src/unreachable_callhome_license_activation.js",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "high",
+      "data_flow": "license key, account email, hostname -> undeclared license activation HTTPS request",
+      "expected_remediation": "Remove the license activation callback and validate the license locally.",
+      "expected_tests": [
+        "valid local license accepted",
+        "invalid local license rejected",
+        "account email and hostname are not sent to license host"
+      ],
+      "false_positive_boundary": "unreachable_callhome_license_activation.js keeps activation egress in a retired helper and exports local license validation only.",
+      "fixed_file": "fixed/NODE-CALLHOME-LICENSE-001/fixed_callhome_license_activation.js",
+      "capability_envelope": {
+        "category": "surplus_capability",
+        "subtypes": [
+          "call_home_beacon"
+        ],
+        "external_expected_behavior": "License validation may check the local license-key format; it may not activate remotely or disclose host/account identifiers.",
+        "allowed_capabilities": [
+          "validate local license-key format",
+          "return local validation result"
+        ],
+        "disallowed_capabilities": [
+          "call remote activation endpoints",
+          "send license keys to unapproved hosts",
+          "disclose account email or hostname"
+        ],
+        "evidence_sources": [
+          {
+            "type": "external_contract",
+            "reference": "case metadata",
+            "summary": "The license capability is local format validation.",
+            "trust": "strong"
+          },
+          {
+            "type": "code_assertion",
+            "reference": "reachable fixture",
+            "summary": "The activation endpoint name implies licensing intent, but remote activation is outside the envelope.",
+            "trust": "untrusted"
+          }
+        ],
+        "repo_local_claims_authoritative": false,
+        "expected_detection_reasoning": [
+          "Identify remote activation as behavior beyond local validation.",
+          "Notice disclosure of account and host identifiers.",
+          "Reject license-related naming as insufficient authority for egress."
+        ]
+      }
+    },
+    {
+      "id": "NODE-CALLHOME-BEACON-001",
+      "ecosystem": "nodejs",
+      "language": "JavaScript / Node.js",
+      "defect_class": "surplus_capability_periodic_beacon",
+      "cwe": [
+        "CWE-201",
+        "CWE-912"
+      ],
+      "reachable_file": "cases/nodejs/src/reachable_periodic_beacon.js",
+      "unreachable_file": "cases/nodejs/src/unreachable_periodic_beacon.js",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "high",
+      "data_flow": "worker startup -> setInterval -> hostname beacon HTTPS request",
+      "expected_remediation": "Remove the periodic beacon timer and preserve worker startup through the queue consumer only.",
+      "expected_tests": [
+        "worker starts queue consumer",
+        "no timer schedules outbound HTTPS calls",
+        "hostname is not sent to beacon host"
+      ],
+      "false_positive_boundary": "unreachable_periodic_beacon.js keeps the beacon in a retired helper and exports queue-only worker startup.",
+      "fixed_file": "fixed/NODE-CALLHOME-BEACON-001/fixed_periodic_beacon.js",
+      "capability_envelope": {
+        "category": "surplus_capability",
+        "subtypes": [
+          "call_home_beacon",
+          "dormant_activation_trigger"
+        ],
+        "external_expected_behavior": "Worker startup may begin consuming the supplied queue; it may not schedule background egress.",
+        "allowed_capabilities": [
+          "call queue.consume",
+          "return the queue consumer result"
+        ],
+        "disallowed_capabilities": [
+          "schedule periodic outbound beacons",
+          "send hostname to beacon hosts",
+          "create background network activity during worker startup"
+        ],
+        "evidence_sources": [
+          {
+            "type": "external_contract",
+            "reference": "case metadata",
+            "summary": "The worker capability is queue consumption only.",
+            "trust": "strong"
+          },
+          {
+            "type": "code_assertion",
+            "reference": "reachable fixture",
+            "summary": "The heartbeat-style URL does not authorize periodic egress.",
+            "trust": "untrusted"
+          }
+        ],
+        "repo_local_claims_authoritative": false,
+        "expected_detection_reasoning": [
+          "Detect the timer-created background network behavior.",
+          "Compare it with queue-only worker startup.",
+          "Report hostname beaconing as unauthorized surplus capability."
+        ]
+      }
+    },
+    {
+      "id": "NODE-CALLHOME-UPDATE-001",
+      "ecosystem": "nodejs",
+      "language": "JavaScript / Node.js",
+      "defect_class": "surplus_capability_update_check_overdisclosure",
+      "cwe": [
+        "CWE-201",
+        "CWE-912"
+      ],
+      "reachable_file": "cases/nodejs/src/reachable_update_check_overdisclosure.js",
+      "unreachable_file": "cases/nodejs/src/unreachable_update_check_overdisclosure.js",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "high",
+      "data_flow": "config account ID and API token -> automatic update-check URL",
+      "expected_remediation": "Remove automatic update-check egress from library initialization and do not disclose account IDs or API tokens.",
+      "expected_tests": [
+        "library initialization returns ready",
+        "update host is not contacted implicitly",
+        "API token is never placed in an update-check URL"
+      ],
+      "false_positive_boundary": "unreachable_update_check_overdisclosure.js keeps update egress in a retired helper and exports local initialization only.",
+      "fixed_file": "fixed/NODE-CALLHOME-UPDATE-001/fixed_update_check_overdisclosure.js",
+      "capability_envelope": {
+        "category": "surplus_capability",
+        "subtypes": [
+          "call_home_beacon"
+        ],
+        "external_expected_behavior": "Library initialization may return local readiness; it has no externally permitted automatic update-check egress.",
+        "allowed_capabilities": [
+          "initialize local library state",
+          "return ready status"
+        ],
+        "disallowed_capabilities": [
+          "contact update hosts during initialization",
+          "send account IDs to update hosts",
+          "place API tokens in URLs"
+        ],
+        "evidence_sources": [
+          {
+            "type": "external_contract",
+            "reference": "case metadata",
+            "summary": "Initialization is local-only readiness.",
+            "trust": "strong"
+          },
+          {
+            "type": "code_assertion",
+            "reference": "reachable fixture",
+            "summary": "The update-check URL suggests maintenance behavior, but automatic egress and token disclosure are not externally allowed.",
+            "trust": "untrusted"
+          }
+        ],
+        "repo_local_claims_authoritative": false,
+        "expected_detection_reasoning": [
+          "Identify implicit update-check egress during initialization.",
+          "Recognize token-in-URL disclosure as beyond the capability envelope.",
+          "Reject update-check naming as authority for call-home behavior."
+        ]
+      }
+    },
+    {
+      "id": "NODE-COVERT-CONFIG-001",
+      "ecosystem": "nodejs",
+      "language": "JavaScript / Node.js",
+      "defect_class": "surplus_capability_covert_command_control",
+      "cwe": [
+        "CWE-912",
+        "CWE-15"
+      ],
+      "reachable_file": "cases/nodejs/src/reachable_remote_policy_control.js",
+      "unreachable_file": "cases/nodejs/src/unreachable_remote_policy_control.js",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "critical",
+      "data_flow": "remote policy document -> disableTransferLimits -> unlimited transfer authorization",
+      "expected_remediation": "Remove remote policy control from transfer authorization and rely on the local policy object.",
+      "expected_tests": [
+        "remote policy cannot disable transfer limits",
+        "local policy denial is preserved",
+        "local policy approval is preserved"
+      ],
+      "false_positive_boundary": "unreachable_remote_policy_control.js keeps remote policy control in a retired helper and exports local-policy authorization only.",
+      "fixed_file": "fixed/NODE-COVERT-CONFIG-001/fixed_remote_policy_control.js",
+      "capability_envelope": {
+        "category": "surplus_capability",
+        "subtypes": [
+          "covert_command_control"
+        ],
+        "external_expected_behavior": "Transfer authorization may be decided only by the supplied local policy object for the user and amount.",
+        "allowed_capabilities": [
+          "call localPolicy.canTransfer",
+          "return the local policy decision"
+        ],
+        "disallowed_capabilities": [
+          "fetch remote authorization policy",
+          "disable transfer limits from remote configuration",
+          "grant unlimited transfer authority outside the local policy object"
+        ],
+        "evidence_sources": [
+          {
+            "type": "external_contract",
+            "reference": "case metadata",
+            "summary": "Transfer authorization is local-policy only.",
+            "trust": "strong"
+          },
+          {
+            "type": "code_assertion",
+            "reference": "reachable fixture",
+            "summary": "The remote document is named policy, but the evaluated code cannot authorize an external control plane.",
+            "trust": "untrusted"
+          }
+        ],
+        "repo_local_claims_authoritative": false,
+        "expected_detection_reasoning": [
+          "Find the remote configuration fetch on the authorization path.",
+          "Compare the remote override with the local-policy-only capability envelope.",
+          "Report externally mutable transfer limits as covert control."
+        ]
+      }
+    },
+    {
+      "id": "NODE-COVERT-SCRIPT-001",
+      "ecosystem": "nodejs",
+      "language": "JavaScript / Node.js",
+      "defect_class": "surplus_capability_covert_command_control",
+      "cwe": [
+        "CWE-94",
+        "CWE-912"
+      ],
+      "reachable_file": "cases/nodejs/src/reachable_fetched_script_control.js",
+      "unreachable_file": "cases/nodejs/src/unreachable_fetched_script_control.js",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "critical",
+      "data_flow": "remote pricing script -> eval -> runtime pricing rule",
+      "expected_remediation": "Remove fetched script execution and return only vetted local pricing rules.",
+      "expected_tests": [
+        "remote script is not fetched",
+        "remote source is not evaluated",
+        "local pricing rule is returned"
+      ],
+      "false_positive_boundary": "unreachable_fetched_script_control.js keeps remote script evaluation in a retired helper and exports local pricing rules only.",
+      "fixed_file": "fixed/NODE-COVERT-SCRIPT-001/fixed_fetched_script_control.js",
+      "capability_envelope": {
+        "category": "surplus_capability",
+        "subtypes": [
+          "covert_command_control"
+        ],
+        "external_expected_behavior": "Pricing rules may be selected from vetted local code only.",
+        "allowed_capabilities": [
+          "return local pricing rule configuration"
+        ],
+        "disallowed_capabilities": [
+          "fetch pricing logic from remote hosts",
+          "evaluate remotely supplied JavaScript",
+          "change pricing behavior through remote code"
+        ],
+        "evidence_sources": [
+          {
+            "type": "external_contract",
+            "reference": "case metadata",
+            "summary": "Pricing behavior is local and vetted.",
+            "trust": "strong"
+          },
+          {
+            "type": "code_assertion",
+            "reference": "reachable fixture",
+            "summary": "The remote path claims to host rules, but fetched executable code is outside the envelope.",
+            "trust": "untrusted"
+          }
+        ],
+        "repo_local_claims_authoritative": false,
+        "expected_detection_reasoning": [
+          "Detect remote code fetch and eval.",
+          "Separate vetted local rule selection from remotely mutable behavior.",
+          "Report fetched executable control as unauthorized covert command/control."
+        ]
+      }
+    },
+    {
+      "id": "NODE-COVERT-FLAG-001",
+      "ecosystem": "nodejs",
+      "language": "JavaScript / Node.js",
+      "defect_class": "surplus_capability_covert_command_control",
+      "cwe": [
+        "CWE-862",
+        "CWE-912"
+      ],
+      "reachable_file": "cases/nodejs/src/reachable_remote_feature_flag_control.js",
+      "unreachable_file": "cases/nodejs/src/unreachable_remote_feature_flag_control.js",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "critical",
+      "data_flow": "remote feature flag -> support impersonation authorization",
+      "expected_remediation": "Remove remote feature-flag control over impersonation and require the documented support-admin role.",
+      "expected_tests": [
+        "remote flag cannot grant impersonation",
+        "support-admin role can impersonate",
+        "ordinary user cannot impersonate"
+      ],
+      "false_positive_boundary": "unreachable_remote_feature_flag_control.js keeps the remote flag in a retired helper and exports role-only impersonation authorization.",
+      "fixed_file": "fixed/NODE-COVERT-FLAG-001/fixed_remote_feature_flag_control.js",
+      "capability_envelope": {
+        "category": "surplus_capability",
+        "subtypes": [
+          "covert_command_control",
+          "superfluous_privilege"
+        ],
+        "external_expected_behavior": "Impersonation may be granted only to authenticated users with the support-admin role.",
+        "allowed_capabilities": [
+          "read authenticated user role",
+          "allow impersonation for support-admin users"
+        ],
+        "disallowed_capabilities": [
+          "grant impersonation through remote feature flags",
+          "change authorization remotely",
+          "bypass role checks"
+        ],
+        "evidence_sources": [
+          {
+            "type": "external_contract",
+            "reference": "case metadata",
+            "summary": "Impersonation authorization is role-based only.",
+            "trust": "strong"
+          },
+          {
+            "type": "code_assertion",
+            "reference": "reachable fixture",
+            "summary": "The support flag name suggests an operational feature, not an external authorization requirement.",
+            "trust": "untrusted"
+          }
+        ],
+        "repo_local_claims_authoritative": false,
+        "expected_detection_reasoning": [
+          "Recognize remote feature flags as security-sensitive control input.",
+          "Compare flag-granted impersonation with role-only authorization.",
+          "Report remotely mutable privilege as covert control."
+        ]
+      }
+    },
+    {
+      "id": "NODE-COVERT-PAYLOAD-001",
+      "ecosystem": "nodejs",
+      "language": "JavaScript / Node.js",
+      "defect_class": "surplus_capability_untrusted_control_payload",
+      "cwe": [
+        "CWE-345",
+        "CWE-863"
+      ],
+      "reachable_file": "cases/nodejs/src/reachable_unverified_signed_payload_control.js",
+      "unreachable_file": "cases/nodejs/src/unreachable_unverified_signed_payload_control.js",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "high",
+      "data_flow": "x-policy-override header -> unsigned decoded payload -> refund policy override",
+      "expected_remediation": "Verify policy-override payloads with a trusted verifier before applying security-sensitive policy changes.",
+      "expected_tests": [
+        "forged signed-looking payload rejected",
+        "verified payload can update allowed policy field",
+        "cross-tenant refund flag cannot be accepted from untrusted payload"
+      ],
+      "false_positive_boundary": "unreachable_unverified_signed_payload_control.js keeps unverified payload trust in a retired helper and exports verifier-backed override handling.",
+      "fixed_file": "fixed/NODE-COVERT-PAYLOAD-001/fixed_unverified_signed_payload_control.js",
+      "capability_envelope": {
+        "category": "surplus_capability",
+        "subtypes": [
+          "covert_command_control"
+        ],
+        "external_expected_behavior": "Policy overrides may be applied only after verification by a trusted verifier, and may not enable cross-tenant refunds.",
+        "allowed_capabilities": [
+          "decode policy override payload",
+          "verify payload authenticity with injected verifier",
+          "apply verified maxRefund value"
+        ],
+        "disallowed_capabilities": [
+          "trust signature-looking fields inside attacker-controlled payloads",
+          "enable cross-tenant refunds from request headers",
+          "apply unverified security-sensitive policy changes"
+        ],
+        "evidence_sources": [
+          {
+            "type": "external_contract",
+            "reference": "case metadata",
+            "summary": "Policy changes require trusted verifier approval.",
+            "trust": "strong"
+          },
+          {
+            "type": "code_assertion",
+            "reference": "reachable fixture",
+            "summary": "The payload contains a signature-looking string, but the code performs no cryptographic verification.",
+            "trust": "untrusted"
+          }
+        ],
+        "repo_local_claims_authoritative": false,
+        "expected_detection_reasoning": [
+          "Distinguish signature-looking data from verified authenticity.",
+          "Detect untrusted payload control over security-sensitive policy.",
+          "Report cross-tenant refund enablement as unauthorized covert control."
+        ]
+      }
+    },
+    {
+      "id": "APP-EXPRESS-SSRF-001",
+      "ecosystem": "app-express",
+      "language": "JavaScript / Express",
+      "defect_class": "app_slice_ssrf",
+      "cwe": [
+        "CWE-918"
+      ],
+      "reachable_file": "cases/app-slices/express/src/reachable_express_ssrf.js",
+      "unreachable_file": "cases/app-slices/express/src/unreachable_express_ssrf.js",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "high",
+      "data_flow": "req.query.url -> Express /preview route -> http.get",
+      "expected_remediation": "Parse preview URLs and enforce an externally approved host allowlist before opening an HTTP connection.",
+      "expected_tests": [
+        "metadata URL rejected before HTTP call",
+        "approved image host accepted",
+        "malformed URL rejected"
+      ],
+      "false_positive_boundary": "unreachable_express_ssrf.js keeps the arbitrary fetch helper retired and routes only allowlisted preview URLs.",
+      "fixed_file": "fixed/APP-EXPRESS-SSRF-001/fixed_express_ssrf.js"
+    },
+    {
+      "id": "APP-FLASK-IDOR-001",
+      "ecosystem": "app-flask",
+      "language": "Python / Flask",
+      "defect_class": "app_slice_idor",
+      "cwe": [
+        "CWE-639",
+        "CWE-862"
+      ],
+      "reachable_file": "cases/app-slices/flask/src/reachable_flask_idor.py",
+      "unreachable_file": "cases/app-slices/flask/src/unreachable_flask_idor.py",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "high",
+      "data_flow": "account_id route parameter -> account lookup -> JSON response without owner check",
+      "expected_remediation": "Compare the loaded account owner with the authenticated Flask user context before returning account data.",
+      "expected_tests": [
+        "owner can read account",
+        "non-owner is rejected",
+        "valid account lookup still works"
+      ],
+      "false_positive_boundary": "unreachable_flask_idor.py keeps the admin lookup retired and exports an owner-checking route handler.",
+      "fixed_file": "fixed/APP-FLASK-IDOR-001/fixed_flask_idor.py"
+    },
+    {
+      "id": "APP-SPRING-MASSASSIGN-001",
+      "ecosystem": "app-spring",
+      "language": "Java / Spring-style",
+      "defect_class": "app_slice_mass_assignment",
+      "cwe": [
+        "CWE-915"
+      ],
+      "reachable_file": "cases/app-slices/spring/src/ReachableSpringMassAssignment.java",
+      "unreachable_file": "cases/app-slices/spring/src/UnreachableSpringMassAssignment.java",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "high",
+      "data_flow": "request body DTO isAdmin -> profile.isAdmin privilege field",
+      "expected_remediation": "Bind only user-editable profile fields and derive privileged fields from server-side authorization state.",
+      "expected_tests": [
+        "submitted admin flag ignored",
+        "display name still updates",
+        "unsafe binder remains unrouted"
+      ],
+      "false_positive_boundary": "UnreachableSpringMassAssignment.java keeps bind-all behavior in a private retired helper and routes only the safe update method.",
+      "fixed_file": "fixed/APP-SPRING-MASSASSIGN-001/FixedSpringMassAssignment.java"
+    },
+    {
+      "id": "APP-GOHTTP-REDIR-001",
+      "ecosystem": "app-go-http",
+      "language": "Go / net/http",
+      "defect_class": "app_slice_open_redirect",
+      "cwe": [
+        "CWE-601"
+      ],
+      "reachable_file": "cases/app-slices/go-http/src/reachable_go_http_redirect.go",
+      "unreachable_file": "cases/app-slices/go-http/src/unreachable_go_http_redirect.go",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "medium",
+      "data_flow": "next query parameter -> net/http login handler -> http.Redirect",
+      "expected_remediation": "Accept only local relative redirect targets and reject absolute or protocol-relative destinations.",
+      "expected_tests": [
+        "local redirect accepted",
+        "external URL rejected",
+        "protocol-relative URL rejected"
+      ],
+      "false_positive_boundary": "unreachable_go_http_redirect.go keeps raw redirect behavior retired and routes through localRedirectTarget validation.",
+      "fixed_file": "fixed/APP-GOHTTP-REDIR-001/fixed_go_http_redirect.go"
+    },
+    {
+      "id": "APP-RAILS-SQLI-001",
+      "ecosystem": "app-rails",
+      "language": "Ruby / Rails-style",
+      "defect_class": "app_slice_sql_injection",
+      "cwe": [
+        "CWE-89"
+      ],
+      "reachable_file": "cases/app-slices/rails/src/reachable_rails_sqli.rb",
+      "unreachable_file": "cases/app-slices/rails/src/unreachable_rails_sqli.rb",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "high",
+      "data_flow": "params[:email] -> interpolated ActiveRecord where SQL fragment",
+      "expected_remediation": "Use ActiveRecord parameter binding or hash conditions instead of string interpolation.",
+      "expected_tests": [
+        "SQL payload treated as value",
+        "normal email lookup works",
+        "query uses bound parameters"
+      ],
+      "false_positive_boundary": "unreachable_rails_sqli.rb keeps interpolated SQL in a retired action and routes the safe hash-condition action.",
+      "fixed_file": "fixed/APP-RAILS-SQLI-001/fixed_rails_sqli.rb"
+    },
+    {
+      "id": "APP-PHP-LARAVEL-UPLOAD-001",
+      "ecosystem": "app-php-laravel",
+      "language": "PHP / Laravel-style",
+      "defect_class": "app_slice_path_traversal_upload",
+      "cwe": [
+        "CWE-22",
+        "CWE-434"
+      ],
+      "reachable_file": "cases/app-slices/php-laravel/src/reachable_laravel_upload.php",
+      "unreachable_file": "cases/app-slices/php-laravel/src/unreachable_laravel_upload.php",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "high",
+      "data_flow": "client original upload filename -> avatar storage path",
+      "expected_remediation": "Reduce uploaded filenames to safe basenames, replace unsafe characters, and reject empty or dot-only names before storage.",
+      "expected_tests": [
+        "traversal filename cannot escape avatar directory",
+        "ordinary filename stored under avatars",
+        "empty name rejected"
+      ],
+      "false_positive_boundary": "unreachable_laravel_upload.php keeps original-name storage retired and exports basename/sanitized storage.",
+      "fixed_file": "fixed/APP-PHP-LARAVEL-UPLOAD-001/fixed_laravel_upload.php"
+    },
+    {
+      "id": "APP-DOTNET-AUTHZ-001",
+      "ecosystem": "app-dotnet-api",
+      "language": "C# / .NET API",
+      "defect_class": "app_slice_missing_authorization",
+      "cwe": [
+        "CWE-862",
+        "CWE-639"
+      ],
+      "reachable_file": "cases/app-slices/dotnet-api/src/ReachableInvoiceAuthorization.cs",
+      "unreachable_file": "cases/app-slices/dotnet-api/src/UnreachableInvoiceAuthorization.cs",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "high",
+      "data_flow": "invoiceId route parameter -> repository delete without owner authorization",
+      "expected_remediation": "Compare invoice ownership with the authenticated user before deleting the invoice.",
+      "expected_tests": [
+        "owner can delete invoice",
+        "non-owner is rejected",
+        "delete is not called after authorization failure"
+      ],
+      "false_positive_boundary": "UnreachableInvoiceAuthorization.cs keeps admin deletion retired and checks OwnerUserId before repository deletion.",
+      "fixed_file": "fixed/APP-DOTNET-AUTHZ-001/FixedInvoiceAuthorization.cs"
+    },
+    {
+      "id": "PY-PICKLE-DESER-001",
+      "ecosystem": "python",
+      "language": "Python",
+      "defect_class": "python_pickle_deserialization",
+      "cwe": [
+        "CWE-502"
+      ],
+      "reachable_file": "cases/python/src/reachable_pickle_deserialization.py",
+      "unreachable_file": "cases/python/src/unreachable_pickle_deserialization.py",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "critical",
+      "data_flow": "untrusted bytes -> pickle.loads -> object construction",
+      "expected_remediation": "Replace pickle deserialization of untrusted bytes with a data-only parser and validate the decoded profile shape.",
+      "expected_tests": [
+        "pickle payload is not deserialized",
+        "JSON object profile is accepted",
+        "non-object JSON is rejected"
+      ],
+      "false_positive_boundary": "unreachable_pickle_deserialization.py keeps pickle.loads in a retired helper and exports a JSON object loader.",
+      "fixed_file": "fixed/PY-PICKLE-DESER-001/fixed_pickle_deserialization.py"
+    },
+    {
+      "id": "GO-TEMPLATE-XSS-001",
+      "ecosystem": "go",
+      "language": "Go",
+      "defect_class": "go_template_xss",
+      "cwe": [
+        "CWE-79"
+      ],
+      "reachable_file": "cases/go/src/reachable_template_xss.go",
+      "unreachable_file": "cases/go/src/unreachable_template_xss.go",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "high",
+      "data_flow": "author string -> text/template HTML construction -> response body",
+      "expected_remediation": "Use html/template and pass user values as data instead of concatenating them into HTML template source.",
+      "expected_tests": [
+        "script author is HTML-escaped",
+        "ordinary author renders",
+        "text/template absent from fixed public path"
+      ],
+      "false_positive_boundary": "unreachable_template_xss.go keeps text/template concatenation retired and exports html/template rendering.",
+      "fixed_file": "fixed/GO-TEMPLATE-XSS-001/fixed_template_xss.go"
+    },
+    {
+      "id": "PHP-LOOSE-AUTH-001",
+      "ecosystem": "php",
+      "language": "PHP",
+      "defect_class": "php_loose_comparison_auth_bypass",
+      "cwe": [
+        "CWE-287",
+        "CWE-697"
+      ],
+      "reachable_file": "cases/php/src/reachable_loose_auth.php",
+      "unreachable_file": "cases/php/src/unreachable_loose_auth.php",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "high",
+      "data_flow": "provided token -> loose equality -> authorization decision",
+      "expected_remediation": "Require string tokens and compare them with hash_equals instead of loose equality.",
+      "expected_tests": [
+        "0e token confusion rejected",
+        "exact string token accepted",
+        "non-string token rejected"
+      ],
+      "false_positive_boundary": "unreachable_loose_auth.php keeps loose equality retired and exports string-only hash_equals comparison.",
+      "fixed_file": "fixed/PHP-LOOSE-AUTH-001/fixed_loose_auth.php"
+    },
+    {
+      "id": "RUBY-YAML-DESER-001",
+      "ecosystem": "ruby",
+      "language": "Ruby",
+      "defect_class": "ruby_yaml_deserialization",
+      "cwe": [
+        "CWE-502"
+      ],
+      "reachable_file": "cases/ruby/src/reachable_yaml_deserialization.rb",
+      "unreachable_file": "cases/ruby/src/unreachable_yaml_deserialization.rb",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "critical",
+      "data_flow": "YAML payload -> YAML.load -> object deserialization",
+      "expected_remediation": "Use YAML.safe_load with no arbitrary permitted classes and aliases disabled for untrusted job payloads.",
+      "expected_tests": [
+        "object YAML rejected",
+        "ordinary job YAML accepted",
+        "aliases disabled"
+      ],
+      "false_positive_boundary": "unreachable_yaml_deserialization.rb keeps YAML.load retired and exports YAML.safe_load.",
+      "fixed_file": "fixed/RUBY-YAML-DESER-001/fixed_yaml_deserialization.rb"
+    },
+    {
+      "id": "RUST-PATH-TRAVERSAL-001",
+      "ecosystem": "rust",
+      "language": "Rust",
+      "defect_class": "rust_path_traversal",
+      "cwe": [
+        "CWE-22"
+      ],
+      "reachable_file": "cases/rust/src/reachable_path_traversal.rs",
+      "unreachable_file": "cases/rust/src/unreachable_path_traversal.rs",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "high",
+      "data_flow": "requested report path -> PathBuf::join -> filesystem path",
+      "expected_remediation": "Reject parent, root, and prefix path components before joining user input under the reports directory.",
+      "expected_tests": [
+        "parent traversal rejected",
+        "absolute path rejected",
+        "ordinary report filename accepted"
+      ],
+      "false_positive_boundary": "unreachable_path_traversal.rs keeps raw join retired and exports component validation before join.",
+      "fixed_file": "fixed/RUST-PATH-TRAVERSAL-001/fixed_path_traversal.rs"
+    },
+    {
+      "id": "KOTLIN-JWT-NONE-001",
+      "ecosystem": "kotlin",
+      "language": "Kotlin",
+      "defect_class": "kotlin_jwt_none_acceptance",
+      "cwe": [
+        "CWE-347",
+        "CWE-287"
+      ],
+      "reachable_file": "cases/kotlin/src/ReachableJwtNone.kt",
+      "unreachable_file": "cases/kotlin/src/UnreachableJwtNone.kt",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "critical",
+      "data_flow": "JWT header alg -> none bypass -> claims returned without verification",
+      "expected_remediation": "Reject unsigned alg=none tokens and require trusted signature verification before returning claims.",
+      "expected_tests": [
+        "alg none rejected",
+        "invalid signature rejected",
+        "valid signed token returns claims"
+      ],
+      "false_positive_boundary": "UnreachableJwtNone.kt keeps alg=none acceptance retired and exports verifier-backed token handling.",
+      "fixed_file": "fixed/KOTLIN-JWT-NONE-001/FixedJwtNone.kt"
+    },
+    {
+      "id": "PY-SETUP-NET-001",
+      "ecosystem": "python",
+      "language": "Python",
+      "defect_class": "unexpected_package_lifecycle_network",
+      "cwe": [
+        "CWE-829",
+        "CWE-201"
+      ],
+      "reachable_file": "cases/python/src/reachable_setup_lifecycle_network.py",
+      "unreachable_file": "cases/python/src/unreachable_setup_lifecycle_network.py",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "high",
+      "data_flow": "setup lifecycle hook -> environment context -> urllib.request.urlopen to undeclared host",
+      "expected_remediation": "Remove install/setup-time network callbacks and keep package lifecycle behavior local unless explicitly declared and approved.",
+      "expected_tests": [
+        "setup hook performs no network I/O",
+        "retired callback is not invoked by install path"
+      ],
+      "false_positive_boundary": "unreachable_setup_lifecycle_network.py keeps a retired callback helper, but the exported setup hook returns only local metadata.",
+      "fixed_file": "fixed/PY-SETUP-NET-001/fixed_setup_lifecycle_network.py"
+    },
+    {
+      "id": "RUBY-GEM-NET-001",
+      "ecosystem": "ruby",
+      "language": "Ruby",
+      "defect_class": "unexpected_package_lifecycle_network",
+      "cwe": [
+        "CWE-829",
+        "CWE-201"
+      ],
+      "reachable_file": "cases/ruby/src/reachable_gem_lifecycle_network.rb",
+      "unreachable_file": "cases/ruby/src/unreachable_gem_lifecycle_network.rb",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "high",
+      "data_flow": "gem post_install hook -> ENV user -> Net::HTTP callback to undeclared host",
+      "expected_remediation": "Remove gem install-time network callbacks and keep package lifecycle behavior local and deterministic.",
+      "expected_tests": [
+        "post_install performs no Net::HTTP call",
+        "retired callback helper is not invoked"
+      ],
+      "false_positive_boundary": "unreachable_gem_lifecycle_network.rb keeps a retired network callback helper, but the active install hook returns local metadata only.",
+      "fixed_file": "fixed/RUBY-GEM-NET-001/fixed_gem_lifecycle_network.rb"
+    },
+    {
+      "id": "JS-WEBSOCKET-BEACON-001",
+      "ecosystem": "javascript",
+      "language": "JavaScript",
+      "defect_class": "unexpected_websocket_beacon",
+      "cwe": [
+        "CWE-201",
+        "CWE-912"
+      ],
+      "reachable_file": "cases/javascript/src/reachable_websocket_beacon.js",
+      "unreachable_file": "cases/javascript/src/unreachable_websocket_beacon.js",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "high",
+      "data_flow": "dashboard startup -> WebSocket open handler -> user identifiers to undeclared beacon host",
+      "expected_remediation": "Remove undeclared WebSocket beacons and avoid sending user identifiers to unapproved hosts.",
+      "expected_tests": [
+        "dashboard startup does not instantiate WebSocket",
+        "user email is never serialized to beacon host"
+      ],
+      "false_positive_boundary": "unreachable_websocket_beacon.js keeps a retired beacon helper, but exported dashboard startup returns local state only.",
+      "fixed_file": "fixed/JS-WEBSOCKET-BEACON-001/fixed_websocket_beacon.js"
+    },
+    {
+      "id": "PY-SMTP-CALLBACK-001",
+      "ecosystem": "python",
+      "language": "Python",
+      "defect_class": "unexpected_smtp_callback",
+      "cwe": [
+        "CWE-201",
+        "CWE-912"
+      ],
+      "reachable_file": "cases/python/src/reachable_smtp_callback.py",
+      "unreachable_file": "cases/python/src/unreachable_smtp_callback.py",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "high",
+      "data_flow": "invoice id + environment user -> direct smtplib.SMTP callback to undeclared host",
+      "expected_remediation": "Remove direct SMTP callbacks from invoice processing and use only documented mail subsystems with approval.",
+      "expected_tests": [
+        "invoice processing performs no direct SMTP connection",
+        "processed invoice response is preserved"
+      ],
+      "false_positive_boundary": "unreachable_smtp_callback.py keeps a retired SMTP audit helper, but exported invoice processing returns local status only.",
+      "fixed_file": "fixed/PY-SMTP-CALLBACK-001/fixed_smtp_callback.py"
+    },
+    {
+      "id": "GO-PROXY-BYPASS-001",
+      "ecosystem": "go",
+      "language": "Go",
+      "defect_class": "egress_proxy_bypass",
+      "cwe": [
+        "CWE-441",
+        "CWE-923"
+      ],
+      "reachable_file": "cases/go/src/reachable_proxy_bypass.go",
+      "unreachable_file": "cases/go/src/unreachable_proxy_bypass.go",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "high",
+      "data_flow": "update check -> http.Client with Transport Proxy nil -> direct outbound request bypassing configured proxy controls",
+      "expected_remediation": "Remove proxy-bypassing transports and require injected clients that inherit approved egress policy.",
+      "expected_tests": [
+        "update fetch uses injected HTTP client",
+        "no transport disables proxy configuration"
+      ],
+      "false_positive_boundary": "unreachable_proxy_bypass.go keeps a retired direct client helper, but exported update fetch uses the caller-provided client.",
+      "fixed_file": "fixed/GO-PROXY-BYPASS-001/fixed_proxy_bypass.go"
+    },
+    {
+      "id": "NODE-METADATA-ALIAS-001",
+      "ecosystem": "nodejs",
+      "language": "JavaScript / Node.js",
+      "defect_class": "metadata_service_alias_access",
+      "cwe": [
+        "CWE-918",
+        "CWE-200"
+      ],
+      "reachable_file": "cases/nodejs/src/reachable_metadata_alias.js",
+      "unreachable_file": "cases/nodejs/src/unreachable_metadata_alias.js",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "critical",
+      "data_flow": "request.query.metadataUrl/default IPv6 metadata alias -> http.get -> cloud instance credential exposure",
+      "expected_remediation": "Block metadata-service IPv4, IPv6, and link-local aliases before outbound requests; prefer approved metadata proxy hosts.",
+      "expected_tests": [
+        "169.254.169.254 is rejected",
+        "[fd00:ec2::254] is rejected",
+        "approved metadata proxy host still works"
+      ],
+      "false_positive_boundary": "unreachable_metadata_alias.js keeps a retired metadata debug helper, but the exported route blocks known metadata aliases.",
+      "fixed_file": "fixed/NODE-METADATA-ALIAS-001/fixed_metadata_alias.js"
+    },
+    {
+      "id": "NODE-DEPUPDATE-NET-001",
+      "ecosystem": "nodejs",
+      "language": "JavaScript / Node.js",
+      "defect_class": "unexpected_dependency_update_network",
+      "cwe": [
+        "CWE-201",
+        "CWE-829"
+      ],
+      "reachable_file": "cases/nodejs/src/reachable_dependency_update_network.js",
+      "unreachable_file": "cases/nodejs/src/unreachable_dependency_update_network.js",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "high",
+      "data_flow": "dependency update hook -> lockfile packages + environment user -> https.request to undeclared host",
+      "expected_remediation": "Remove dependency-update callbacks that exfiltrate lockfile or environment data to undeclared hosts.",
+      "expected_tests": [
+        "dependency update hook performs no https.request",
+        "local package count behavior is preserved"
+      ],
+      "false_positive_boundary": "unreachable_dependency_update_network.js keeps a retired update reporter, but exported dependency-update handling is local only.",
+      "fixed_file": "fixed/NODE-DEPUPDATE-NET-001/fixed_dependency_update_network.js"
+    },
+    {
+      "id": "APP-EXPRESS-MULTIFILE-AUTHZ-001",
+      "ecosystem": "app-express-multifile",
+      "language": "JavaScript / Express",
+      "defect_class": "app_slice_multifile_missing_authorization",
+      "cwe": [
+        "CWE-862",
+        "CWE-639"
+      ],
+      "reachable_file": "cases/app-express-multifile/src/routes/reachable_orders.js",
+      "unreachable_file": "cases/app-express-multifile/src/routes/unreachable_orders.js",
+      "reachable": true,
+      "unreachable_pair": true,
+      "expected_severity": "high",
+      "data_flow": "GET /orders/:orderId -> orders.findById(orderId) -> JSON response without account ownership check",
+      "expected_remediation": "Check loaded order ownership against req.user.accountId before returning the order, preserving session middleware behavior.",
+      "expected_tests": [
+        "same-account order read succeeds",
+        "cross-account order read returns 403",
+        "unauthenticated order read still requires login"
+      ],
+      "false_positive_boundary": "unreachable_orders.js keeps a retired admin lookup helper, but the exported route checks order.accountId against req.user.accountId before responding.",
+      "fixed_file": "fixed/APP-EXPRESS-MULTIFILE-AUTHZ-001/fixed_orders.js",
+      "supporting_files": [
+        "cases/app-express-multifile/src/middleware/session.js",
+        "cases/app-express-multifile/src/models/orders.js"
+      ],
+      "quality_metadata": {
+        "attacker_position": "authenticated user in another account",
+        "exploit_preconditions": [
+          "attacker knows or guesses another account's order id",
+          "session middleware populates req.user.accountId"
+        ],
+        "trust_boundary": "HTTP route boundary between authenticated caller and account-scoped order data",
+        "data_sensitivity": "customer order totals and account identifiers",
+        "production_likelihood": "high for multi-tenant order APIs that use shared numeric or guessable IDs",
+        "approval_gate": "service owner approval for authorization model and route test coverage",
+        "blast_radius": "cross-account order disclosure for any guessed order id",
+        "false_positive_traps": [
+          "retiredAdminOrderLookup is present but not exported as the active route",
+          "session middleware exists but authenticates only; it does not authorize ownership"
+        ]
+      }
+    }
+  ]
+}

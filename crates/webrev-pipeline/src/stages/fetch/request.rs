@@ -4,7 +4,7 @@ use reqwest::{
     redirect::Policy,
 };
 use std::time::Duration;
-use webrev_core::{OpsecConfig, Result, WebrevError};
+use webrev_core::{OpsecConfig, Result, Scope, WebrevError};
 
 /// Hard per-request timeout.
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(20);
@@ -12,19 +12,41 @@ const REQUEST_TIMEOUT: Duration = Duration::from_secs(20);
 /// Maximum attempts per URL before giving up.
 const MAX_ATTEMPTS: u32 = 3;
 
-pub(super) fn build_client(opsec: &OpsecConfig) -> Result<reqwest::Client> {
+pub(super) fn build_client(opsec: &OpsecConfig, scope: &Scope) -> Result<reqwest::Client> {
     let ua = opsec
         .rotation
         .user_agent_for(0)
         .unwrap_or("webrev")
         .to_owned();
+    let redirect_scope = scope.clone();
     let mut builder = reqwest::Client::builder()
         .user_agent(ua)
         .timeout(REQUEST_TIMEOUT)
-        .redirect(Policy::limited(5));
+        .dns_resolver(crate::dns::pinned_resolver(
+            scope.clone(),
+            opsec.egress.proxy.as_deref(),
+        ))
+        .redirect(Policy::custom(move |attempt| {
+            let destination = attempt.url();
+            if attempt.previous().len() >= 5
+                || !matches!(destination.scheme(), "http" | "https")
+                || !destination.username().is_empty()
+                || destination.password().is_some()
+                || !redirect_scope.allows(destination.as_str())
+            {
+                attempt.stop()
+            } else {
+                attempt.follow()
+            }
+        }));
     if let Some(proxy) = &opsec.egress.proxy {
-        let p = reqwest::Proxy::all(proxy)
-            .map_err(|e| WebrevError::Config(format!("invalid proxy {proxy:?}: {e}")))?;
+        let p = reqwest::Proxy::all(proxy).map_err(|e| {
+            WebrevError::Config(format!(
+                "invalid proxy {:?}: {}",
+                webrev_core::redact_url(proxy),
+                e.without_url()
+            ))
+        })?;
         builder = builder.proxy(p);
     }
     // Authenticated context: attach cookies/headers/bearer to every request.
@@ -134,14 +156,26 @@ pub(super) async fn fetch_with_retry(
                         tokio::time::sleep(Duration::from_millis(200 * u64::from(attempt))).await;
                         let _ = e;
                     }
-                    Err(e) => return Err(WebrevError::Fetch(format!("reading {url}: {e}"))),
+                    Err(e) => {
+                        return Err(WebrevError::Fetch(format!(
+                            "reading {}: {}",
+                            webrev_core::redact_url(url),
+                            e.without_url()
+                        )))
+                    }
                 }
             }
             Err(e) if attempt < MAX_ATTEMPTS => {
                 tokio::time::sleep(Duration::from_millis(200 * u64::from(attempt))).await;
                 let _ = e;
             }
-            Err(e) => return Err(WebrevError::Fetch(format!("requesting {url}: {e}"))),
+            Err(e) => {
+                return Err(WebrevError::Fetch(format!(
+                    "requesting {}: {}",
+                    webrev_core::redact_url(url),
+                    e.without_url()
+                )))
+            }
         }
     }
 }

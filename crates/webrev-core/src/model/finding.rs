@@ -88,6 +88,29 @@ pub enum Confidence {
     High,
 }
 
+/// Evidentiary state, independent of impact and extractor confidence.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum FindingStatus {
+    #[default]
+    Observed,
+    Suspicious,
+    Confirmed,
+    Inconclusive,
+}
+
+impl FindingStatus {
+    #[must_use]
+    pub fn slug(self) -> &'static str {
+        match self {
+            Self::Observed => "observed",
+            Self::Suspicious => "suspicious",
+            Self::Confirmed => "confirmed",
+            Self::Inconclusive => "inconclusive",
+        }
+    }
+}
+
 /// How *interesting* a finding is to an operator — orthogonal to [`Confidence`]
 /// (which is about certainty). Ordered `Info < Low < Medium < High < Critical`,
 /// so findings sort naturally by priority.
@@ -165,12 +188,24 @@ pub struct Finding {
     pub value: String,
     pub confidence: Confidence,
     pub provenance: Provenance,
+    /// All sources retained when equivalent findings are merged.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub provenances: Vec<Provenance>,
+    /// Stable extractor/check identifiers contributing to this result.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub detectors: Vec<String>,
+    #[serde(default)]
+    pub status: FindingStatus,
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub justification: String,
     /// Detected plaintext for a [`FindingKind::Secret`]. Always populated by
     /// the secret extractor; absent for other kinds of findings.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub plaintext: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub evidence: Option<Box<super::evidence::ProbeEvidence>>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub additional_evidence: Vec<super::evidence::ProbeEvidence>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub coverage: Option<Box<super::evidence::ActiveCoverage>>,
 }
@@ -185,6 +220,13 @@ impl Finding {
         confidence: Confidence,
         provenance: Provenance,
     ) -> Self {
+        let status = match kind {
+            FindingKind::Secret | FindingKind::Vulnerability | FindingKind::Idor => {
+                FindingStatus::Suspicious
+            }
+            FindingKind::ScanCoverage => FindingStatus::Inconclusive,
+            _ => FindingStatus::Observed,
+        };
         Self {
             id: Uuid::new_v4(),
             session_id,
@@ -192,10 +234,85 @@ impl Finding {
             url,
             value: value.into(),
             confidence,
+            provenances: vec![provenance.clone()],
             provenance,
+            detectors: Vec::new(),
+            status,
+            justification: String::new(),
             plaintext: None,
             evidence: None,
+            additional_evidence: Vec::new(),
             coverage: None,
+        }
+    }
+
+    /// Retain independent observations without claiming that repeated leads
+    /// constitute proof of exploitability.
+    pub fn merge_from(&mut self, other: Self) {
+        for provenance in other.provenances.into_iter().chain([other.provenance]) {
+            if !self.provenances.contains(&provenance) {
+                self.provenances.push(provenance);
+            }
+        }
+        for detector in other.detectors {
+            if !self.detectors.contains(&detector) {
+                self.detectors.push(detector);
+            }
+        }
+        if other.confidence > self.confidence {
+            self.confidence = other.confidence;
+        }
+        let verified_confirmation = other.status == FindingStatus::Confirmed
+            && other.evidence.as_ref().is_some_and(|e| {
+                e.verdict == super::evidence::EvidenceVerdict::EvaluationConfirmed
+                    && e.check == "template_arithmetic"
+                    && e.observations.len() >= 4
+            });
+        if verified_confirmation
+            || (self.status == FindingStatus::Observed && other.status == FindingStatus::Suspicious)
+        {
+            self.status = if verified_confirmation {
+                FindingStatus::Confirmed
+            } else {
+                other.status
+            };
+            self.justification = other.justification;
+        }
+        if let Some(evidence) = other.evidence {
+            if self.evidence.is_none() {
+                self.evidence = Some(evidence);
+            } else if self.evidence.as_deref() != Some(&evidence)
+                && !self.additional_evidence.contains(&evidence)
+            {
+                self.additional_evidence.push(*evidence);
+            }
+        }
+        for evidence in other.additional_evidence {
+            if self.evidence.as_deref() != Some(&evidence)
+                && !self.additional_evidence.contains(&evidence)
+            {
+                self.additional_evidence.push(evidence);
+            }
+        }
+    }
+
+    /// Deterministic evidence score, independent of severity. The score ranks
+    /// verification strength, not the probability that a target is vulnerable.
+    #[must_use]
+    pub fn evidence_score(&self) -> u8 {
+        match self.status {
+            FindingStatus::Confirmed => 95,
+            FindingStatus::Inconclusive => 0,
+            FindingStatus::Suspicious => match self.confidence {
+                Confidence::High => 60,
+                Confidence::Medium => 40,
+                Confidence::Low => 20,
+            },
+            FindingStatus::Observed => match self.confidence {
+                Confidence::High => 85,
+                Confidence::Medium => 70,
+                Confidence::Low => 50,
+            },
         }
     }
 
@@ -224,18 +341,14 @@ impl Finding {
     /// Derive the finding's [`Severity`] from its kind, confidence, and target.
     ///
     /// Severity is computed on demand (not stored) so the ruleset can evolve
-    /// without re-scanning. Secrets rank highest; sensitive endpoints
-    /// (admin/debug/config/VCS/etc.) are promoted; low-signal kinds stay info.
+    /// without re-scanning. Secret impact is unknown and uses a fixed high
+    /// priority; sensitive endpoints (admin/debug/config/VCS/etc.) are promoted.
     #[must_use]
     pub fn severity(&self) -> Severity {
         match self.kind {
-            FindingKind::Secret => {
-                if self.confidence == Confidence::High {
-                    Severity::Critical
-                } else {
-                    Severity::High
-                }
-            }
+            // Credential scope and privileges are unknown from this scanner's
+            // static signal; do not inflate severity from extractor confidence.
+            FindingKind::Secret | FindingKind::Idor => Severity::High,
             FindingKind::Endpoint => endpoint_severity(self.url.as_deref().unwrap_or(&self.value)),
             FindingKind::GraphQl | FindingKind::SourceMap => Severity::Medium,
             FindingKind::Form | FindingKind::Route | FindingKind::WebSocketFrame => Severity::Low,
@@ -245,8 +358,6 @@ impl Finding {
             | FindingKind::Technology
             | FindingKind::Config
             | FindingKind::ScanCoverage => Severity::Info,
-            // Broken access control is always worth a human look.
-            FindingKind::Idor => Severity::High,
             // The specific weakness (encoded in `value` by the active-scan
             // checks) drives severity more than confidence does here: a
             // missing header is advisory, a credentialed CORS reflection is
@@ -264,8 +375,8 @@ impl Finding {
         // A page can expose several technologies, credentials, parameters or
         // vulnerabilities. Keeping only kind+URL would silently lose evidence.
         match self.kind {
-            FindingKind::Endpoint
-            | FindingKind::Link
+            FindingKind::Endpoint => format!("{}|{}", self.kind.slug(), self.value),
+            FindingKind::Link
             | FindingKind::Script
             | FindingKind::Route
             | FindingKind::SourceMap
@@ -353,177 +464,5 @@ fn endpoint_severity(target: &str) -> Severity {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::model::endpoint::Method;
-    use crate::model::session::SessionId;
-
-    #[test]
-    fn severity_ranks_secrets_and_sensitive_endpoints() {
-        let sid = SessionId::new();
-        let secret = Finding::new(
-            sid,
-            FindingKind::Secret,
-            None,
-            "fp:x",
-            Confidence::High,
-            Provenance::new(Source::JsRegex, None),
-        );
-        assert_eq!(secret.severity(), Severity::Critical);
-
-        let mk_ep = |url: &str| {
-            Finding::new(
-                sid,
-                FindingKind::Endpoint,
-                Some(url.into()),
-                format!("GET {url}"),
-                Confidence::Low,
-                Provenance::new(Source::JsAst, None),
-            )
-        };
-        assert_eq!(mk_ep("https://x/admin/users").severity(), Severity::High);
-        assert_eq!(mk_ep("https://x/api/v1/me").severity(), Severity::Medium);
-        assert_eq!(mk_ep("https://x/about").severity(), Severity::Low);
-
-        let param = Finding::new(
-            sid,
-            FindingKind::Parameter,
-            None,
-            "q",
-            Confidence::Low,
-            Provenance::new(Source::JsRegex, None),
-        );
-        assert_eq!(param.severity(), Severity::Info);
-        // Severity ordering is usable for sorting.
-        assert!(Severity::Critical > Severity::Info);
-    }
-
-    #[test]
-    fn vulnerability_and_idor_severity_ranked_by_weakness() {
-        let sid = SessionId::new();
-        let mk_vuln = |value: &str| {
-            Finding::new(
-                sid,
-                FindingKind::Vulnerability,
-                None,
-                value,
-                Confidence::High,
-                Provenance::new(Source::Active, None),
-            )
-        };
-        assert_eq!(
-            mk_vuln("CORS misconfiguration: arbitrary Origin reflected with credentials allowed")
-                .severity(),
-            Severity::Critical
-        );
-        assert_eq!(
-            mk_vuln("possible SQL injection: database error signature returned").severity(),
-            Severity::High
-        );
-        assert_eq!(
-            mk_vuln("open redirect via 'next' parameter").severity(),
-            Severity::Medium
-        );
-        assert_eq!(
-            mk_vuln("missing security header(s): X-Frame-Options").severity(),
-            Severity::Low
-        );
-        // Active checks added later map through the same marker phrases.
-        assert_eq!(
-            mk_vuln(
-                "possible path traversal / local file inclusion: /etc/passwd contents returned for 'file' parameter"
-            )
-            .severity(),
-            Severity::High
-        );
-        assert_eq!(
-            mk_vuln("possible subdomain takeover (GitHub Pages)").severity(),
-            Severity::High
-        );
-        assert_eq!(
-            mk_vuln(
-                "possible CRLF / header injection: injected response header observed via 'q' parameter"
-            )
-            .severity(),
-            Severity::Medium
-        );
-        assert_eq!(
-            mk_vuln("graphql introspection enabled: __schema returned over GET").severity(),
-            Severity::Medium
-        );
-        assert_eq!(
-            mk_vuln("possible SSRF sink: parameter accepts a URL ('url', URL value reflected in response)")
-                .severity(),
-            Severity::Low
-        );
-        assert_eq!(
-            mk_vuln(
-                "possible prototype pollution: server error triggered by '__proto__[webrevpp]=1'"
-            )
-            .severity(),
-            Severity::Low
-        );
-
-        let idor = Finding::new(
-            sid,
-            FindingKind::Idor,
-            None,
-            "no auth required",
-            Confidence::Medium,
-            Provenance::new(Source::Active, None),
-        );
-        assert_eq!(idor.severity(), Severity::High);
-    }
-
-    #[test]
-    fn dedup_key_ignores_method_and_source() {
-        let sid = SessionId::new();
-        let a = Finding::from_endpoint(
-            sid,
-            &Endpoint::new("https://x/api/v1", Method::Get, Source::Html),
-            Confidence::Medium,
-        );
-        let b = Finding::from_endpoint(
-            sid,
-            &Endpoint::new("https://x/api/v1", Method::Post, Source::JsAst),
-            Confidence::High,
-        );
-        // Same kind + url => same dedup key even though method/source differ.
-        assert_eq!(a.dedup_key(), b.dedup_key());
-    }
-
-    #[test]
-    fn dedup_key_falls_back_to_value() {
-        let sid = SessionId::new();
-        let f = Finding::new(
-            sid,
-            FindingKind::Secret,
-            None,
-            "fp:deadbeef",
-            Confidence::High,
-            Provenance::new(Source::JsRegex, None),
-        );
-        assert_eq!(f.dedup_key(), "secret|fp:deadbeef");
-    }
-
-    #[test]
-    fn same_page_can_keep_multiple_technologies_and_proofs() {
-        for kind in [
-            FindingKind::Technology,
-            FindingKind::Vulnerability,
-            FindingKind::Parameter,
-        ] {
-            let mk = |value| {
-                Finding::new(
-                    SessionId::new(),
-                    kind,
-                    Some("https://x/page".into()),
-                    value,
-                    Confidence::High,
-                    Provenance::new(Source::Html, None),
-                )
-            };
-            assert_ne!(mk("one").dedup_key(), mk("two").dedup_key());
-            assert_eq!(mk("one").dedup_key(), mk("one").dedup_key());
-        }
-    }
+    include!("finding_tests.rs");
 }

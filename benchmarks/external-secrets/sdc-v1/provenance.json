@@ -1,0 +1,11 @@
+{
+  "repository": "https://github.com/RusDavies/security-defect-corpus",
+  "commit": "84dd9c822eea735448353a01afe5e7e0df6549c4",
+  "archive": "security-defect-corpus-84dd9c822eea735448353a01afe5e7e0df6549c4.tar.gz",
+  "archive_sha256": "4ef50ed423fbb77b43050c22b3587508af3264f1075f8edb807d89101944b655",
+  "license": "MIT",
+  "families": 3,
+  "cases": 8,
+  "source_policy": "byte-preserving upstream files; no execution and no network",
+  "selection": "all reachable/unreachable/fixed JS/TS hardcoded-authentication-secret families in pinned ground truth; omit duplicate fixed TS variant"
+}

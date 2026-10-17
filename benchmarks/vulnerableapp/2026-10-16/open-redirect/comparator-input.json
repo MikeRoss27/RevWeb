@@ -1,0 +1,46 @@
+{
+  "tool": "Webrev",
+  "scanType": "DAST",
+  "findings": [
+    {
+      "url": "/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_1",
+      "type": "OPEN_REDIRECT_3XX_STATUS_CODE",
+      "method": "GET"
+    },
+    {
+      "url": "/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_2",
+      "type": "OPEN_REDIRECT_3XX_STATUS_CODE",
+      "method": "GET"
+    },
+    {
+      "url": "/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_3",
+      "type": "OPEN_REDIRECT_3XX_STATUS_CODE",
+      "method": "GET"
+    },
+    {
+      "url": "/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_4",
+      "type": "OPEN_REDIRECT_3XX_STATUS_CODE",
+      "method": "GET"
+    },
+    {
+      "url": "/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_5",
+      "type": "OPEN_REDIRECT_3XX_STATUS_CODE",
+      "method": "GET"
+    },
+    {
+      "url": "/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_6",
+      "type": "OPEN_REDIRECT_3XX_STATUS_CODE",
+      "method": "GET"
+    },
+    {
+      "url": "/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_9",
+      "type": "OPEN_REDIRECT_3XX_STATUS_CODE",
+      "method": "GET"
+    },
+    {
+      "url": "/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_10",
+      "type": "OPEN_REDIRECT_3XX_STATUS_CODE",
+      "method": "GET"
+    }
+  ]
+}

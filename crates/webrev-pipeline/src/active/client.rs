@@ -5,14 +5,14 @@ use reqwest::{
 };
 use std::time::Duration;
 use webrev_core::{
-    Confidence, Finding, FindingKind, OpsecConfig, Provenance, Result, SessionId, Source,
+    Confidence, Finding, FindingKind, OpsecConfig, Provenance, Result, Scope, SessionId, Source,
     WebrevError,
 };
 
 /// Hard per-request timeout.
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(15);
 
-pub(super) fn build_probe_client(opsec: &OpsecConfig) -> Result<reqwest::Client> {
+pub(super) fn build_probe_client(opsec: &OpsecConfig, scope: &Scope) -> Result<reqwest::Client> {
     for (name, value) in opsec.auth.effective_headers() {
         HeaderName::from_bytes(name.as_bytes())
             .map_err(|_| WebrevError::Config("invalid authentication header name".into()))?;
@@ -28,6 +28,10 @@ pub(super) fn build_probe_client(opsec: &OpsecConfig) -> Result<reqwest::Client>
         .user_agent(ua)
         .timeout(REQUEST_TIMEOUT)
         .no_proxy()
+        .dns_resolver(crate::dns::pinned_resolver(
+            scope.clone(),
+            opsec.egress.proxy.as_deref(),
+        ))
         .retry(reqwest::retry::never())
         // Separate connections avoid stale-pool retries and connection-bound
         // authentication contaminating the anonymous control.
@@ -37,8 +41,13 @@ pub(super) fn build_probe_client(opsec: &OpsecConfig) -> Result<reqwest::Client>
         // send a request to an attacker-controlled-looking host.
         .redirect(Policy::none());
     if let Some(proxy) = &opsec.egress.proxy {
-        let p = reqwest::Proxy::all(proxy)
-            .map_err(|e| WebrevError::Config(format!("invalid proxy {proxy:?}: {e}")))?;
+        let p = reqwest::Proxy::all(proxy).map_err(|e| {
+            WebrevError::Config(format!(
+                "invalid proxy {:?}: {}",
+                webrev_core::redact_url(proxy),
+                e.without_url()
+            ))
+        })?;
         builder = builder.proxy(p);
     }
     builder

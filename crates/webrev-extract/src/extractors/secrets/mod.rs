@@ -20,8 +20,8 @@ mod tests;
 pub use jwt::JwtExtractor;
 
 use heuristics::{
-    distinct_chars, is_common_false_positive, is_hex_digest, is_mixed, near_secret_keyword,
-    shannon_entropy, ENTROPY_MIN, ENTROPY_MIN_DISTINCT,
+    distinct_chars, is_common_false_positive, is_hex_digest, is_identifier_context, is_mixed,
+    near_secret_keyword, shannon_entropy, ENTROPY_MIN, ENTROPY_MIN_DISTINCT,
 };
 
 /// Regex-based secret scanner, with an entropy fallback for unknown shapes.
@@ -103,7 +103,9 @@ impl Extractor for SecretExtractor {
         for (regex, confidence) in &self.patterns {
             for cap in regex.captures_iter(&input.body) {
                 if let Some(secret) = cap.get(1).or_else(|| cap.get(0)) {
-                    if is_common_false_positive(secret.as_str()) {
+                    if is_common_false_positive(secret.as_str())
+                        || is_identifier_context(&input.body, secret.start())
+                    {
                         continue;
                     }
                     push(secret.as_str(), *confidence, &mut findings);
@@ -119,7 +121,8 @@ impl Extractor for SecretExtractor {
         for cap in self.entropy_candidate.captures_iter(&input.body) {
             if let Some(token) = cap.get(1) {
                 let value = token.as_str();
-                if is_common_false_positive(value)
+                if is_identifier_context(&input.body, token.start())
+                    || is_common_false_positive(value)
                     || is_hex_digest(value)
                     || !is_mixed(value)
                     || distinct_chars(value) < ENTROPY_MIN_DISTINCT

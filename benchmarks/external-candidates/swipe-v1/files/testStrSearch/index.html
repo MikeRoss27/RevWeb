@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en-US">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Parse foo</title>
+</head>
+
+<body>
+
+<script>
+
+var s = location.href.substring(document.location.href.indexOf("?a=")+3);
+
+var regex1 = RegExp('f(oo*)','g');
+
+var ind = s.search(regex1);
+
+var array1;
+
+if (ind < 0) {
+  document.write("pattern not found");
+}
+else {
+  if (ind > 3) {
+    document.write("pattern found at index "+ind+", and ind > 3");
+  } else {
+    document.write("pattern found at index "+ind+" but ind <= 3");
+  }
+}
+
+</script>
+</body>
+
+
+</html>

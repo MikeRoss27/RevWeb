@@ -28,6 +28,10 @@ pub enum ReportFormat {
     Csv,
     /// Reconstructed `OpenAPI` 3.1 document (reverse the API from the consumer).
     OpenApi,
+    /// Graphviz directed graph of observed endpoint, component and parameter links.
+    Dot,
+    /// `GraphML` directed graph, suitable for Gephi and other graph tooling.
+    GraphMl,
 }
 
 /// Which endpoints the URL list should include.
@@ -80,6 +84,8 @@ impl SessionReport {
             ReportFormat::Urls => Ok(self.render_urls(opts)),
             ReportFormat::Csv => Ok(self.render_csv(opts)),
             ReportFormat::OpenApi => self.render_openapi(opts),
+            ReportFormat::Dot => Ok(self.render_dot(opts)),
+            ReportFormat::GraphMl => Ok(self.render_graphml(opts)),
         }
     }
 
@@ -200,6 +206,8 @@ impl fmt::Display for ReportFormat {
             ReportFormat::Urls => "urls",
             ReportFormat::Csv => "csv",
             ReportFormat::OpenApi => "openapi",
+            ReportFormat::Dot => "dot",
+            ReportFormat::GraphMl => "graphml",
         })
     }
 }

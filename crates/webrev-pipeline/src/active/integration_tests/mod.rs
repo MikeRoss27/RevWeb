@@ -1,8 +1,10 @@
 //! Wire-level regression fixtures: positives, controls and incomplete scans.
+mod bola;
 mod fixture;
 mod limits;
 mod proofs;
 mod recon;
+mod safety;
 
 use super::*;
 use fixture::{Fixture, Reply};

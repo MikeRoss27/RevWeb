@@ -91,6 +91,42 @@ impl fmt::Display for Source {
     }
 }
 
+/// Strength of the evidence for an endpoint route. The ordering is intentional:
+/// a route inferred from a normalized path is weaker than one present in
+/// static assets, which is weaker than a request observed on the wire.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum EndpointConfidence {
+    Inferred,
+    Static,
+    Observed,
+}
+
+impl EndpointConfidence {
+    /// Stable score for sorting and machine-readable exports.
+    #[must_use]
+    pub const fn score(self) -> u8 {
+        match self {
+            Self::Inferred => 30,
+            Self::Static => 70,
+            Self::Observed => 100,
+        }
+    }
+}
+
+impl Source {
+    /// Confidence in an endpoint directly discovered from this source.
+    #[must_use]
+    pub const fn endpoint_confidence(self) -> EndpointConfidence {
+        match self {
+            Self::Browser | Self::Active => EndpointConfidence::Observed,
+            Self::JsAst | Self::JsRegex | Self::Html | Self::SourceMap | Self::Manifest => {
+                EndpointConfidence::Static
+            }
+        }
+    }
+}
+
 /// Whether an endpoint belongs to the target application (`Internal`) or is a
 /// reference to a third-party host outside the mission scope (`External`).
 ///
@@ -127,6 +163,10 @@ pub struct Endpoint {
     pub url: String,
     pub method: Method,
     pub source: Source,
+    /// Confidence in the route represented by `url`, independent of finding
+    /// confidence. A route template inferred by pattern normalization is low.
+    #[serde(default = "default_endpoint_confidence")]
+    pub confidence: EndpointConfidence,
     /// Internal (in-scope) vs external (third-party). Extractors cannot know
     /// the scope, so this defaults to [`EndpointScope::Internal`] and is set
     /// authoritatively by the store stage via [`Endpoint::with_scope`].
@@ -140,6 +180,7 @@ impl Endpoint {
             url: url.into(),
             method,
             source,
+            confidence: source.endpoint_confidence(),
             scope: EndpointScope::Internal,
         }
     }
@@ -149,5 +190,66 @@ impl Endpoint {
     pub fn with_scope(mut self, scope: EndpointScope) -> Self {
         self.scope = scope;
         self
+    }
+
+    /// Mark a route template created by replacing volatile path segments.
+    #[must_use]
+    pub fn with_inferred_pattern(mut self) -> Self {
+        self.confidence = EndpointConfidence::Inferred;
+        self
+    }
+
+    /// Keep the strongest evidence when the same method and normalized URL
+    /// are discovered more than once. The caller must match those keys first.
+    pub fn merge_from(&mut self, other: &Self) {
+        if other.confidence > self.confidence
+            || (other.confidence == self.confidence && other.source < self.source)
+        {
+            self.source = other.source;
+            self.confidence = other.confidence;
+        }
+        if other.scope == EndpointScope::Internal {
+            self.scope = EndpointScope::Internal;
+        }
+    }
+}
+
+const fn default_endpoint_confidence() -> EndpointConfidence {
+    EndpointConfidence::Static
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn source_scores_follow_evidence_strength() {
+        assert_eq!(
+            Endpoint::new("/x", Method::Get, Source::Browser)
+                .confidence
+                .score(),
+            100
+        );
+        assert_eq!(
+            Endpoint::new("/x", Method::Get, Source::JsAst)
+                .confidence
+                .score(),
+            70
+        );
+        assert_eq!(
+            Endpoint::new("/x/{id}", Method::Get, Source::Browser)
+                .with_inferred_pattern()
+                .confidence
+                .score(),
+            30
+        );
+    }
+
+    #[test]
+    fn later_live_evidence_promotes_an_endpoint() {
+        let mut endpoint = Endpoint::new("/api", Method::Get, Source::JsRegex);
+        endpoint.merge_from(&Endpoint::new("/api", Method::Get, Source::Browser));
+        assert_eq!(endpoint.confidence, EndpointConfidence::Observed);
+        assert_eq!(endpoint.source, Source::Browser);
     }
 }

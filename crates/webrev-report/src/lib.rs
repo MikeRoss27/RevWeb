@@ -11,6 +11,7 @@
 //! so this crate depends only on the domain model and `serde`.
 
 pub mod format;
+pub mod graph;
 pub mod json;
 pub mod openapi;
 pub mod summary;

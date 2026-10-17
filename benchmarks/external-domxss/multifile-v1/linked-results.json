@@ -1,0 +1,62 @@
+{
+  "schema": 1,
+  "run_date_utc": "2026-10-17",
+  "command": "cargo test -p webrev-extract --test domxss_multifile_external -- --nocapture",
+  "upstream_commit": "28f06b4b331c6192477c8987deee3cfaf08eaf57",
+  "corpus": {
+    "positive_variants": 342,
+    "unique_source_sink_pairs": 69,
+    "negative_labels": 0,
+    "modeled_source_sink_variants": 122,
+    "modeled_source_sink_pairs": 25,
+    "split_method_variants": {
+      "type01": 69,
+      "type02": 66,
+      "type03": 69,
+      "type04": 69,
+      "type05": 69
+    }
+  },
+  "results": {
+    "multi_file_exact_flow_coverage": {
+      "matched_cases": 26,
+      "unmatched_cases": 96,
+      "total_cases": 122,
+      "coverage_fraction": 0.21311475409836064,
+      "matched_unique_pairs": 13,
+      "total_unique_pairs": 25
+    },
+    "raw_signal_cases": 44,
+    "per_method": {
+      "type01": {
+        "matched": 13,
+        "total": 25
+      },
+      "type02": {
+        "matched": 13,
+        "total": 22
+      },
+      "type03": {
+        "matched": 0,
+        "total": 25
+      },
+      "type04": {
+        "matched": 0,
+        "total": 25
+      },
+      "type05": {
+        "matched": 0,
+        "total": 25
+      }
+    },
+    "precision": null,
+    "false_positive_rate": null
+  },
+  "interpretation": "Positive-only correlated diagnostic after explicit ES-module value-import linking. Static candidates remain Suspicious and retain source/sink provenance. Function exports and interprocedural propagation remain unsupported. This is not a precision or FPR estimate; results.json preserves the previous independent-file baseline.",
+  "environment": {
+    "CARGO_TARGET_DIR": "/home/na/.cache/webrev-validation-target",
+    "CARGO_PROFILE_DEV_DEBUG": "0",
+    "CARGO_PROFILE_TEST_DEBUG": "0"
+  },
+  "analysis_mode": "explicit ES-module value import linking; separate ASTs"
+}

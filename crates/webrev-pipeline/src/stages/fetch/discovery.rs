@@ -85,7 +85,44 @@ pub(super) fn enqueue(
             continue;
         };
         if scope.allows(&abs) && !visited.contains(&abs) {
+            // A GET to /logout, /delete?id=.. or ?action=unsubscribe can change
+            // state. Never crawl such links; they are logged, not fetched.
+            if let Some(word) = crate::active::destructive_keyword(&abs) {
+                tracing::info!(url = %abs, keyword = word, "crawl link refused: looks state-changing");
+                continue;
+            }
             queue.push_back((abs, depth));
         }
+    }
+}
+
+#[cfg(test)]
+mod destructive_link_tests {
+    use super::*;
+
+    #[test]
+    fn crawler_never_enqueues_state_changing_links() {
+        let scope = Scope::new(vec!["ex.com".into()], vec![]);
+        let mut queue = VecDeque::new();
+        let hrefs = vec![
+            "/logout".to_owned(),
+            "/items?action=delete&id=2".to_owned(),
+            "/unsubscribe".to_owned(),
+            "/static/remove.js".to_owned(),
+            "/about".to_owned(),
+        ];
+        enqueue(
+            &mut queue,
+            &BTreeSet::new(),
+            &scope,
+            "https://ex.com/",
+            &hrefs,
+            1,
+        );
+        let urls: Vec<_> = queue.iter().map(|(u, _)| u.as_str()).collect();
+        assert_eq!(
+            urls,
+            ["https://ex.com/static/remove.js", "https://ex.com/about"]
+        );
     }
 }

@@ -49,10 +49,12 @@ impl SessionReport {
             for finding in rows {
                 let _ = writeln!(
                     out,
-                    "  [{}] {:<9} confidence={} · {}\n    {}",
+                    "  [{}] {:<9} status={} confidence={} evidence_score={} · {}\n    {}",
                     finding.severity().tag().trim(),
                     finding.category(),
+                    finding.status.slug(),
                     finding.confidence.slug(),
+                    finding.evidence_score(),
                     finding.assessment(),
                     terminal_text(finding.display_value())
                 );
@@ -64,25 +66,28 @@ impl SessionReport {
                         let _ = writeln!(out, "    {}", terminal_text(&line));
                     }
                 }
+                for evidence in &finding.additional_evidence {
+                    for line in evidence.details() {
+                        let _ = writeln!(out, "    {}", terminal_text(&line));
+                    }
+                }
+                if !finding.justification.is_empty() {
+                    let _ = writeln!(out, "    reason: {}", terminal_text(&finding.justification));
+                }
+                if !finding.detectors.is_empty() {
+                    let _ = writeln!(out, "    detectors: {}", finding.detectors.join(", "));
+                }
                 if let Some(coverage) = &finding.coverage {
                     for (check, count) in &coverage.checks {
                         let _ = writeln!(
                             out,
-                            "    {check}: {} selected targets, {} findings, {} inconclusive",
-                            count.attempted, count.findings, count.inconclusive
+                            "    {check}: {} selected, {} executed, {} negative, {} not executed, {} not selected, {} HTTP refused, {} scope refused, {} errors, {} inconclusive, {} findings",
+                            count.attempted, count.executed, count.negative, count.not_executed,
+                            count.not_selected, count.refused, count.scope_refused, count.errors, count.inconclusive, count.findings
                         );
                     }
                 }
-                let _ = writeln!(
-                    out,
-                    "    source: {}{}",
-                    finding.provenance.source,
-                    finding
-                        .provenance
-                        .location
-                        .as_ref()
-                        .map_or_else(String::new, |s| format!(" · {}", terminal_text(s)))
-                );
+                write_provenances(&mut out, finding);
             }
         }
         out
@@ -100,6 +105,32 @@ fn group_for(f: &Finding) -> &'static str {
         "TECHNOLOGIES"
     } else {
         "ATTACK SURFACE"
+    }
+}
+
+fn write_provenances(out: &mut String, finding: &Finding) {
+    let location = |value: &Option<String>| {
+        value
+            .as_ref()
+            .map_or_else(String::new, |s| format!(" · {}", terminal_text(s)))
+    };
+    let _ = writeln!(
+        out,
+        "    source: {}{}",
+        finding.provenance.source,
+        location(&finding.provenance.location)
+    );
+    for provenance in finding
+        .provenances
+        .iter()
+        .filter(|p| *p != &finding.provenance)
+    {
+        let _ = writeln!(
+            out,
+            "    also from: {}{}",
+            provenance.source,
+            location(&provenance.location)
+        );
     }
 }
 

@@ -14,6 +14,66 @@ async fn unsuccessful_requests_still_consume_shared_budget() {
 }
 
 #[tokio::test]
+async fn concurrent_targets_cannot_overshoot_shared_request_budget() {
+    let fixture = Fixture::new(|_| Reply {
+        delay_ms: 10,
+        ..Reply::html("ordinary page")
+    });
+    let mut opsec = config();
+    opsec.active.max_requests = 3;
+    let paths: Vec<String> = (0..30).map(|i| format!("/page{i}?q=x")).collect();
+    let findings = scan(
+        &fixture,
+        &paths.iter().map(String::as_str).collect::<Vec<_>>(),
+        &opsec,
+    )
+    .await;
+    let run = coverage(&findings);
+    let received = fixture.requests.lock().unwrap().len();
+    assert!(run.budget_exhausted);
+    assert!(run.requests <= 3);
+    assert!(received <= 3, "wire requests {received} exceeded budget 3");
+}
+
+#[tokio::test]
+async fn active_http_client_resolves_and_connects_through_pinned_dns() {
+    let fixture = Fixture::new(|_| Reply::html("ordinary page"));
+    let url = fixture.origin.replacen("127.0.0.1", "localhost", 1);
+    let endpoint = Endpoint::new(url, Method::Get, Source::Html);
+    let findings = run_active_scan(
+        &config(),
+        &Scope::new(vec!["localhost".into()], vec![]),
+        SessionId::new(),
+        &[endpoint],
+        CancellationToken::new(),
+    )
+    .await
+    .unwrap();
+    assert!(!fixture.requests.lock().unwrap().is_empty());
+    assert!(coverage(&findings).requests > 0);
+}
+
+#[tokio::test]
+async fn cidr_scope_never_connects_when_local_dns_is_outside_range() {
+    let fixture = Fixture::new(|_| Reply::html("must not be reached"));
+    let url = fixture.origin.replacen("127.0.0.1", "localhost", 1);
+    let endpoint = Endpoint::new(url, Method::Get, Source::Html);
+    let mut opsec = config();
+    opsec.active.max_requests = 1;
+    let findings = run_active_scan(
+        &opsec,
+        &Scope::new(vec!["192.0.2.0/24".into()], vec![]),
+        SessionId::new(),
+        &[endpoint],
+        CancellationToken::new(),
+    )
+    .await
+    .unwrap();
+    assert!(fixture.requests.lock().unwrap().is_empty());
+    assert!(coverage(&findings).transport_errors > 0);
+}
+
+#[tokio::test]
 async fn zero_budget_never_connects_and_records_incomplete_coverage() {
     let fixture = Fixture::new(|_| panic!("zero budget must never connect"));
     let mut opsec = config();
@@ -21,6 +81,19 @@ async fn zero_budget_never_connects_and_records_incomplete_coverage() {
     let findings = scan(&fixture, &["/"], &opsec).await;
     assert_eq!(coverage(&findings).requests, 0);
     assert!(coverage(&findings).budget_exhausted);
+}
+
+#[tokio::test]
+async fn coverage_distinguishes_selected_negative_and_unselected_checks() {
+    let fixture = Fixture::new(|_| Reply::html("ordinary page"));
+    let findings = scan(&fixture, &["/page?q=hello"], &config()).await;
+    let run = coverage(&findings);
+    let origin = &run.checks["origin"];
+    assert_eq!(origin.attempted, 1);
+    assert_eq!(origin.executed, 1);
+    assert_eq!(origin.findings, 0);
+    assert!(run.checks["path_traversal"].not_selected > 0);
+    assert!(run.checks["parameter_fuzz"].executed > 0);
 }
 
 #[tokio::test]

@@ -8,6 +8,7 @@ use webrev_core::{Endpoint, Finding, FindingKind, Method, Mission, Source};
 pub fn active_targets(mission: &Mission, findings: &[Finding]) -> Vec<Endpoint> {
     let mut endpoints = Vec::new();
     let mut distinct = BTreeSet::new();
+    let mut resolver = crate::targets::EndpointResolver::new(mission);
     for finding in findings.iter().filter(|f| f.kind == FindingKind::Endpoint) {
         let Some(raw) = finding.url.as_deref() else {
             continue;
@@ -15,8 +16,9 @@ pub fn active_targets(mission: &Mission, findings: &[Finding]) -> Vec<Endpoint> 
         if raw.contains(['{', '}']) {
             continue;
         }
-        let resolved = crate::targets::resolve_endpoint_url(mission, finding);
-        let Some(mut url) = resolved else { continue };
+        let Some(mut url) = resolver.resolve(finding) else {
+            continue;
+        };
         url.set_fragment(None);
         let url = url.to_string();
         let method = finding
@@ -25,7 +27,16 @@ pub fn active_targets(mission: &Mission, findings: &[Finding]) -> Vec<Endpoint> 
             .next()
             .map_or(Method::Unknown, Method::parse);
         if mission.scope.allows(&url) && distinct.insert((method, url.clone())) {
-            endpoints.push(Endpoint::new(url, method, finding.provenance.source));
+            let source = if finding
+                .provenances
+                .iter()
+                .any(|provenance| provenance.source == Source::Browser)
+            {
+                Source::Browser
+            } else {
+                finding.provenance.source
+            };
+            endpoints.push(Endpoint::new(url, method, source));
         }
     }
     for seed in &mission.seeds {
@@ -74,5 +85,27 @@ mod tests {
                 "https://x.test/app/"
             ]
         );
+    }
+
+    #[test]
+    fn merged_browser_provenance_remains_replay_eligible() {
+        let mission = Mission::new(
+            "fixture",
+            Scope::new(vec!["x.test".into()], vec![]),
+            vec!["https://x.test/".into()],
+        );
+        let mut finding = Finding::new(
+            mission.id,
+            FindingKind::Endpoint,
+            Some("https://x.test/api/users/101".into()),
+            "GET https://x.test/api/users/101",
+            Confidence::High,
+            Provenance::new(Source::JsAst, None),
+        );
+        finding
+            .provenances
+            .push(Provenance::new(Source::Browser, None));
+        let targets = active_targets(&mission, &[finding]);
+        assert_eq!(targets[0].source, Source::Browser);
     }
 }

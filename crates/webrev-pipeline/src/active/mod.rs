@@ -1,7 +1,9 @@
 //! Scoped active assessment with shared request limits and explicit proof tiers.
 mod access;
+mod bola;
 mod client;
 mod crlf;
+mod destructive;
 mod evidence;
 mod expression;
 mod graphql;
@@ -15,6 +17,8 @@ mod targets;
 mod transport;
 mod traversal;
 mod urls;
+pub use bola::{bola_candidates, run_bola_scan, BolaCandidate};
+pub(crate) use destructive::destructive_keyword;
 pub use targets::active_targets;
 #[cfg(test)]
 mod integration_tests;
@@ -107,6 +111,24 @@ pub async fn run_active_scan(
         findings
             .extend(classic_checks(&client, opsec, &ep.url, params, &mut budget, session).await);
         findings.extend(recon_checks(&client, &ep.url, params, &mut budget, session).await);
+    }
+    for check in [
+        "origin",
+        "api_cors",
+        "subdomain_takeover",
+        "open_redirect",
+        "parameter_fuzz",
+        "template_arithmetic",
+        "anonymous_access",
+        "crlf_injection",
+        "path_traversal",
+        "ssrf_signal",
+        "prototype_pollution",
+        "graphql_introspection",
+    ] {
+        if !client.coverage().checks.contains_key(check) {
+            client.not_selected(check);
+        }
     }
     let record = coverage_finding(session, client.coverage());
     findings.push(record);
@@ -269,6 +291,10 @@ fn scoped_endpoints<'a>(
                 client.update(|c| c.skipped_methods += 1);
                 return false;
             }
+            if destructive_keyword(&ep.url).is_some() {
+                client.refuse_destructive();
+                return false;
+            }
             seen.insert(ep.url.clone())
         })
         .collect()
@@ -281,11 +307,18 @@ fn coverage_finding(session: SessionId, coverage: webrev_core::ActiveCoverage) -
         "incomplete / no clean verdict"
     };
     let mut record = Finding::new(session, FindingKind::ScanCoverage, None,
-        format!("active coverage: {state}; {} / {} requests, {} responses, {} transport errors, {} refused, {} oversized, {} method skips, {} query-auth skips; cancelled={}, budget_exhausted={}, target_limit={}, parameter_limit={}",
+        format!("active coverage: {state}; {} / {} requests, {} responses, {} transport errors, {} HTTP refused, {} scope refused, {} oversized, {} method skips, {} query-auth skips; cancelled={}, budget_exhausted={}, target_limit={}, parameter_limit={}",
             coverage.requests, coverage.request_limit, coverage.responses, coverage.transport_errors,
-            coverage.refused_responses, coverage.oversized_responses, coverage.skipped_methods, coverage.skipped_query_auth, coverage.cancelled,
+            coverage.refused_responses, coverage.out_of_scope, coverage.oversized_responses, coverage.skipped_methods, coverage.skipped_query_auth, coverage.cancelled,
             coverage.budget_exhausted, coverage.target_limit_reached, coverage.parameter_limit_reached),
         Confidence::High, Provenance::new(Source::Active, None));
+    record.status = if coverage.complete() {
+        webrev_core::FindingStatus::Observed
+    } else {
+        webrev_core::FindingStatus::Inconclusive
+    };
+    record.detectors.push("active_coverage".into());
+    record.justification = state.into();
     record.coverage = Some(Box::new(coverage));
     record
 }

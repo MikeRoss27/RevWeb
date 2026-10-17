@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+<h1>The iframe element</h1>
+
+<iframe id="hmm" src="about:blank" title="My iframe">
+</iframe>
+
+<script>
+    var elem = document.getElementById("hmm");
+    elem.src = location.search.substring(1);
+</script>
+</body>
+</html>
+

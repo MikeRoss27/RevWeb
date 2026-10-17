@@ -42,10 +42,11 @@ pub(super) fn compile() -> (Vec<(Regex, Confidence)>, Regex) {
             compile(r"(-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----)"),
             Confidence::High,
         ),
-        // Generic `key = "value"` assignment (value is captured)
+        // Generic `key = "value"` assignment or `password === "value"`
+        // comparison (hardcoded credential check); the value is captured.
         (
             compile(
-                r#"(?i)(?:api[_-]?key|secret|token|password|access[_-]?key)\s*[:=]\s*["']([A-Za-z0-9\-_\.]{16,})["']"#,
+                r#"(?i)(?:api[_-]?key|secret|token|password|access[_-]?key)\s*(?::|=|[!=]==?)\s*["']([A-Za-z0-9\-_\.]{16,})["']"#,
             ),
             Confidence::Medium,
         ),

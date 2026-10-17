@@ -1,0 +1,16 @@
+    Finished `test` profile [unoptimized] target(s) in 0.11s
+     Running tests/domxss_multifile_external.rs (/home/na/.cache/webrev-validation-target/debug/deps/domxss_multifile_external-80bb9fd9a5585524)
+
+running 2 tests
+test external_flow_matcher_requires_the_annotated_sink ... ok
+external multi-file DOM XSS: raw unrelated-or-matching flow signals on 90/342 cases; modeled-category exact-flow coverage across explicitly linked module ASTs: matched=63 unmatched=59 / 122; unique pairs with a match=13/25; all unique pairs=69 (variants are correlated)
+type01: exact-flow multi-file coverage matched=13 unmatched=12 / 25
+type02: exact-flow multi-file coverage matched=13 unmatched=9 / 22
+type03: exact-flow multi-file coverage matched=13 unmatched=12 / 25
+type04: exact-flow multi-file coverage matched=13 unmatched=12 / 25
+type05: exact-flow multi-file coverage matched=11 unmatched=14 / 25
+detected in-scope source/sink pairs: {("01", "09"), ("03", "09"), ("05", "09"), ("10", "10"), ("10", "12"), ("10", "18"), ("11", "09"), ("11", "10"), ("11", "12"), ("11", "15"), ("11", "18"), ("12", "09"), ("13", "09")}
+test pinned_external_multifile_dom_xss_diagnostic ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.22s
+

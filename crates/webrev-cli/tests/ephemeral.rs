@@ -28,7 +28,7 @@ impl Fixture {
         let stopping = Arc::clone(&stop);
         let worker = thread::spawn(move || {
             let body = format!(
-                "<html data-reactroot data-v-app><script>const apiKey = '{SECRET}'; fetch('/api/demo?token={SECRET}'); fetch('/api/users/123?q=hello');</script></html>"
+                "<html data-reactroot data-v-app><script>const apiKey = '{SECRET}'; fetch('/api/demo?token={SECRET}'); fetch('/api/users/123?q=hello'); fetch('/api/mutate', {{method:'POST'}}).catch(() => {{}});</script></html>"
             );
             while !stopping.load(Ordering::Relaxed) {
                 match listener.accept() {
@@ -398,5 +398,75 @@ fn active_scan_triage_uses_real_queries_and_ids_and_shows_the_stack() {
     assert_eq!(files(dir.path()), vec!["webrev-report.json"]);
     let conversion = cli(dir.path(), &["report", "--format", "text"]);
     success(&conversion);
-    assert_eq!(String::from_utf8_lossy(&conversion.stdout), text);
+    let detailed = String::from_utf8_lossy(&conversion.stdout);
+    assert!(detailed.contains("baseline:"));
+    assert!(detailed.contains("ATTACK SURFACE"));
+    assert!(text.contains("to review"));
+    assert!(text.contains("COVERAGE"));
+}
+
+#[test]
+#[ignore = "requires a local Chromium/Chrome installation"]
+fn observation_only_exports_refusals_and_preserves_plaintext() {
+    let fixture = Fixture::new();
+    for command in ["dynamic", "scan"] {
+        let dir = tempfile::tempdir().unwrap();
+        let mut args = scan_args(command, &fixture);
+        args.extend(["--duration-secs", "1", "--observation-only"]);
+        if command == "scan" {
+            args.push("--dynamic");
+        }
+        success(&cli(dir.path(), &args));
+        let report: SessionReport =
+            serde_json::from_slice(&std::fs::read(dir.path().join("webrev-report.json")).unwrap())
+                .unwrap();
+        let coverage = report
+            .findings
+            .iter()
+            .find(|finding| {
+                finding.kind == FindingKind::ScanCoverage
+                    && finding.provenance.source == webrev_core::Source::Browser
+            })
+            .expect("browser coverage");
+        let evidence: serde_json::Value = serde_json::from_str(&coverage.value).unwrap();
+        assert_eq!(evidence["complete"], false);
+        assert_eq!(evidence["policy"], "ObserveOnly");
+        assert!(evidence["refused_requests"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|request| request["method"] == "POST" && request["reason"] == "MethodRestricted"));
+        assert!(!report
+            .endpoints
+            .iter()
+            .any(|endpoint| endpoint.source == webrev_core::Source::Browser
+                && endpoint.url.ends_with("/api/mutate")));
+        assert!(report.findings.iter().any(|finding| finding
+            .url
+            .as_deref()
+            .is_some_and(|url| url.contains(SECRET))));
+        let text = cli(
+            dir.path(),
+            &[
+                "report",
+                "--input",
+                "webrev-report.json",
+                "--format",
+                "text",
+            ],
+        );
+        success(&text);
+        let text = String::from_utf8(text.stdout).unwrap();
+        assert!(text.contains("COVERAGE") && text.contains("MethodRestricted"));
+        assert!(text.contains(SECRET));
+    }
+}
+
+#[test]
+fn tui_rejects_unsupported_observation_policy_before_launch() {
+    let dir = tempfile::tempdir().unwrap();
+    let output = cli(dir.path(), &["tui", "--observation-only"]);
+    assert!(!output.status.success());
+    assert!(String::from_utf8_lossy(&output.stderr)
+        .contains("TUI browser exploration does not support"));
 }

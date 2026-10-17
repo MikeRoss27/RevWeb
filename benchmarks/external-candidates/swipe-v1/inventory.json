@@ -1,0 +1,172 @@
+{
+  "source": "SWIPE: DOM-XSS analysis infrastructure",
+  "doi": "10.5281/zenodo.15883603",
+  "source_archive": "SWIPE.zip",
+  "source_archive_bytes": 1894433749,
+  "source_archive_md5": "b5d69554b8ed7efc9be2c5be6d3d47bd",
+  "license": "MIT",
+  "retrieved_utc": "2026-10-17",
+  "retrieval_method": "HTTP byte ranges; selected small test fixtures only; no live targets scanned",
+  "files": [
+    {
+      "path": "testFields1/index.html",
+      "bytes": 476,
+      "sha256": "fb72de10fb7431d2bf1cc53f12bd39d1daca0357c56c1c3cda97fb9182cea86a"
+    },
+    {
+      "path": "simpleDOMXSS2codePointAt/index.html",
+      "bytes": 911,
+      "sha256": "56c77053fbf8d1c03af14727b3a7b88f637c1773bbba8cfdd50c4eb7c481bfae"
+    },
+    {
+      "path": "simpleDOMXSS2concat/index.html",
+      "bytes": 955,
+      "sha256": "297a0ef47c29b0743d6979b23ff7a580bca4813edc60c9f43967c5ffc2516e5b"
+    },
+    {
+      "path": "simpleDOMXSS2includes/index.html",
+      "bytes": 958,
+      "sha256": "768a42feb28a975f6ee94beddcac17ff332e4f4dbffcc960aaee81a243ce716d"
+    },
+    {
+      "path": "example_page.html",
+      "bytes": 959,
+      "sha256": "b4998b3059976b136216a900728012d0e524786366ed47392d6710a874dd08b1"
+    },
+    {
+      "path": "testFields0/index.html",
+      "bytes": 470,
+      "sha256": "a726618f5e3e3927f33da2a584c34226f3c93f562b710346edc9b166d6c841d2"
+    },
+    {
+      "path": "simpleDOMXSS2endsW/index.html",
+      "bytes": 879,
+      "sha256": "3ec9d13459231dcb14e59f0300e11902a98d374a3ddfc068c62c85444b06f77d"
+    },
+    {
+      "path": "simpleDOMXSS2dUC/index.html",
+      "bytes": 480,
+      "sha256": "52356e1f4e7ddb8d383c537154f1c9e2eccb120bc6a47d692eb25dce857fa29a"
+    },
+    {
+      "path": "testStrMatchGlobal/index.html",
+      "bytes": 774,
+      "sha256": "3cf3c9e7b1723c09fa31a70d2d5f113e35cf000e4c672ccadbaaba03c5745cc7"
+    },
+    {
+      "path": "simpleDOMXSS2if1/index.html",
+      "bytes": 875,
+      "sha256": "b83b3d9f16e657956f5741773cc9116100bd72aa39f6f81d2f457eef80280b9b"
+    },
+    {
+      "path": "sinks/vuln.html",
+      "bytes": 253,
+      "sha256": "c89b41bbffb46728a8e9692a78dc3fbf507b7933a21f5ac92458c0f00067cf4d"
+    },
+    {
+      "path": "sinks/innerHTML.html",
+      "bytes": 160,
+      "sha256": "075ab491fff89a1fdc4fa4c41552da555487f9a049aa4d293f993a014e7e4d9d"
+    },
+    {
+      "path": "sinks/function.html",
+      "bytes": 115,
+      "sha256": "d2a31ea19dc1c79721392a2064e85530e9a587b0cf665073c462ff7cb80a6ce2"
+    },
+    {
+      "path": "sinks/onclick.html",
+      "bytes": 188,
+      "sha256": "cb36dc456b19ee4e0a232c8dc5455b8980340d1b2331291b9d8d57d84942e573"
+    },
+    {
+      "path": "sinks/eval.html",
+      "bytes": 100,
+      "sha256": "700d3cedc8d84fe1a63533c1dfe65ee4c8c03cf49c0b22753d4e20e196106865"
+    },
+    {
+      "path": "simpleDOMXSS2upperlowercase/index.html",
+      "bytes": 1034,
+      "sha256": "0e584f4b34c675a84be80bf2ef9006f76e5538376f9755d2ede253a630f71a5f"
+    },
+    {
+      "path": "simpleDOMXSS2methods/hero.js",
+      "bytes": 213,
+      "sha256": "e508b3f746d2bed54ed329b0d48f9cf61644eb7fe4861e5e6ee01552565b43e3"
+    },
+    {
+      "path": "simpleDOMXSS2methods/index.html",
+      "bytes": 1089,
+      "sha256": "937418d4f0405e673fbfdf2ecc17c8c5a8a667acbb61fe97fe03e82a71d47915"
+    },
+    {
+      "path": "simpleDOMXSS2charCodeAt/index.html",
+      "bytes": 909,
+      "sha256": "a3ac85628bcedd2b0c38e6449fe0fc958cd1e51d6974414f67e5b94c3ccaf5c9"
+    },
+    {
+      "path": "simpleDOMXSS2REexec/index.html",
+      "bytes": 497,
+      "sha256": "8d2b4b7bf13d214bc875c9cc8382bb2bf94dcd88cdd8b4433c2d5ec39921b53c"
+    },
+    {
+      "path": "simpleDOMXSS2dU/index.html",
+      "bytes": 471,
+      "sha256": "3db0e252b579fc652cb1b04d799760de1da1e3137c0d041849a25642c54b7281"
+    },
+    {
+      "path": "testConditional/index.html",
+      "bytes": 271,
+      "sha256": "60ee6612aeefb352a17763f7e0a674be06a23c43f20fc5d4a022e3794cad43ab"
+    },
+    {
+      "path": "simpleDOMXSS2/index.html",
+      "bytes": 460,
+      "sha256": "c2354af866aa6e1379306eadf9260629e4d4a2134dad57f7ccc00a79442df75d"
+    },
+    {
+      "path": "simpleDOMXSS2if2/index.html",
+      "bytes": 881,
+      "sha256": "87350ff8893822ac2e8319b88c7947c4d3c9939d181442283c8e94d0ca8dd8d3"
+    },
+    {
+      "path": "testStrSearch/index.html",
+      "bytes": 613,
+      "sha256": "16a84d916c880eebd5d4a52abaf1e523dbd6de06d0b3376feeb81c7877032324"
+    },
+    {
+      "path": "testFields2/index.html",
+      "bytes": 505,
+      "sha256": "46ba6ee021e0ceb4ced7d65927447ec54673b31205102568a94db3b56f28de01"
+    },
+    {
+      "path": "simpleDOMXSS2charAt/index.html",
+      "bytes": 877,
+      "sha256": "a027bc0a95ae2d4ce7866eddc7b67722399298182735dda50c33adfb2bc7345b"
+    },
+    {
+      "path": "testArrayFields/index.html",
+      "bytes": 443,
+      "sha256": "60cfb038d271f73d667be58aa54a89c1ffc9354375d036d4859e6862f72286ba"
+    },
+    {
+      "path": "simpleDOMXSS2slice/index.html",
+      "bytes": 1011,
+      "sha256": "9410abea51813b46bc23ca394a32ba19474cc899ab3373cd5aec2f99f62ca3eb"
+    },
+    {
+      "path": "simpleDOMXSS1/index.html",
+      "bytes": 373,
+      "sha256": "cc180fc7249613dae75db74a175da65f15e6db85bceedc3671be34149634a762"
+    },
+    {
+      "path": "simpleDOMXSS1/script1.js",
+      "bytes": 429,
+      "sha256": "6811a74deb6e99d47129980a4f145d3088c5f23bbb022461f664ec5dfd222a5e"
+    },
+    {
+      "path": "testFields3/index.html",
+      "bytes": 511,
+      "sha256": "6c12415ff2bfd572e2afa7d22547887bb427f94925764ffdffef59d5756a5a94"
+    }
+  ]
+}

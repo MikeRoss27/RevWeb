@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en-US">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Parse foo</title>
+</head>
+
+<body>
+
+<script>
+
+var s = location.href.substring(document.location.href.indexOf("?a=")+3);
+
+var regex1 = RegExp('f(oo*)','g');
+var array1;
+
+while ((array1 = regex1.exec(s)) !== null) {
+  document.write(`Found ${array1[0]} (${array1[1]}); lastIndex is now ${regex1.lastIndex}.<br>`);
+}
+
+</script>
+</body>
+
+
+</html>

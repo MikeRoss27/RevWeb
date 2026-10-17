@@ -51,7 +51,10 @@ EXAMPLES:
   webrev tui --seed https://app.example.com/
 
   # Convert the JSON report to bare URLs for ffuf/nuclei
-  webrev report --format urls | ffuf -u FUZZ -w -";
+  webrev report --format urls | ffuf -u FUZZ -w -
+
+  # Cross-account GET object checks with two test account profiles
+  webrev bola --seed https://app.example.com/ --a-auth account-a.json --b-auth account-b.json";
 
 /// `webrev` — a web security analysis and testing toolkit.
 #[derive(Parser)]
@@ -93,6 +96,10 @@ pub enum Command {
     Tui(ScanArgs),
     /// Convert or filter an existing JSON report.
     Report(ReportArgs),
+    /// Compare stack and API fingerprints across target reports.
+    Compare(CompareArgs),
+    /// Compare object access across two captured test accounts.
+    Bola(BolaArgs),
 }
 
 /// Arguments for the one-shot `scan` command: the shared scan options plus a
@@ -134,6 +141,9 @@ pub struct ScanArgs {
     /// In-scope host suffix (repeatable). Defaults to the seeds' hosts.
     #[arg(long = "scope", value_name = "HOST")]
     pub scope: Vec<String>,
+    /// JSON file containing explicit `include` and optional `exclude` host lists.
+    #[arg(long = "scope-file", value_name = "PATH")]
+    pub scope_file: Option<std::path::PathBuf>,
     /// Out-of-scope host suffix (repeatable).
     #[arg(long = "exclude", value_name = "HOST")]
     pub exclude: Vec<String>,
@@ -173,6 +183,10 @@ pub struct ScanArgs {
     /// Dynamic dwell time per seed, in seconds.
     #[arg(long, default_value_t = 8)]
     pub duration_secs: u64,
+    /// Browser observation only: no driven clicks/scroll; refuse non-GET/HEAD/OPTIONS.
+    /// Page scripts, GET and WebSockets can still mutate state. For dynamic and scan --dynamic.
+    #[arg(long)]
+    pub observation_only: bool,
     /// Report output path (or the TUI's 'r' key). Use '-' for stdout in CLI scans.
     #[arg(long, default_value = "webrev-report.json")]
     pub report: PathBuf,
@@ -194,6 +208,11 @@ pub enum Format {
     /// Reconstructed OpenAPI 3.1 spec of the discovered surface.
     #[value(name = "openapi")]
     OpenApi,
+    /// Observed endpoint, component, and parameter relationships in Graphviz DOT.
+    Dot,
+    /// Observed endpoint, component, and parameter relationships in GraphML.
+    #[value(name = "graphml")]
+    GraphMl,
 }
 
 impl From<Format> for webrev_report::ReportFormat {
@@ -205,6 +224,8 @@ impl From<Format> for webrev_report::ReportFormat {
             Format::Urls => Self::Urls,
             Format::Csv => Self::Csv,
             Format::OpenApi => Self::OpenApi,
+            Format::Dot => Self::Dot,
+            Format::GraphMl => Self::GraphMl,
         }
     }
 }
@@ -259,4 +280,50 @@ pub struct ReportArgs {
     /// Drop findings below this severity (jsonl/csv are ranked by severity).
     #[arg(long = "min-severity", value_enum, default_value_t = SeveritySel::Info)]
     pub min_severity: SeveritySel,
+}
+
+/// Compare two or more completed JSON scan reports.
+#[derive(Args)]
+pub struct CompareArgs {
+    /// JSON report to compare (repeat for each target).
+    #[arg(long = "input", required = true, value_name = "PATH")]
+    pub inputs: Vec<PathBuf>,
+    /// Write comparison JSON to a file instead of stdout.
+    #[arg(long)]
+    pub output: Option<PathBuf>,
+}
+
+/// Read-only cross-account object access checks from two scan reports.
+#[derive(Args)]
+pub struct BolaArgs {
+    /// JSON report captured while signed in as account A (alternative to --seed).
+    #[arg(long)]
+    pub a_report: Option<PathBuf>,
+    /// JSON report captured while signed in as account B (alternative to --seed).
+    #[arg(long)]
+    pub b_report: Option<PathBuf>,
+    /// Scan this URL under both accounts before comparing captured requests.
+    #[arg(long = "seed", value_name = "URL")]
+    pub seeds: Vec<String>,
+    /// In-scope host suffix for browser capture (repeatable; defaults to seed hosts).
+    #[arg(long = "scope", value_name = "HOST")]
+    pub scope: Vec<String>,
+    /// JSON AuthConfig for account A (headers, cookies, bearer).
+    #[arg(long)]
+    pub a_auth: PathBuf,
+    /// JSON AuthConfig for account B (headers, cookies, bearer).
+    #[arg(long)]
+    pub b_auth: PathBuf,
+    /// Result report path, or '-' for stdout.
+    #[arg(long, default_value = "webrev-bola.json")]
+    pub output: PathBuf,
+    /// Shared request budget for all four-way comparisons.
+    #[arg(long, default_value_t = 60)]
+    pub max_requests: usize,
+    /// Optional egress proxy.
+    #[arg(long)]
+    pub proxy: Option<String>,
+    /// Browser dwell time per seed and account, in seconds.
+    #[arg(long, default_value_t = 8)]
+    pub duration_secs: u64,
 }

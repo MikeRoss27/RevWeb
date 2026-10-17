@@ -3,7 +3,7 @@
 
 use crate::port::Storage;
 use async_trait::async_trait;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 use std::sync::Mutex;
 use webrev_core::{Endpoint, Finding, Mission, Result, SessionId, WebrevError};
 
@@ -13,7 +13,11 @@ struct State {
     /// Creation order, so `latest_session` can return the newest.
     order: Vec<SessionId>,
     findings: BTreeMap<SessionId, Vec<Finding>>,
+    /// Fast lookup into `findings`; vectors remain the canonical ordered data.
+    finding_indexes: BTreeMap<SessionId, HashMap<String, usize>>,
     endpoints: BTreeMap<SessionId, Vec<Endpoint>>,
+    /// Fast lookup into `endpoints`, keyed exactly like endpoint merging.
+    endpoint_indexes: BTreeMap<SessionId, HashMap<(String, webrev_core::Method), usize>>,
     secrets: BTreeMap<SessionId, Vec<String>>,
 }
 
@@ -56,20 +60,54 @@ impl Storage for InMemoryStorage {
     }
 
     async fn insert_finding(&self, finding: &Finding) -> Result<()> {
-        self.lock()?
-            .findings
-            .entry(finding.session_id)
-            .or_default()
-            .push(finding.clone());
+        let mut state = self.lock()?;
+        let key = finding.dedup_key();
+        let position = state
+            .finding_indexes
+            .get(&finding.session_id)
+            .and_then(|index| index.get(&key))
+            .copied();
+        let findings = state.findings.entry(finding.session_id).or_default();
+        if let Some(position) = position {
+            let existing = findings
+                .get_mut(position)
+                .expect("finding index points to an existing vector entry");
+            existing.merge_from(finding.clone());
+        } else {
+            let position = findings.len();
+            findings.push(finding.clone());
+            state
+                .finding_indexes
+                .entry(finding.session_id)
+                .or_default()
+                .insert(key, position);
+        }
         Ok(())
     }
 
     async fn insert_endpoint(&self, session: SessionId, endpoint: &Endpoint) -> Result<()> {
-        self.lock()?
-            .endpoints
-            .entry(session)
-            .or_default()
-            .push(endpoint.clone());
+        let mut state = self.lock()?;
+        let key = (endpoint.url.clone(), endpoint.method);
+        let position = state
+            .endpoint_indexes
+            .get(&session)
+            .and_then(|index| index.get(&key))
+            .copied();
+        let endpoints = state.endpoints.entry(session).or_default();
+        if let Some(position) = position {
+            let existing = endpoints
+                .get_mut(position)
+                .expect("endpoint index points to an existing vector entry");
+            existing.merge_from(endpoint);
+        } else {
+            let position = endpoints.len();
+            endpoints.push(endpoint.clone());
+            state
+                .endpoint_indexes
+                .entry(session)
+                .or_default()
+                .insert(key, position);
+        }
         Ok(())
     }
 
@@ -105,7 +143,9 @@ impl Storage for InMemoryStorage {
         state.sessions.remove(&session);
         state.order.retain(|s| *s != session);
         state.findings.remove(&session);
+        state.finding_indexes.remove(&session);
         state.endpoints.remove(&session);
+        state.endpoint_indexes.remove(&session);
         state.secrets.remove(&session);
         Ok(())
     }
@@ -152,5 +192,67 @@ mod tests {
         store.cleanup_session(mission.id).await.unwrap();
         let remaining = store.findings_by_session(mission.id).await.unwrap();
         assert_eq!(remaining, Vec::new());
+    }
+
+    #[tokio::test]
+    async fn merges_endpoint_observations_by_method_and_url() {
+        let store = InMemoryStorage::new();
+        let session = SessionId::new();
+        let url = "https://example.test/api/users";
+        store
+            .insert_endpoint(session, &Endpoint::new(url, Method::Get, Source::JsAst))
+            .await
+            .unwrap();
+        store
+            .insert_endpoint(session, &Endpoint::new(url, Method::Get, Source::Browser))
+            .await
+            .unwrap();
+        store
+            .insert_endpoint(session, &Endpoint::new(url, Method::Post, Source::JsAst))
+            .await
+            .unwrap();
+
+        let endpoints = store.endpoints_by_session(session).await.unwrap();
+        assert_eq!(endpoints.len(), 2);
+        let get = endpoints.iter().find(|e| e.method == Method::Get).unwrap();
+        assert_eq!(get.source, Source::Browser);
+        assert_eq!(get.confidence.score(), 100);
+    }
+
+    #[tokio::test]
+    async fn indexed_findings_merge_provenance_and_keep_insertion_order() {
+        let store = InMemoryStorage::new();
+        let session = SessionId::new();
+        let first = Finding::new(
+            session,
+            FindingKind::Endpoint,
+            Some("/first".into()),
+            "GET /first",
+            Confidence::Medium,
+            Provenance::new(Source::JsAst, Some("a.js:1".into())),
+        );
+        let mut repeated = first.clone();
+        repeated.provenance = Provenance::new(Source::Browser, Some("/first".into()));
+        repeated.provenances = vec![repeated.provenance.clone()];
+        let second = Finding::new(
+            session,
+            FindingKind::Endpoint,
+            Some("/second".into()),
+            "GET /second",
+            Confidence::High,
+            Provenance::new(Source::JsRegex, Some("b.js:2".into())),
+        );
+
+        store.insert_finding(&first).await.unwrap();
+        store.insert_finding(&second).await.unwrap();
+        store.insert_finding(&repeated).await.unwrap();
+
+        let findings = store.findings_by_session(session).await.unwrap();
+        assert_eq!(findings.len(), 2);
+        assert_eq!(findings[0].value, "GET /first");
+        assert_eq!(findings[1].value, "GET /second");
+        assert!(findings[0]
+            .provenances
+            .contains(&Provenance::new(Source::Browser, Some("/first".into()))));
     }
 }

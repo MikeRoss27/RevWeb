@@ -1,0 +1,62 @@
+{
+  "schema": 1,
+  "run_date_utc": "2026-10-17",
+  "command": "cargo test -p webrev-extract --test domxss_multifile_external -- --nocapture",
+  "upstream_commit": "28f06b4b331c6192477c8987deee3cfaf08eaf57",
+  "corpus": {
+    "positive_variants": 342,
+    "unique_source_sink_pairs": 69,
+    "negative_labels": 0,
+    "modeled_source_sink_variants": 122,
+    "modeled_source_sink_pairs": 25,
+    "split_method_variants": {
+      "type01": 69,
+      "type02": 66,
+      "type03": 69,
+      "type04": 69,
+      "type05": 69
+    }
+  },
+  "results": {
+    "multi_file_exact_flow_coverage": {
+      "matched_cases": 63,
+      "unmatched_cases": 59,
+      "total_cases": 122,
+      "coverage_fraction": 0.5163934426229508,
+      "matched_unique_pairs": 13,
+      "total_unique_pairs": 25
+    },
+    "raw_signal_cases": 90,
+    "per_method": {
+      "type01": {
+        "matched": 13,
+        "total": 25
+      },
+      "type02": {
+        "matched": 13,
+        "total": 22
+      },
+      "type03": {
+        "matched": 13,
+        "total": 25
+      },
+      "type04": {
+        "matched": 13,
+        "total": 25
+      },
+      "type05": {
+        "matched": 11,
+        "total": 25
+      }
+    },
+    "precision": null,
+    "false_positive_rate": null
+  },
+  "interpretation": "Positive-only correlated diagnostic after bounded synchronous function summaries for explicit direct calls to imported functions. Candidates remain Suspicious/Medium with provenance. Exactly13/25 unique modeled pairs; higher variant coverage does not increase unique pair coverage. Mutable module captures, recursion, async, namespace imports and reexports are unsupported. Opaque branch conditions are path-insensitive; literal dead boolean branches are skipped. Previous0/122 and26/122 results retained in results.json and linked-results.json.",
+  "environment": {
+    "CARGO_TARGET_DIR": "/home/na/.cache/webrev-validation-target",
+    "CARGO_PROFILE_DEV_DEBUG": "0",
+    "CARGO_PROFILE_TEST_DEBUG": "0"
+  },
+  "analysis_mode": "explicit ES-module value imports and bounded direct calls to exported function summaries; separate ASTs"
+}

@@ -10,7 +10,9 @@
 //! exported explicitly by the application; this crate never writes to disk.
 
 pub mod backends;
+pub mod fingerprint;
 pub mod port;
 
 pub use backends::memory::InMemoryStorage;
+pub use fingerprint::{compare_targets, TargetFingerprint, TargetMatch};
 pub use port::Storage;

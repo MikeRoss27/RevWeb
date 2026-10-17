@@ -127,3 +127,24 @@ fn detects_backend_from_headers() {
     assert!(values.iter().any(|v| v.starts_with("nginx")));
     assert!(values.iter().any(|v| v.starts_with("Express")));
 }
+
+#[test]
+fn detects_gateway_from_specific_headers() {
+    let input = ExtractInput::new(
+        SessionId::new(),
+        Some("https://api.example.test/".into()),
+        ContentKind::Html,
+        "",
+    )
+    .with_headers(vec![
+        ("X-Amzn-Apigateway-Api-Id".into(), "abc123".into()),
+        ("X-Envoy-Upstream-Service-Time".into(), "12".into()),
+    ]);
+    let values: Vec<String> = TechExtractor::new()
+        .extract(&input)
+        .into_iter()
+        .map(|finding| finding.value)
+        .collect();
+    assert!(values.contains(&"AWS API Gateway (gateway)".into()));
+    assert!(values.contains(&"Envoy (gateway)".into()));
+}

@@ -1,0 +1,21 @@
+{
+  "tool": "Webrev",
+  "scanType": "DAST",
+  "findings": [
+    {
+      "url": "/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_1",
+      "type": "OPEN_REDIRECT_3XX_STATUS_CODE",
+      "method": "GET"
+    },
+    {
+      "url": "/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_9",
+      "type": "OPEN_REDIRECT_3XX_STATUS_CODE",
+      "method": "GET"
+    },
+    {
+      "url": "/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_10",
+      "type": "OPEN_REDIRECT_3XX_STATUS_CODE",
+      "method": "GET"
+    }
+  ]
+}

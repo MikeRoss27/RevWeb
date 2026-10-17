@@ -160,6 +160,21 @@ pub(super) const SIGNATURES: &[Signature] = &[
         markers: &["via: kong", "x-kong"],
     },
     Signature {
+        name: "AWS API Gateway",
+        category: "gateway",
+        markers: &["x-amzn-apigateway-api-id"],
+    },
+    Signature {
+        name: "Envoy",
+        category: "gateway",
+        markers: &["server: envoy", "x-envoy-upstream-service-time"],
+    },
+    Signature {
+        name: "Traefik",
+        category: "gateway",
+        markers: &["server: traefik"],
+    },
+    Signature {
         name: "Varnish",
         category: "cache",
         markers: &["x-varnish", "via: varnish"],

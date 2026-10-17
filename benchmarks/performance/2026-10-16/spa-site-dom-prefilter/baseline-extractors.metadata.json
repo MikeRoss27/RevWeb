@@ -1,0 +1,13 @@
+{
+  "workspace": "/tmp/webrev-profile-baseline",
+  "workspace_commit": "61b843daf845946060abae026b43349170ff177b",
+  "workspace_dirty": false,
+  "toolchain": "rustc 1.98.1 (48a229cea 2026-09-01)",
+  "platform": "Linux-7.2.9-arch1-1-x86_64-with-glibc2.44",
+  "fixture_assets": "/run/media/na/PHILIPS Solid State Drive/hacking/revweb/benchmarks/performance/2026-10-16/spa-site-dom-prefilter/fixture/assets",
+  "output": "/tmp/webrev-baseline-extractor-profile.json",
+  "mode": "direct extractor calls; no network or scanner pipeline",
+  "source_inputs_sha256": "0ec274e65ce8218a0e159eb31a93e74f116193c1f438ef235fe050426f6ee610",
+  "cargo_lock_sha256": "2772e2b0e0137ac42463e2ddec8b6205d967f085d9e788bf581bb3994204472e",
+  "third_party_lock_packages_sha256": "d53c35fd2a8e2870e826d8c4c596d6e72e0f4cddd5d01ce024abde58beb89a2b"
+}

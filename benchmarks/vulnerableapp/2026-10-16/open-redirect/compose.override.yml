@@ -1,0 +1,22 @@
+services:
+  VulnerableApp-base:
+    image: sasanlabs/owasp-vulnerableapp@sha256:831aa0930edf92ad875037db28c8320a36783f4e47a905b903ba664a6b60a160
+  VulnerableApp-jsp:
+    image: sasanlabs/owasp-vulnerableapp-jsp@sha256:9996c002138bdc362cedbe3fff9be8347833c19297317457d6a9bf22a795f6b0
+  VulnerableApp-php:
+    image: sasanlabs/owasp-vulnerableapp-php@sha256:1e8aa11127e659fb18b80dea8246f840c5119af16de9451f2f50709fb052efcc
+  VulnerableApp-facade:
+    image: sasanlabs/owasp-vulnerableapp-facade@sha256:2630d7a09962458aa6bd974f696773e3d9cfa9bbed471964e03a184d304eda5b
+    ports: !override
+      - "127.0.0.1:18080:80"
+  mongodb:
+    image: mongo@sha256:95a98776f273721a295b03098578b06bc10281bb56aa828c77e9f60ecc70b150
+    ports: !override
+      - "127.0.0.1:27017:27017"
+  mailpit:
+    image: axllent/mailpit@sha256:3bd7c2f2696deb35a4780d152b404dceec99cb041b942c0877b3b22384714f85
+    ports: !override
+      - "127.0.0.1:18025:8025"
+networks:
+  default:
+    internal: true

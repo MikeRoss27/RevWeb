@@ -27,12 +27,18 @@ impl EvidenceVerdict {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ResponseObservation {
     pub role: String,
+    #[serde(default = "default_probe_method")]
+    pub method: String,
     pub url: String,
     pub status: u16,
     pub authenticated: bool,
     pub content_type: String,
     pub body_bytes: usize,
     pub excerpt: String,
+}
+
+fn default_probe_method() -> String {
+    "GET".to_owned()
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -56,13 +62,14 @@ impl ProbeEvidence {
         lines.push(format!("limit: {}", self.limitation));
         for response in &self.observations {
             lines.push(format!(
-                "{}: HTTP {} | auth={} | {} bytes | {} | {}",
+                "{}: {} {} → HTTP {} | auth={} | {} bytes | {}",
                 response.role,
+                response.method,
+                response.url,
                 response.status,
                 response.authenticated,
                 response.body_bytes,
-                response.content_type,
-                response.url
+                response.content_type
             ));
             if !response.excerpt.is_empty() {
                 lines.push(format!("match: {}", response.excerpt));
@@ -75,7 +82,17 @@ impl ProbeEvidence {
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct CheckCoverage {
+    /// Targets selected for this check (legacy name retained in JSON).
     pub attempted: usize,
+    pub executed: usize,
+    pub not_executed: usize,
+    pub not_selected: usize,
+    pub negative: usize,
+    pub refused: usize,
+    /// Selected probe targets refused by the configured authorization scope.
+    #[serde(default)]
+    pub scope_refused: usize,
+    pub errors: usize,
     pub findings: usize,
     pub inconclusive: usize,
 }
@@ -117,5 +134,9 @@ impl ActiveCoverage {
             && self.skipped_methods == 0
             && self.skipped_query_auth == 0
             && self.checks.values().all(|check| check.inconclusive == 0)
+            && self
+                .checks
+                .values()
+                .all(|check| check.not_executed == 0 && check.errors == 0)
     }
 }

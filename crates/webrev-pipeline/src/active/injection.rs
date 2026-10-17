@@ -48,29 +48,84 @@ pub(super) async fn check_open_redirect(
     session: SessionId,
 ) -> Option<Finding> {
     let nonce = rand::random::<u64>();
-    let target = format!("https://webrev-redirect-probe.invalid/{nonce:016x}");
-    let url = mutate_parameter(original, index, &target)?;
-    let response = client.get(&url, true, None).await?;
-    if !response.status.is_redirection() {
-        return None;
+    let path = format!("/{nonce:016x}");
+    let target_host = "webrev-redirect-probe.invalid";
+    let target = format!("https://{target_host}{path}");
+    let origin = reqwest::Url::parse(original).ok()?;
+    let _origin_host = origin.host_str()?;
+    let probes = [
+        target.clone(),
+        format!("//{target_host}{path}"),
+        format!("@{target_host}{path}"),
+        format!("\t//{target_host}{path}"),
+        format!("\\/{target_host}{path}"),
+    ];
+
+    for probe in probes {
+        if client.stopped() {
+            return None;
+        }
+        let url = mutate_parameter(original, index, &probe)?;
+        let Some(response) = client.get(&url, true, None).await else {
+            continue;
+        };
+        if !response.status.is_redirection() {
+            continue;
+        }
+        let Some(location) = response
+            .headers
+            .get("location")
+            .and_then(|value| value.to_str().ok())
+        else {
+            continue;
+        };
+        // Resolve relative and protocol-relative Location values as a browser
+        // would, but never follow them. Require our randomized host and path;
+        // a status difference or a reflected substring is not sufficient.
+        let Some(resolved) = origin.join(location).ok() else {
+            continue;
+        };
+        if !matches!(resolved.scheme(), "http" | "https")
+            || resolved.host_str() != Some(target_host)
+            || resolved.path() != path
+            || resolved.query().is_some()
+        {
+            continue;
+        }
+        let expected_scheme = if probe == target {
+            "https"
+        } else {
+            origin.scheme()
+        };
+        if resolved.scheme() != expected_scheme {
+            continue;
+        }
+        let technique = if probe.starts_with('@') {
+            " (authority-prefix bypass)".to_owned()
+        } else if probe.starts_with("//") {
+            " (protocol-relative destination)".to_owned()
+        } else if probe.starts_with('\t') {
+            " (tab-prefixed protocol-relative destination)".to_owned()
+        } else if probe.starts_with('\\') {
+            " (backslash URL separator)".to_owned()
+        } else {
+            String::new()
+        };
+        return Some(attach(
+            vuln_finding(
+                session,
+                &url,
+                format!("open redirect via '{parameter}' parameter{technique} (Location: {location})"),
+                Confidence::High,
+            ),
+            "open_redirect",
+            Some(parameter),
+            EvidenceVerdict::Observed,
+            vec![response.observation("probe", location)],
+            "The randomized external .invalid destination was present as the resolved Location; the scanner did not follow it.",
+        ));
     }
-    let location = response.headers.get("location")?.to_str().ok()?;
-    if reqwest::Url::parse(location).ok()? != reqwest::Url::parse(&target).ok()? {
-        return None;
-    }
-    Some(attach(
-        vuln_finding(
-            session,
-            &url,
-            format!("open redirect via '{parameter}' parameter (Location: {location})"),
-            Confidence::High,
-        ),
-        "open_redirect",
-        Some(parameter),
-        EvidenceVerdict::Observed,
-        vec![response.observation("probe", location)],
-        "The injected URL was returned in Location; it was not followed.",
-    ))
+    None
 }
 
 pub(super) async fn check_param_fuzz(
