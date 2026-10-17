@@ -78,7 +78,13 @@ impl ExtractorRegistry {
             .extractors
             .iter()
             .filter(|e| e.applies_to(input))
-            .flat_map(|e| e.extract(input))
+            .flat_map(|e| {
+                let mut findings = e.extract(input);
+                for finding in &mut findings {
+                    finding.detectors.push(e.name().to_owned());
+                }
+                findings
+            })
             .collect();
 
         if input.kind == ContentKind::Html {
@@ -90,7 +96,11 @@ impl ExtractorRegistry {
                     body,
                 );
                 for extractor in self.extractors.iter().filter(|e| e.applies_to(&sub)) {
-                    findings.extend(extractor.extract(&sub));
+                    let mut extracted = extractor.extract(&sub);
+                    for finding in &mut extracted {
+                        finding.detectors.push(extractor.name().to_owned());
+                    }
+                    findings.extend(extracted);
                 }
             }
         }

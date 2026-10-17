@@ -154,3 +154,23 @@ pub(super) fn near_secret_keyword(body: &str, at: usize) -> bool {
     let window = String::from_utf8_lossy(&body.as_bytes()[start..at]).to_ascii_lowercase();
     SECRET_KEYWORDS.iter().any(|k| window.contains(k))
 }
+
+/// A token in an HTML identity/style attribute or CSS selector is an identifier,
+/// even when its bytes happen to have high entropy or a credential-like prefix.
+pub(super) fn is_identifier_context(body: &str, at: usize) -> bool {
+    let before = &body[..at];
+    let tag_start = before.rfind('<');
+    let tag_end = before.rfind('>');
+    if let Some(start) = tag_start.filter(|start| tag_end.is_none_or(|end| *start > end)) {
+        let attribute = before[start..]
+            .trim_end_matches(['\'', '"', '`', ' ', '\t'])
+            .to_ascii_lowercase();
+        if ["id=", "class=", "classname=", "style=", "for="]
+            .iter()
+            .any(|name| attribute.ends_with(name))
+        {
+            return true;
+        }
+    }
+    matches!(before.as_bytes().last(), Some(b'#' | b'.'))
+}

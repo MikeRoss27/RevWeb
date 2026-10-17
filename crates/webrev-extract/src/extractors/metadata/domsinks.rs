@@ -33,15 +33,23 @@
 //!
 //! # Limitations (deliberately conservative — these are leads, not proofs)
 //!
-//! The taint model is intra-procedural and single-file: there is **no**
+//! Ordinary extraction is intra-procedural and single-file. The separate
+//! [`DomSinkExtractor::extract_modules`] batch pass links explicit ES-module
+//! value/function imports across already collected files, with bounded work and static
+//! candidates only. Export summaries require straight-line initialization;
+//! module control flow and namespace imports are not modeled. Exported function
+//! summaries require short, synchronous, straight-line declaration bodies.
+//! There is **no**
 //! cross-function propagation (a tainted value passed as an argument is not
 //! tracked into the callee) and **no** aliasing analysis beyond simple
 //! `x = <tainted>` assignments (no object-field, array-element, or destructuring
 //! tracking). A tainted value's property access / method call is conservatively
 //! assumed to stay tainted (`location.hash.slice(1)` is still tainted). Scope
 //! lookup is lexical but generous: an inner closure can see an outer scope's
-//! tainted variables. Sanitizers (`DOMPurify.sanitize`, framework escaping) are
-//! not modelled, so a traced flow is a *candidate*, not a confirmed bug.
+//! tainted variables. `DOMPurify.sanitize` is recognized for HTML sinks;
+//! custom/framework sanitizers remain unmodelled, so a flow is a candidate.
+
+mod modules;
 
 use crate::traits::{ContentKind, ExtractInput, Extractor};
 use regex::Regex;
@@ -103,6 +111,33 @@ const MESSAGE_PATTERNS: &[&str] = &[
     r"(?i)\bonmessage\s*=[^=]",
 ];
 
+/// Text hints for the conservative taint-AST gate. Matching is intentionally
+/// broader than the AST model: comments, strings, or unrelated identifiers may
+/// trigger a parse, but a possible source or sink must never be filtered out.
+const TAINT_SOURCE_HINTS: &[&str] = &[
+    "location",
+    // Broad identifiers also cover whitespace around member-access dots.
+    "document", "window", "self",
+    // Covers the modeled `message` event parameter source even without a
+    // global-object prefix (for example, `addEventListener(...)`).
+    "message", ".data",
+];
+
+const TAINT_SINK_HINTS: &[&str] = &[
+    "innerhtml",
+    "outerhtml",
+    "write",
+    "eval",
+    "new function",
+    "insertadjacenthtml",
+    "setattribute",
+    "dangerouslysetinnerhtml",
+    "__html",
+];
+
+const NAVIGATION_SINK_HINT: &str =
+    r"(?i)\b(?:(?:window|self)\s*\.\s*)?location(?:\s*\.\s*href)?\s*=";
+
 /// Functions that preserve taint on their (string) argument.
 const TAINT_PRESERVING_CALLS: &[&str] = &[
     "decodeURIComponent",
@@ -114,6 +149,72 @@ const TAINT_PRESERVING_CALLS: &[&str] = &[
     "atob",
 ];
 
+/// String methods whose results cannot carry attacker-controlled markup or
+/// code: they return only a number or boolean. Keeping these out of string
+/// sinks prevents index/predicate values from being mistaken for tainted text.
+const NON_STRING_RESULT_CALLS: &[&str] = &[
+    "charCodeAt",
+    "codePointAt",
+    "indexOf",
+    "lastIndexOf",
+    "localeCompare",
+    "search",
+    "includes",
+    "startsWith",
+    "endsWith",
+];
+
+/// HTML event-handler attributes execute their string value as JavaScript.
+fn is_event_handler_attribute(name: &str) -> bool {
+    matches!(
+        name.to_ascii_lowercase().as_str(),
+        "onabort"
+            | "onanimationend"
+            | "onanimationiteration"
+            | "onanimationstart"
+            | "onauxclick"
+            | "onbeforeinput"
+            | "onbeforeunload"
+            | "onblur"
+            | "onchange"
+            | "onclick"
+            | "oncontextmenu"
+            | "oncopy"
+            | "oncut"
+            | "ondblclick"
+            | "ondrag"
+            | "ondragend"
+            | "ondragenter"
+            | "ondragleave"
+            | "ondragover"
+            | "ondragstart"
+            | "ondrop"
+            | "onerror"
+            | "onfocus"
+            | "oninput"
+            | "oninvalid"
+            | "onkeydown"
+            | "onkeypress"
+            | "onkeyup"
+            | "onload"
+            | "onmousedown"
+            | "onmouseenter"
+            | "onmouseleave"
+            | "onmousemove"
+            | "onmouseout"
+            | "onmouseover"
+            | "onmouseup"
+            | "onpaste"
+            | "onreset"
+            | "onresize"
+            | "onscroll"
+            | "onselect"
+            | "onsubmit"
+            | "ontoggle"
+            | "ontransitionend"
+    )
+}
+
 /// How far past a `message` handler to look for an `origin` check.
 const ORIGIN_WINDOW: usize = 240;
 
@@ -122,6 +223,7 @@ pub struct DomSinkExtractor {
     sink_patterns: Vec<(Regex, &'static str)>,
     wasm_patterns: Vec<(Regex, &'static str)>,
     message: Vec<Regex>,
+    navigation_sink_hint: Regex,
 }
 
 impl DomSinkExtractor {
@@ -145,10 +247,13 @@ impl DomSinkExtractor {
             .iter()
             .map(|re| Regex::new(re).expect("message pattern is valid"))
             .collect();
+        let navigation_sink_hint =
+            Regex::new(NAVIGATION_SINK_HINT).expect("navigation sink hint is valid");
         Self {
             sink_patterns,
             wasm_patterns,
             message,
+            navigation_sink_hint,
         }
     }
 }
@@ -169,6 +274,45 @@ fn snippet(body: &str, start: usize) -> String {
         .take_while(|&c| c != ';' && c != '\n')
         .collect();
     window.split_whitespace().collect::<Vec<_>>().join(" ")
+}
+
+/// ASCII case-insensitive substring search without allocating a lowercase
+/// copy of the full (often minified) bundle.
+fn contains_ascii_case_insensitive(body: &str, needle: &str) -> bool {
+    body.as_bytes()
+        .windows(needle.len())
+        .any(|window| window.eq_ignore_ascii_case(needle.as_bytes()))
+}
+
+/// Skip only the expensive taint AST walk when the text cannot contain both a
+/// modeled source and modeled sink. This gate is recall-preserving by design:
+/// false positives keep the AST parse; only absence of every broad source or
+/// sink hint skips it. The regex fallback and its independent analyses always
+/// run regardless of this decision.
+fn should_run_taint_ast(
+    body: &str,
+    message_patterns: &[Regex],
+    navigation_sink_hint: &Regex,
+) -> bool {
+    let has_source = TAINT_SOURCE_HINTS
+        .iter()
+        .any(|hint| contains_ascii_case_insensitive(body, hint))
+        || message_patterns
+            .iter()
+            .any(|pattern| pattern.is_match(body));
+    has_source
+        && (TAINT_SINK_HINTS
+            .iter()
+            .any(|hint| contains_ascii_case_insensitive(body, hint))
+            || navigation_sink_hint.is_match(body))
+}
+
+fn sanitizer_wraps_sink(body: &str, start: usize) -> bool {
+    let statement_start = body[..start].rfind([';', '\n']).map_or(0, |i| i + 1);
+    let statement_end = body[start..]
+        .find([';', '\n'])
+        .map_or(body.len(), |i| start + i);
+    body[statement_start..statement_end].contains("DOMPurify.sanitize(")
 }
 
 /// Build a dotted path for an identifier / plain member chain, e.g.
@@ -198,13 +342,23 @@ fn member_prop_name(m: &MemberExpr) -> Option<String> {
     }
 }
 
-/// Map a member/identifier path to a canonical taint-source label, or `None`.
-fn known_source(path: &str) -> Option<String> {
+/// Drop a `window.`/`self.` global prefix and fold `document.location` into
+/// `location`, which the DOM defines as the same object.
+fn global_tail(path: &str) -> &str {
     let tail = path
         .strip_prefix("window.")
         .or_else(|| path.strip_prefix("self."))
         .unwrap_or(path);
-    let had_prefix = tail.len() != path.len();
+    match tail.strip_prefix("document.") {
+        Some(rest) if rest == "location" || rest.starts_with("location.") => rest,
+        _ => tail,
+    }
+}
+
+/// Map a member/identifier path to a canonical taint-source label, or `None`.
+fn known_source(path: &str) -> Option<String> {
+    let tail = global_tail(path);
+    let had_prefix = path.starts_with("window.") || path.starts_with("self.");
     match tail {
         "location" => Some("location".to_owned()),
         "location.href" | "location.search" | "location.hash" | "location.pathname" => {
@@ -222,15 +376,36 @@ fn known_source(path: &str) -> Option<String> {
 
 /// Canonical sink label for an assignment to a navigation target, or `None`.
 fn nav_sink(path: &str) -> Option<&'static str> {
-    let tail = path
-        .strip_prefix("window.")
-        .or_else(|| path.strip_prefix("self."))
-        .unwrap_or(path);
-    match tail {
+    match global_tail(path) {
         "location" => Some("location"),
         "location.href" => Some("location.href"),
         _ => None,
     }
+}
+
+/// Truthiness of a literal `if` condition, so dead arms never contribute flows.
+fn constant_condition(expr: &Expr) -> Option<bool> {
+    use swc_core::ecma::ast::{Lit, UnaryOp};
+    match expr {
+        Expr::Paren(inner) => constant_condition(&inner.expr),
+        Expr::Lit(Lit::Bool(value)) => Some(value.value),
+        Expr::Lit(Lit::Null(_)) => Some(false),
+        Expr::Lit(Lit::Num(value)) => Some(value.value != 0.0 && !value.value.is_nan()),
+        Expr::Lit(Lit::Str(value)) => Some(!value.value.is_empty()),
+        Expr::Unary(unary) if unary.op == UnaryOp::Bang => {
+            constant_condition(&unary.arg).map(|truthy| !truthy)
+        }
+        _ => None,
+    }
+}
+
+/// The live arms of an `if`: `(consequent, alternate)`.
+fn live_arms(statement: &swc_core::ecma::ast::IfStmt) -> [Option<&swc_core::ecma::ast::Stmt>; 2] {
+    let condition = constant_condition(&statement.test);
+    [
+        (condition != Some(false)).then_some(&*statement.cons),
+        statement.alt.as_deref().filter(|_| condition != Some(true)),
+    ]
 }
 
 fn pat_ident_name(pat: &Pat) -> Option<String> {
@@ -239,6 +414,36 @@ fn pat_ident_name(pat: &Pat) -> Option<String> {
     } else {
         None
     }
+}
+
+/// Every binding in a parameter/pattern shadows an imported or outer name,
+/// even when this lightweight analysis cannot model destructuring values.
+fn pat_bound_names(pat: &Pat) -> Vec<String> {
+    #[derive(Default)]
+    struct Bindings(Vec<String>);
+    impl Visit for Bindings {
+        fn visit_binding_ident(&mut self, binding: &swc_core::ecma::ast::BindingIdent) {
+            self.0.push(binding.id.sym.to_string());
+        }
+    }
+    let mut bindings = Bindings::default();
+    pat.visit_with(&mut bindings);
+    bindings.0
+}
+
+/// Conservatively invalidate function bindings touched by an assignment target,
+/// including destructuring. Member-object names may also be invalidated.
+fn assigned_identifiers(target: &AssignTarget) -> Vec<String> {
+    #[derive(Default)]
+    struct Names(Vec<String>);
+    impl Visit for Names {
+        fn visit_ident(&mut self, id: &swc_core::ecma::ast::Ident) {
+            self.0.push(id.sym.to_string());
+        }
+    }
+    let mut names = Names::default();
+    target.visit_with(&mut names);
+    names.0
 }
 
 /// Span of a function/arrow literal (unwrapping parentheses), as a byte range.
@@ -263,8 +468,19 @@ type Taint = (String, bool);
 /// Intra-procedural taint tracker. Scopes are a stack of
 /// `variable name -> taint origin`; `message` handler parameters are seeded as
 /// tainted on scope entry.
+#[derive(Clone, Default, PartialEq, Eq)]
+struct ImportedFunction {
+    returns: Option<String>,
+    /// Parameter index, transformations and sink label.
+    sinks: Vec<(usize, String, String)>,
+    locations: BTreeSet<String>,
+}
+
 struct TaintVisitor {
-    scopes: Vec<BTreeMap<String, String>>,
+    imported_functions: BTreeMap<String, ImportedFunction>,
+    module_calls_only: bool,
+    linked_trace_locations: BTreeMap<String, BTreeSet<String>>,
+    scopes: Vec<BTreeMap<String, Option<String>>>,
     /// Byte-range spans of function/arrow literals that are `message` handlers,
     /// so their first parameter can be seeded as tainted.
     handler_spans: BTreeSet<(usize, usize)>,
@@ -279,25 +495,51 @@ impl TaintVisitor {
     fn new() -> Self {
         Self {
             scopes: vec![BTreeMap::new()],
+            imported_functions: BTreeMap::new(),
+            module_calls_only: false,
+            linked_trace_locations: BTreeMap::new(),
             handler_spans: BTreeSet::new(),
             traces: Vec::new(),
             traced_spans: Vec::new(),
         }
     }
 
+    fn module_binding_shadows(&self, name: &str) -> bool {
+        self.module_calls_only && self.scopes.iter().any(|scope| scope.contains_key(name))
+    }
+
     fn lookup(&self, name: &str) -> Option<String> {
-        self.scopes.iter().rev().find_map(|s| s.get(name).cloned())
+        self.scopes
+            .iter()
+            .rev()
+            .find_map(|s| s.get(name))
+            .cloned()
+            .flatten()
     }
 
     fn insert_var(&mut self, name: String, origin: String) {
         if let Some(top) = self.scopes.last_mut() {
-            top.insert(name, origin);
+            top.insert(name, Some(origin));
         }
     }
 
+    fn imported_function(&self, name: &str) -> Option<&ImportedFunction> {
+        if self
+            .scopes
+            .iter()
+            .skip(1)
+            .any(|scope| scope.contains_key(name))
+        {
+            return None;
+        }
+        self.imported_functions.get(name)
+    }
+
     fn clear_var(&mut self, name: &str) {
+        self.imported_functions.remove(name);
         for scope in self.scopes.iter_mut().rev() {
-            if scope.remove(name).is_some() {
+            if let Some(value) = scope.get_mut(name) {
+                *value = None;
                 return;
             }
         }
@@ -311,15 +553,20 @@ impl TaintVisitor {
                 let name = id.sym.as_ref();
                 if let Some(origin) = self.lookup(name) {
                     Some((origin, false))
-                } else if name == "location" {
+                } else if name == "location" && !self.module_binding_shadows(name) {
                     Some(("location".to_owned(), true))
                 } else {
                     None
                 }
             }
             Expr::Member(m) => {
+                if member_prop_name(m).as_deref() == Some("length") {
+                    return None;
+                }
                 if let Some(path) = member_expr_path(m) {
-                    if let Some(label) = known_source(&path) {
+                    if let Some(label) = known_source(&path).filter(|_| {
+                        !self.module_binding_shadows(path.split('.').next().unwrap_or_default())
+                    }) {
                         return Some((label, true));
                     }
                 }
@@ -345,12 +592,25 @@ impl TaintVisitor {
             return None;
         };
         match &**callee {
+            Expr::Member(m) if member_expr_path(m).as_deref() == Some("DOMPurify.sanitize") => None,
             // `tainted.method(...)` (string methods preserve taint).
-            Expr::Member(m) => self.classify(&m.obj),
-            // `decodeURIComponent(tainted)` and friends.
-            Expr::Ident(id) if TAINT_PRESERVING_CALLS.contains(&id.sym.as_ref()) => {
-                self.first_tainted_arg(&call.args)
+            Expr::Member(m) => {
+                let transformation = member_prop_name(m).unwrap_or_else(|| "method".into());
+                if NON_STRING_RESULT_CALLS.contains(&transformation.as_str()) {
+                    return None;
+                }
+                self.classify(&m.obj)
+                    .map(|(origin, _)| (format!("{origin} -> {transformation}"), false))
             }
+            Expr::Ident(id) if self.imported_function(id.sym.as_ref()).is_some() => self
+                .imported_function(id.sym.as_ref())?
+                .returns
+                .clone()
+                .map(|origin| (origin, false)),
+            // `decodeURIComponent(tainted)` and friends.
+            Expr::Ident(id) if TAINT_PRESERVING_CALLS.contains(&id.sym.as_ref()) => self
+                .first_tainted_arg(&call.args)
+                .map(|(origin, _)| (format!("{origin} -> {}", id.sym), false)),
             _ => None,
         }
     }
@@ -398,6 +658,10 @@ impl TaintVisitor {
                         let sink = member_expr_path(m).unwrap_or_else(|| format!("(expr).{prop}"));
                         self.trace(taint, &sink, assign.span());
                     }
+                } else if is_event_handler_attribute(&prop) {
+                    if let Some(taint) = self.classify(&assign.right) {
+                        self.trace(taint, &format!("event handler {prop}"), assign.span());
+                    }
                 } else if let Some(sink) = member_expr_path(m).as_deref().and_then(nav_sink) {
                     if let Some(taint) = self.classify(&assign.right) {
                         self.trace(taint, sink, assign.span());
@@ -417,17 +681,19 @@ impl TaintVisitor {
 
     /// Track a simple `x = <tainted>` assignment in the current scope.
     fn assign_var(&mut self, assign: &AssignExpr) {
-        if assign.op != AssignOp::Assign {
-            return;
-        }
         let AssignTarget::Simple(SimpleAssignTarget::Ident(bi)) = &assign.left else {
             return;
         };
         let name = bi.id.sym.as_ref();
+        self.imported_functions.remove(name);
         if name == "location" {
             return;
         }
         let name = name.to_owned();
+        if assign.op != AssignOp::Assign {
+            self.clear_var(&name);
+            return;
+        }
         match self.classify(&assign.right) {
             Some((origin, _)) => self.insert_var(name, origin),
             None => self.clear_var(&name),
@@ -457,10 +723,12 @@ impl TaintVisitor {
         let Callee::Expr(callee) = &call.callee else {
             return;
         };
-        let Expr::Member(m) = &**callee else {
-            return;
+        let is_add_event_listener = match &**callee {
+            Expr::Member(m) => member_prop_name(m).as_deref() == Some("addEventListener"),
+            Expr::Ident(id) => id.sym.as_ref() == "addEventListener",
+            _ => false,
         };
-        if member_prop_name(m).as_deref() != Some("addEventListener") {
+        if !is_add_event_listener {
             return;
         }
         let Some(first) = call.args.first() else {
@@ -484,11 +752,39 @@ impl TaintVisitor {
 
     /// Handle the sink logic of a call expression.
     fn call_sink(&mut self, call: &CallExpr) {
+        if let Callee::Expr(callee) = &call.callee {
+            if let Expr::Ident(id) = &**callee {
+                if let Some(function) = self
+                    .imported_function(id.sym.as_ref())
+                    .cloned()
+                    .filter(|_| call.args.iter().all(|arg| arg.spread.is_none()))
+                {
+                    for (index, suffix, sink) in function.sinks {
+                        let Some(arg) = call.args.get(index).filter(|arg| arg.spread.is_none())
+                        else {
+                            continue;
+                        };
+                        if let Some((origin, _)) = self.classify(&arg.expr) {
+                            let origin = format!("{origin}{suffix}");
+                            let flow = format!("DOM XSS: {origin} -> {sink}");
+                            self.linked_trace_locations
+                                .entry(flow)
+                                .or_default()
+                                .extend(function.locations.iter().cloned());
+                            self.trace((origin, false), &sink, call.span());
+                        }
+                    }
+                    return;
+                }
+            }
+        }
         let Callee::Expr(callee) = &call.callee else {
             return;
         };
         match &**callee {
-            Expr::Ident(id) if id.sym.as_ref() == "eval" => {
+            Expr::Ident(id)
+                if id.sym.as_ref() == "eval" && !self.module_binding_shadows("eval") =>
+            {
                 if let Some(taint) = self.first_tainted_arg(&call.args) {
                     self.trace(taint, "eval", call.span());
                 }
@@ -503,7 +799,29 @@ impl TaintVisitor {
             return;
         };
         let lower = prop.to_ascii_lowercase();
-        if (lower == "write" || lower == "writeln") && object_is_document(m) {
+        if lower == "setattribute" {
+            let args = call.args.as_slice();
+            if let (
+                Some(ExprOrSpread {
+                    expr: first,
+                    spread: None,
+                }),
+                Some(ExprOrSpread {
+                    expr: second,
+                    spread: None,
+                }),
+            ) = (args.first(), args.get(1))
+            {
+                if let Expr::Lit(Lit::Str(attribute)) = &**first {
+                    let attribute = attribute.value.to_string_lossy();
+                    if is_event_handler_attribute(&attribute) {
+                        if let Some(taint) = self.classify(second) {
+                            self.trace(taint, &format!("setAttribute({attribute})"), call.span());
+                        }
+                    }
+                }
+            }
+        } else if (lower == "write" || lower == "writeln") && object_is_document(m) {
             if let Some(taint) = self.first_tainted_arg(&call.args) {
                 self.trace(taint, &format!("document.{prop}"), call.span());
             }
@@ -527,7 +845,72 @@ fn object_is_document(m: &MemberExpr) -> bool {
 }
 
 impl Visit for TaintVisitor {
+    fn visit_if_stmt(&mut self, statement: &swc_core::ecma::ast::IfStmt) {
+        if self.module_calls_only {
+            if let Expr::Lit(Lit::Bool(test)) = &*statement.test {
+                if test.value {
+                    statement.cons.visit_with(self);
+                } else if let Some(alternate) = &statement.alt {
+                    alternate.visit_with(self);
+                }
+                return;
+            }
+        }
+        statement.visit_children_with(self);
+    }
+
+    fn visit_cond_expr(&mut self, expression: &swc_core::ecma::ast::CondExpr) {
+        if self.module_calls_only {
+            if let Expr::Lit(Lit::Bool(test)) = &*expression.test {
+                if test.value {
+                    expression.cons.visit_with(self);
+                } else {
+                    expression.alt.visit_with(self);
+                }
+                return;
+            }
+        }
+        expression.visit_children_with(self);
+    }
+
+    fn visit_update_expr(&mut self, update: &swc_core::ecma::ast::UpdateExpr) {
+        if let Expr::Ident(id) = &*update.arg {
+            self.imported_functions.remove(id.sym.as_ref());
+            self.clear_var(id.sym.as_ref());
+        }
+        update.visit_children_with(self);
+    }
+
+    fn visit_block_stmt(&mut self, block: &swc_core::ecma::ast::BlockStmt) {
+        if !self.module_calls_only {
+            block.visit_children_with(self);
+            return;
+        }
+        let mut bindings = BTreeMap::new();
+        for statement in &block.stmts {
+            match statement {
+                swc_core::ecma::ast::Stmt::Decl(swc_core::ecma::ast::Decl::Var(var)) => {
+                    for decl in &var.decls {
+                        for name in pat_bound_names(&decl.name) {
+                            bindings.insert(name, None);
+                        }
+                    }
+                }
+                swc_core::ecma::ast::Stmt::Decl(swc_core::ecma::ast::Decl::Fn(function)) => {
+                    bindings.insert(function.ident.sym.to_string(), None);
+                }
+                _ => {}
+            }
+        }
+        self.scopes.push(bindings);
+        block.visit_children_with(self);
+        self.scopes.pop();
+    }
+
     fn visit_assign_expr(&mut self, assign: &AssignExpr) {
+        for name in assigned_identifiers(&assign.left) {
+            self.imported_functions.remove(&name);
+        }
         self.assign_sink(assign);
         self.register_onmessage(assign);
         self.assign_var(assign);
@@ -544,7 +927,7 @@ impl Visit for TaintVisitor {
 
     fn visit_new_expr(&mut self, new_expr: &NewExpr) {
         if let Expr::Ident(id) = &*new_expr.callee {
-            if id.sym.as_ref() == "Function" {
+            if id.sym.as_ref() == "Function" && !self.module_binding_shadows("Function") {
                 if let Some(taint) = new_expr
                     .args
                     .as_deref()
@@ -558,11 +941,25 @@ impl Visit for TaintVisitor {
     }
 
     fn visit_var_declarator(&mut self, decl: &VarDeclarator) {
+        for name in pat_bound_names(&decl.name) {
+            self.imported_functions.remove(&name);
+        }
         if let Pat::Ident(bi) = &decl.name {
-            if let Some(init) = &decl.init {
-                if let Some((origin, _)) = self.classify(init) {
-                    self.insert_var(bi.id.sym.as_ref().to_owned(), origin);
-                }
+            let origin = decl
+                .init
+                .as_ref()
+                .and_then(|init| self.classify(init))
+                .map(|(origin, _)| origin);
+            self.scopes
+                .last_mut()
+                .expect("scope exists")
+                .insert(bi.id.sym.to_string(), origin);
+        } else {
+            for name in pat_bound_names(&decl.name) {
+                self.scopes
+                    .last_mut()
+                    .expect("scope exists")
+                    .insert(name, None);
             }
         }
         decl.visit_children_with(self);
@@ -583,17 +980,53 @@ impl Visit for TaintVisitor {
     }
 
     fn visit_function(&mut self, f: &Function) {
+        if self.module_calls_only {
+            return;
+        }
         let is_handler = self.handler_spans.contains(&span_tuple(f.span()));
         self.scopes.push(BTreeMap::new());
+        for param in &f.params {
+            for name in pat_bound_names(&param.pat) {
+                self.scopes
+                    .last_mut()
+                    .expect("scope exists")
+                    .insert(name, None);
+            }
+        }
         let first_param = f.params.first().and_then(|p| pat_ident_name(&p.pat));
         self.seed_handler_param(first_param, is_handler);
         f.visit_children_with(self);
         self.scopes.pop();
     }
 
+    fn visit_catch_clause(&mut self, clause: &swc_core::ecma::ast::CatchClause) {
+        self.scopes.push(BTreeMap::new());
+        if let Some(param) = &clause.param {
+            for name in pat_bound_names(param) {
+                self.scopes
+                    .last_mut()
+                    .expect("scope exists")
+                    .insert(name, None);
+            }
+        }
+        clause.body.visit_with(self);
+        self.scopes.pop();
+    }
+
     fn visit_arrow_expr(&mut self, a: &ArrowExpr) {
+        if self.module_calls_only {
+            return;
+        }
         let is_handler = self.handler_spans.contains(&span_tuple(a.span()));
         self.scopes.push(BTreeMap::new());
+        for param in &a.params {
+            for name in pat_bound_names(param) {
+                self.scopes
+                    .last_mut()
+                    .expect("scope exists")
+                    .insert(name, None);
+            }
+        }
         let first_param = a.params.first().and_then(pat_ident_name);
         self.seed_handler_param(first_param, is_handler);
         a.visit_children_with(self);
@@ -671,7 +1104,12 @@ impl Extractor for DomSinkExtractor {
         let mut findings = Vec::new();
 
         // Pass 1: static taint flows (AST).
-        let (traces, traced_spans) = run_taint(body);
+        let (traces, traced_spans) =
+            if should_run_taint_ast(body, &self.message, &self.navigation_sink_hint) {
+                run_taint(body)
+            } else {
+                (Vec::new(), Vec::new())
+            };
         for (value, confidence) in traces {
             push_unique(
                 &mut findings,
@@ -693,6 +1131,9 @@ impl Extractor for DomSinkExtractor {
                     .iter()
                     .any(|&(lo, hi)| lo <= start && start < hi)
                 {
+                    continue;
+                }
+                if sanitizer_wraps_sink(body, start) {
                     continue;
                 }
                 push_unique(
@@ -761,179 +1202,5 @@ impl Extractor for DomSinkExtractor {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use webrev_core::SessionId;
-
-    fn run(js: &str) -> Vec<Finding> {
-        let input = ExtractInput::new(
-            SessionId::new(),
-            Some("https://t/app.js".into()),
-            ContentKind::JavaScript,
-            js,
-        );
-        DomSinkExtractor::new().extract(&input)
-    }
-
-    fn find_value<'a>(found: &'a [Finding], needle: &str) -> Option<&'a Finding> {
-        found.iter().find(|f| f.value.contains(needle))
-    }
-
-    #[test]
-    fn patterns_compile() {
-        let _ = DomSinkExtractor::new();
-    }
-
-    #[test]
-    fn traces_direct_source_to_sink_as_high() {
-        let found = run("el.innerHTML = location.hash;");
-        let f = find_value(&found, "DOM XSS: location.hash -> el.innerHTML")
-            .expect("traced flow finding");
-        assert_eq!(f.confidence, Confidence::High);
-        assert_eq!(f.kind, FindingKind::Config);
-        assert_eq!(f.provenance.source, Source::JsAst);
-        // The regex lead for this sink is suppressed by the traced span.
-        assert!(!found
-            .iter()
-            .any(|f| f.value.contains("dom sink (unverified source)")));
-    }
-
-    #[test]
-    fn traces_variable_assignment_as_medium() {
-        let js = "const dirty = location.search; el.innerHTML = dirty;";
-        let found = run(js);
-        let f = find_value(&found, "DOM XSS: location.search -> el.innerHTML")
-            .expect("traced flow via variable");
-        assert_eq!(f.confidence, Confidence::Medium);
-        assert_eq!(f.provenance.source, Source::JsAst);
-    }
-
-    #[test]
-    fn traces_concatenation_as_medium() {
-        let found = run(r#"document.write("<h1>" + document.cookie + "</h1>");"#);
-        let f = find_value(&found, "DOM XSS: document.cookie -> document.write")
-            .expect("traced flow via concat");
-        assert_eq!(f.confidence, Confidence::Medium);
-    }
-
-    #[test]
-    fn traces_decoder_and_method_chain() {
-        let found = run("el.innerHTML = decodeURIComponent(location.hash.slice(1));");
-        let f = find_value(&found, "DOM XSS: location.hash -> el.innerHTML")
-            .expect("decoder/method chain preserves taint");
-        assert_eq!(f.confidence, Confidence::High);
-    }
-
-    #[test]
-    fn traces_eval_and_new_function_and_insert_adjacent() {
-        let js = r"
-            eval(location.hash);
-            const f = new Function(location.search);
-            node.insertAdjacentHTML('beforeend', document.referrer);
-        ";
-        let found = run(js);
-        assert!(find_value(&found, "DOM XSS: location.hash -> eval").is_some());
-        assert!(find_value(&found, "DOM XSS: location.search -> new Function").is_some());
-        assert!(
-            find_value(&found, "-> node.insertAdjacentHTML").is_some(),
-            "insertAdjacentHTML flow, got {:?}",
-            found.iter().map(|f| &f.value).collect::<Vec<_>>()
-        );
-    }
-
-    #[test]
-    fn traces_location_navigation_sink() {
-        let found = run("window.location.href = location.hash;");
-        let f = find_value(&found, "DOM XSS: location.hash -> location.href")
-            .expect("navigation sink flow");
-        assert_eq!(f.confidence, Confidence::High);
-    }
-
-    #[test]
-    fn traces_dangerously_set_inner_html() {
-        let js =
-            "const x = location.hash; const r = <div dangerouslySetInnerHTML={{__html: x}} />;";
-        let found = run(js);
-        let f = find_value(&found, "DOM XSS: location.hash -> dangerouslySetInnerHTML")
-            .expect("React sink flow");
-        assert_eq!(f.confidence, Confidence::Medium);
-        assert_eq!(f.provenance.source, Source::JsAst);
-    }
-
-    #[test]
-    fn traces_postmessage_handler_param() {
-        let js = "window.addEventListener('message', function (e) { el.innerHTML = e.data; });";
-        let found = run(js);
-        let f = find_value(&found, "DOM XSS: event.data -> el.innerHTML")
-            .expect("postMessage data flows to sink");
-        assert_eq!(f.confidence, Confidence::Medium);
-        // The receiver itself is still flagged (no origin check).
-        assert!(found
-            .iter()
-            .any(|f| f.value.starts_with("postMessage receiver (no origin check")));
-    }
-
-    #[test]
-    fn constant_sink_is_only_a_low_lead_never_traced() {
-        let found = run(r#"el.innerHTML = "<b>constant</b>";"#);
-        // No traced path.
-        assert!(!found.iter().any(|f| f.value.starts_with("DOM XSS:")));
-        assert!(found.iter().all(|f| f.confidence != Confidence::High));
-        // A Low unverified lead keeps recall.
-        let lead = find_value(&found, "dom sink (unverified source)").expect("low lead");
-        assert_eq!(lead.confidence, Confidence::Low);
-        assert_eq!(lead.provenance.source, Source::JsRegex);
-    }
-
-    #[test]
-    fn untraced_sink_with_unknown_variable_is_low_lead() {
-        // `userInput` has no tainted origin: a lead, not a traced path.
-        let found = run("el.innerHTML = userInput;");
-        assert!(!found.iter().any(|f| f.value.starts_with("DOM XSS:")));
-        assert!(find_value(&found, "dom sink (unverified source)").is_some());
-    }
-
-    #[test]
-    fn detects_wasm() {
-        let js = r#"fetch("/app.wasm"); WebAssembly.instantiateStreaming(resp);"#;
-        let found = run(js);
-        assert!(find_value(&found, "WebAssembly module reference").is_some());
-        assert!(find_value(&found, "WebAssembly instantiation").is_some());
-    }
-
-    #[test]
-    fn postmessage_without_origin_is_medium() {
-        let js = r"window.addEventListener('message', function (e) { handle(e.data); });";
-        let found = run(js);
-        let f = found
-            .iter()
-            .find(|f| f.value.starts_with("postMessage receiver"))
-            .expect("postMessage finding");
-        assert_eq!(f.confidence, Confidence::Medium);
-        assert!(f.value.contains("no origin check"));
-    }
-
-    #[test]
-    fn postmessage_with_origin_is_low() {
-        let js = r"window.addEventListener('message', function (e) { if (e.origin !== OK) return; handle(e.data); });";
-        let found = run(js);
-        let f = found
-            .iter()
-            .find(|f| f.value.starts_with("postMessage receiver"))
-            .expect("postMessage finding");
-        assert_eq!(f.confidence, Confidence::Low);
-    }
-
-    #[test]
-    fn negative_and_dedup() {
-        // No sinks here.
-        assert_eq!(run("const total = a + b; renderSafely(total);"), Vec::new());
-        // Two identical traced sinks collapse to one finding.
-        let js = "a.innerHTML = location.hash;\na.innerHTML = location.hash;";
-        assert_eq!(run(js).len(), 1);
-    }
-
-    #[test]
-    fn unparseable_returns_empty_not_error() {
-        assert_eq!(run("function (() {{{ <<< "), Vec::new());
-    }
+    include!("domsinks_tests.rs");
 }

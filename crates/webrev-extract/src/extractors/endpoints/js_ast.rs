@@ -7,6 +7,7 @@
 //! exotic code that fails to parse falls through to the regex extractor.
 
 use crate::traits::{ContentKind, ExtractInput, Extractor};
+use std::collections::BTreeSet;
 use swc_core::common::input::StringInput;
 use swc_core::common::sync::Lrc;
 use swc_core::common::{BytePos, FileName, SourceMap};
@@ -35,6 +36,7 @@ impl Default for JsAstExtractor {
 #[derive(Default)]
 struct EndpointVisitor {
     hits: Vec<(Endpoint, Confidence)>,
+    candidate_strings: Vec<String>,
     /// Module specifiers passed to a dynamic `import(...)`. Reported
     /// separately (as [`webrev_core::FindingKind::Script`], not an
     /// [`Endpoint`]): a lazy-loaded chunk like `import("./AdminPanel")` is a
@@ -57,6 +59,73 @@ fn nth_string_arg(call: &CallExpr, idx: usize) -> Option<String> {
         return None;
     }
     string_literal_value(&arg.expr)
+}
+
+/// Return a static string or a template literal with interpolations represented
+/// as `{}`. Keeping the marker makes the discovered route useful without
+/// pretending that a runtime value is known.
+fn static_url_arg(call: &CallExpr, idx: usize) -> Option<String> {
+    let arg = call.args.get(idx)?;
+    if arg.spread.is_some() {
+        return None;
+    }
+    match &*arg.expr {
+        Expr::Lit(Lit::Str(_)) => string_literal_value(&arg.expr),
+        Expr::Tpl(template) => {
+            let mut url = String::new();
+            for (index, quasi) in template.quasis.iter().enumerate() {
+                url.push_str(quasi.cooked.as_ref()?.to_string_lossy().as_ref());
+                if index < template.exprs.len() {
+                    url.push_str("{}");
+                }
+            }
+            // Angular applications commonly interpolate a configured origin
+            // before a stable route (`${this.apiBase}/rest/items`). Keep the
+            // route while omitting that unknown host expression.
+            if url.starts_with("{}") && url[2..].starts_with('/') {
+                url.drain(..2);
+            }
+            looks_like_endpoint(&url).then_some(url)
+        }
+        _ => None,
+    }
+}
+
+/// Recognize Angular `HttpClient` calls such as `this.http.get(url)` and
+/// `http.post(url, body)`. Requiring the receiver to be named `http` avoids
+/// treating arbitrary `.get()` methods as network activity.
+fn http_client_method(member: &MemberExpr) -> Option<Method> {
+    fn path(expr: &Expr) -> Option<String> {
+        match expr {
+            Expr::Ident(id) => Some(id.sym.as_ref().to_owned()),
+            Expr::This(_) => Some("this".to_owned()),
+            Expr::Member(member) => {
+                let MemberProp::Ident(prop) = &member.prop else {
+                    return None;
+                };
+                Some(format!("{}.{}", path(&member.obj)?, prop.sym))
+            }
+            _ => None,
+        }
+    }
+
+    let MemberProp::Ident(prop) = &member.prop else {
+        return None;
+    };
+    let method = match prop.sym.as_ref() {
+        "get" => Method::Get,
+        "post" => Method::Post,
+        "put" => Method::Put,
+        "delete" => Method::Delete,
+        "patch" => Method::Patch,
+        _ => return None,
+    };
+    let receiver = path(&member.obj)?;
+    receiver
+        .split('.')
+        .next_back()
+        .filter(|name| *name == "http")
+        .map(|_| method)
 }
 
 /// Detect `xhr.open(METHOD, url)` calls, returning `(method, url)`.
@@ -114,13 +183,13 @@ impl Visit for EndpointVisitor {
         let matched = match &call.callee {
             Callee::Expr(e) => match &**e {
                 Expr::Ident(id) if id.sym.as_ref() == "fetch" => Some(Method::Unknown),
-                Expr::Member(member) => axios_method(member),
+                Expr::Member(member) => axios_method(member).or_else(|| http_client_method(member)),
                 _ => None,
             },
             Callee::Super(_) | Callee::Import(_) => None,
         };
         if let Some(method) = matched {
-            if let Some(url) = nth_string_arg(call, 0) {
+            if let Some(url) = static_url_arg(call, 0) {
                 self.hits
                     .push((Endpoint::new(url, method, Source::JsAst), Confidence::High));
             }
@@ -155,10 +224,7 @@ impl Visit for EndpointVisitor {
     fn visit_str(&mut self, s: &Str) {
         let value = s.value.to_string_lossy();
         if looks_like_endpoint(&value) {
-            self.hits.push((
-                Endpoint::new(value.into_owned(), Method::Unknown, Source::JsAst),
-                Confidence::Medium,
-            ));
+            self.candidate_strings.push(value.into_owned());
         }
     }
 }
@@ -192,6 +258,8 @@ impl Extractor for JsAstExtractor {
         let mut visitor = EndpointVisitor::default();
         module.visit_with(&mut visitor);
 
+        let called: BTreeSet<String> = visitor.hits.iter().map(|(ep, _)| ep.url.clone()).collect();
+
         let endpoints = visitor.hits.into_iter().map(|(ep, confidence)| {
             let mut f = Finding::from_endpoint(input.session_id, &ep, confidence);
             f.provenance = Provenance::new(Source::JsAst, input.url.clone());
@@ -207,7 +275,21 @@ impl Extractor for JsAstExtractor {
                 Provenance::new(Source::JsAst, input.url.clone()),
             )
         });
-        endpoints.chain(imports).collect()
+        let candidates = visitor
+            .candidate_strings
+            .into_iter()
+            .filter(move |s| !called.contains(s))
+            .map(|s| {
+                Finding::new(
+                    input.session_id,
+                    FindingKind::Config,
+                    None,
+                    format!("network URL candidate (static string): {s}"),
+                    Confidence::Low,
+                    Provenance::new(Source::JsAst, input.url.clone()),
+                )
+            });
+        endpoints.chain(imports).chain(candidates).collect()
     }
 }
 
@@ -246,6 +328,21 @@ mod tests {
         assert!(found
             .iter()
             .all(|f| f.url.as_deref() != Some("not a url with spaces")));
+    }
+
+    #[test]
+    fn extracts_angular_httpclient_template_url_with_static_route() {
+        let found = run(
+            "function load() { return this.http.get(`${this.hostServer}/rest/products/search?q=${criteria}`); }",
+        );
+        assert!(
+            found.iter().any(|finding| {
+                finding.kind == FindingKind::Endpoint
+                    && finding.value == "GET /rest/products/search?q={}"
+                    && finding.confidence == Confidence::High
+            }),
+            "findings: {found:?}"
+        );
     }
 
     #[test]

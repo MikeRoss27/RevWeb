@@ -155,3 +155,47 @@ fn retains_full_random_looking_sk_keys() {
         assert_eq!(found[0].plaintext.as_deref(), Some(key.as_str()));
     }
 }
+
+#[test]
+fn html_ids_and_css_classes_are_not_credentials() {
+    let token = "Rj8Kpz2Wqf4Lm9Xv7Tb3Nc6Hy1Qs5Ad";
+    let key = format!("sk-{token}{token}");
+    let html = format!(
+        r#"<div id="{token}" class="{key}"></div><script>const apiKey = "{token}";</script>"#
+    );
+    let input = ExtractInput::new(SessionId::new(), None, ContentKind::Html, html);
+    let found = SecretExtractor::with_random_key().extract(&input);
+    assert!(found
+        .iter()
+        .all(|f| f.plaintext.as_deref() != Some(key.as_str())));
+    assert!(found.iter().any(|f| f.plaintext.as_deref() == Some(token)));
+}
+
+#[test]
+fn hardcoded_credential_comparison_is_detected() {
+    for js in [
+        "if (req.body.password === 'debug-open-sesame') { grant(); }",
+        "if (password == \"debug-open-sesame\") { grant(); }",
+        "if (user.password !== 'debug-open-sesame') { deny(); }",
+    ] {
+        let found = run(js);
+        assert_eq!(found.len(), 1, "{js}");
+        assert_eq!(found[0].plaintext.as_deref(), Some("debug-open-sesame"));
+        assert_eq!(found[0].confidence, Confidence::Medium);
+    }
+}
+
+#[test]
+fn credential_comparisons_against_non_secrets_are_ignored() {
+    for js in [
+        // Variables, empty and short literals, UI constants and placeholders.
+        "if (password === confirmPassword) {}",
+        "if (password !== '') {}",
+        "if (password === 'short') {}",
+        "if (event.key === 'Enter') {}",
+        "if (token.type === 'bearer-token-type-name') {}",
+        "if (password === 'your-password-here-please') {}",
+    ] {
+        assert!(run(js).is_empty(), "{js}");
+    }
+}
