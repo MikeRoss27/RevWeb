@@ -86,7 +86,7 @@ webrev scan --seed https://your-authorized-target.example/
 webrev tui --seed https://your-authorized-target.example/
 ```
 
-Default scans show full triage output and save `webrev-report.json`. For active
+Default scans show a prioritized triage summary and save the full `webrev-report.json`. For active
 checks use `scan --active` or press `a` in the TUI. IDOR signals need mission
 authentication (`--cookie`, `--bearer` or `--header`). XSS/SQLi/IDOR findings are
 signals requiring manual verification. No RCE detector is implemented.

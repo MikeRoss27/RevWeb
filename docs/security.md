@@ -16,6 +16,31 @@ host and its subdomains unless you widen it explicitly.
 Set `--exclude` to carve out sensitive subdomains (e.g. admin panels) that are
 out of scope even though they share a parent domain.
 
+For an explicit engagement boundary, pass every authorized domain with
+repeatable `--scope` options or use `--scope-file scope.json`, for example
+`webrev scan --seed https://app.example.com --scope example.com --scope api.vendor.test`.
+Webrev treats DNS answers for an allowed hostname as routing that authorized
+hostname and pins the first answer set per HTTP client. Redirects still need to
+match the configured hostname scope. A proxy may resolve the destination
+remotely, so its egress policy must enforce the same authorization boundary.
+Scope files are JSON with `include` and optional `exclude` arrays. Entries may
+be hostname suffixes, exact IP literals, or CIDR networks. Direct HTTP clients
+filter resolved addresses through CIDR entries before connecting. For a domain
+explicitly included by hostname, its DNS answers are treated as routes for that
+authorized hostname unless an excluded IP/CIDR matches. Chromium cannot check a
+hostname's resolved address before it connects; dynamic scans fail closed for
+hostname requests if the scope contains IP/CIDR exclusions. CIDR-only scope
+supports dynamic requests to literal IP URLs, while hostname URLs require a
+hostname entry as well. When a proxy resolves target hostnames remotely, it
+must enforce the same destination IP/CIDR rules; Webrev cannot inspect that
+remote resolution.
+
+Active coverage separates HTTP refusals (for example 401/403/429) from scope
+refusals. A direct DNS lookup whose addresses all fall outside the configured
+IP/CIDR scope is refused before connection and is not retried; it cannot count
+as a negative security test. The aggregate `out_of_scope` count also includes
+targets excluded before detector selection.
+
 ## In-memory sessions and visible secrets
 
 All sessions stay in memory until the process exits. There is no database or
@@ -78,6 +103,13 @@ Probe behavior:
 - **GET-shaped probe requests.** Endpoints known to be `POST`/`PUT`/`DELETE`/`PATCH`
   are skipped by the probe client. Browser interactions execute application
   behavior independently of this restriction.
+- **Destructive-looking URLs are refused.** Endpoints, BOLA candidates and
+  crawled `<a href>` links whose path or query contains a whole-token
+  state-changing word (logout, delete, remove, unsubscribe, pay, checkout,
+  reset, ...) are never requested. Active scans and BOLA record them as a
+  `destructive_url_guard` check (refused, not executed, inconclusive), so the
+  coverage record is never complete. There is no override flag. This is a
+  name heuristic: a GET handler with a harmless name can still mutate state.
 - **Never follows an injected redirect.** The probe client disables redirect
   following outright, so an open-redirect check cannot itself send a request
   to the attacker-controlled-looking URL it injects.
@@ -104,3 +136,48 @@ signals and confirmed expression evaluation. See [proof boundaries](active-resea
 A report includes the original mission metadata, scope, seeds, findings,
 endpoints, summary counters and detected plaintext secrets. `webrev report`
 preserves this metadata when converting or filtering an existing JSON report.
+
+## Exposition accidentelle des données sensibles
+
+Le texte en clair des secrets détectés reste volontairement présent dans les
+findings et les rapports (`Finding.plaintext`) : cette section ne le concerne
+pas. Elle traite des fuites non voulues, hors rapport.
+
+Corrigé :
+
+- `AuthConfig` (en-têtes, cookies, bearer) n'a plus de `Debug` dérivé : `{:?}`
+  n'affiche que les noms des en-têtes/cookies et `<redacted>` pour le bearer.
+  La sérialisation JSON (fichiers de compte BOLA) est inchangée.
+- `EgressPolicy` et `DnsPolicy` masquent le `user:pass@` et les paramètres de
+  requête sensibles de l'URL du proxy / DoH dans `Debug`, donc aussi dans
+  `OpsecConfig` et `MissionProfile`.
+- `webrev_core::redact_url` masque userinfo et valeurs de paramètres
+  `token/key/secret/pass/sig/session/...` (requête et fragment). Elle est
+  utilisée pour les lignes `dynamic:` / `skip out-of-scope:` et l'erreur de
+  seed BOLA invalide. Elle ne s'applique jamais aux findings ni aux rapports.
+
+Non corrigé ou non vérifié (hors périmètre de cette passe) :
+
+- `webrev-pipeline` : les erreurs `invalid proxy {proxy:?}` (`active/client.rs`,
+  `stages/fetch/request.rs`), les erreurs reqwest `requesting {url}` /
+  `reading {url}` (le texte reqwest contient l'URL complète) et
+  `tracing::debug!(%url, ...)` (`active/transport.rs`) peuvent afficher
+  userinfo ou jetons en requête sur stderr ; à passer par `redact_url`.
+- `webrev-browser` : `HarEntry` dérive `Debug` et contient les en-têtes de
+  requête (dont `Authorization`) ; il n'est pas écrit sur disque à ce jour.
+- Les extraits de preuve actifs (256 caractères) et les URL de seeds sont
+  conservés tels quels dans le rapport ; une réponse qui renvoie un cookie ou un
+  jeton dans son corps s'y retrouve. Les seeds avec userinfo/jeton figurent
+  dans `mission.seeds` du rapport JSON.
+- Le défaut de `RUST_LOG=debug`/`trace` des dépendances (reqwest, hyper,
+  chromiumoxide) n'a pas été audité.
+
+### Suivi : journaux et erreurs du pipeline (2026-10-17)
+
+Les messages `invalid proxy`, `requesting`, `reading` et le journal
+`active probe request failed` passent maintenant par `redact_url` et utilisent
+`reqwest::Error::without_url`, de sorte que userinfo et jetons de requête
+n'apparaissent plus dans les erreurs ni dans `tracing`. Restent hors de portée :
+le `Debug` de `HarEntry` (en-têtes `Authorization`, en mémoire uniquement), les
+extraits de réponses de sondes actives stockés tels quels dans le rapport JSON,
+et les journaux internes de reqwest/hyper/chromiumoxide sous `RUST_LOG=debug`.

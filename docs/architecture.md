@@ -122,3 +122,25 @@ uses explicit verdicts and response observations from `webrev-core::model::evide
 Every active run adds a typed `ScanCoverage` record to the in-memory findings;
 report formats and TUI details retain it. Confirmed expression evaluation never
 promotes itself to OS RCE. See [research review](active-research.md).
+
+## Finding status, evidence and deduplication
+
+Every finding now carries an evidentiary `status` (`observed`, `suspicious`,
+`confirmed`, `inconclusive`) independent of confidence and qualitative
+severity. `evidence_score` ranks verification strength; it is not a probability
+and does not derive from CVSS. CVSS is not currently assessed. Active response
+evidence stores request method/URL, response status, content type, size and a
+bounded excerpt. Authorization header values are not stored in evidence.
+
+Static extractors add stable detector identifiers. Storage merges contributing
+detectors, provenances, confidence and evidence for repeated findings before
+the store stage suppresses duplicate events. Endpoint keys retain the HTTP
+method. Older JSON reports remain readable through serde defaults; old
+findings deserialize as `observed`, since their original evidence state cannot
+be reconstructed.
+
+The static extractor registry labels recognized call sites as endpoints;
+other endpoint-shaped JavaScript literals are low-confidence configuration
+candidates. Parameter findings now come from page URLs, network-call literals,
+HTML forms/links/actions and recognizable inline JSON bodies. Free-standing
+JavaScript object keys are no longer request parameters.

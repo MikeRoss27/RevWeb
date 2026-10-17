@@ -32,8 +32,9 @@ sent to the target.
 | --- | --- | --- |
 | `--seed <URL>` | stdin | Seed URL to analyze. Repeatable. If omitted, seeds are read from stdin (one URL per line; `#` comments and blanks ignored). |
 | `--stdin` | off | Also read seeds from stdin, merging them with any `--seed` values. |
-| `--scope <HOST>` | seeds' hosts | In-scope host suffix. Repeatable. If omitted, derived from the seeds. |
-| `--exclude <HOST>` | — | Out-of-scope host suffix. Repeatable. |
+| `--scope <HOST\|CIDR>` | seeds' hosts | In-scope host suffix, exact IP, or IP network. Repeatable. If omitted, derived from the seeds. |
+| `--scope-file <PATH>` | — | JSON file with a non-empty `include` array and optional `exclude` array of host suffixes, IPs, or CIDRs. Lists combine with CLI values; exclusions win. |
+| `--exclude <HOST\|CIDR>` | — | Out-of-scope host suffix, exact IP, or IP network. Repeatable. |
 | `--name <NAME>` | `webrev-mission` | Mission name (env `WEBREV_NAME`). |
 | `--proxy <URL>` | — | Egress proxy, e.g. `http://127.0.0.1:8080` (env `WEBREV_PROXY`). |
 | `--header "<N: V>"` | — | Extra request header. Repeatable. |
@@ -46,11 +47,34 @@ sent to the target.
 | `--max-depth <N>` | `2` | Link-following depth from the seeds (0 = seeds only). |
 | `--max-concurrency <N>` | `4` | Concurrent in-flight requests during the crawl. |
 | `--duration-secs <N>` | `8` | Dynamic dwell time per seed (dynamic/tui only). |
+| `--observation-only` | off | For `dynamic` and `scan --dynamic`: no driven scrolling/clicking; refuse methods other than GET/HEAD/OPTIONS. Page scripts still execute. Unsupported in TUI. |
 | `--report <PATH>` | `webrev-report.json` | Direct report output for CLI scans; export path for the TUI `r` key. |
 
 Scope matching is **host-suffix** based: `--scope example.com` matches
 `example.com` and `api.example.com`. The scope is **fail-closed** — an empty
 include list denies everything.
+
+IP literals and CIDRs are also supported, for example `--scope 192.0.2.0/24`
+or `--exclude 192.0.2.128/25`. Direct HTTP clients filter resolved addresses
+against CIDR rules before connecting. A hostname explicitly included by domain
+may use its DNS addresses unless an excluded IP/CIDR matches. Chromium can
+enforce IP/CIDRs on literal-IP URLs, but cannot verify a hostname's resolved IP.
+Dynamic hostname requests fail closed when IP or CIDR exclusions are present;
+CIDR-only scope supports dynamic requests to literal IP URLs, while hostname
+URLs require an explicit hostname entry too.
+
+Example `scope.json`:
+
+```json
+{
+  "include": ["example.com", "vendor.test"],
+  "exclude": ["admin.example.com"]
+}
+```
+
+Run with `webrev scan --seed https://app.example.com/ --scope-file scope.json`.
+An explicitly supplied file with no allowed hosts is rejected; it never falls
+back to the seed-derived scope.
 
 All scans hold their session in memory. No database is created. Detected secrets
 are retained and shown in plaintext by default, including JSON, JSONL, CSV and
@@ -62,7 +86,7 @@ the TUI. No reveal flag is required. The fingerprint remains a deduplication key
 | --- | --- | --- |
 | `--input <PATH>` | `webrev-report.json` | Existing full JSON report to convert or filter. |
 | `--output <PATH>` | stdout | Write the report to a file instead of printing it. |
-| `--format <FMT>` | `json` | `json` (full document), `jsonl` (one finding per line), `urls` (bare endpoint URLs, one per line), `csv` (findings table), `text` (grouped human-readable triage), or `openapi` (reconstructed OpenAPI 3.1 spec of the discovered surface). |
+| `--format <FMT>` | `json` | `json` (full document), `jsonl` (one finding per line), `urls` (bare endpoint URLs, one per line), `csv` (findings table), `text` (grouped human-readable triage), `openapi` (reconstructed OpenAPI 3.1 spec), `dot` (Graphviz graph), or `graphml` (GraphML graph). |
 | `--scope <SEL>` | `all` | Restrict endpoint output: `all`, `internal` (in-scope target), or `external` (third-party). |
 | `--min-confidence <LVL>` | `low` | Drop findings below `low` / `medium` / `high`. |
 | `--min-severity <LVL>` | `info` | Drop findings below `info` / `low` / `medium` / `high` / `critical`. `jsonl`/`csv` are ranked by severity; `csv` leads with a `severity` column. |
@@ -84,7 +108,7 @@ Adds to the shared scan options:
 | --- | --- | --- |
 | `--dynamic` | off | Also run a dynamic (headless Chromium) pass after the static scan, in the same session. |
 | `--active` | off | Also run a light active-scan pass (see below) over every endpoint the static/dynamic passes discovered, plus the seeds themselves. Sends abnormal traffic — authorized targets only. |
-| `--format <FMT>` | `json` | Format of the end-of-scan report: `json`, `jsonl`, `urls`, `csv`, `text`, or `openapi`. |
+| `--format <FMT>` | `json` | Format of the end-of-scan report: `json`, `jsonl`, `urls`, `csv`, `text`, `openapi`, `dot`, or `graphml`. |
 | `--no-report` | off | Print the scan summary, then discard the in-memory session without writing a report. |
 
 ```bash
@@ -165,7 +189,9 @@ The active engine counts every HTTP attempt against a shared budget (default
 category also has 15 target attempts; at most four query positions are tested per
 endpoint. Decoded bodies are limited to 512 KiB; oversized responses remain
 inconclusive. Scope, jitter and cancellation apply to every request. A
-`ScanCoverage` record exposes failures, blocked responses and reached limits.
+`ScanCoverage` record exposes transport failures, HTTP refusals, scope
+refusals, detector outcomes and reached limits. A refused scope target is not
+reported as a negative test.
 See [research review and proof boundaries](active-research.md).
 
 ```bash
@@ -220,7 +246,40 @@ webrev report --format csv --min-confidence high --output findings.csv
 
 # Reconstruct an OpenAPI 3.1 spec of the discovered surface (marked UNVERIFIED)
 webrev report --format openapi --output api.json
+
+# Export observed component, endpoint, and parameter relations
+webrev report --format dot --output relations.dot
+webrev report --format graphml --output relations.graphml
+
+# Compare stack and API routes across separate target reports
+webrev compare --input target-a.json --input target-b.json --output comparison.json
 ```
+
+### Automated cross-account BOLA checks
+
+Use two test accounts and objects you own. Put each account's authentication in
+a JSON file such as `{"cookies":[["sid","ACCOUNT_SESSION"]]}` or
+`{"bearer":"TOKEN"}`. The `bola` command opens each seed in the browser under
+both accounts, pairs GET object URLs with the same route shape and different
+identifiers, then compares A→A, B→B, B→A, and A→B. It does not guess IDs or
+send write requests.
+
+```bash
+webrev bola --seed https://app.example.com/ --scope example.com \
+  --a-auth account-a.json --b-auth account-b.json
+```
+
+If the account-specific scans have already been captured, Chromium is not
+needed for the comparison:
+
+```bash
+webrev bola --a-report account-a-report.json --b-report account-b-report.json \
+  --a-auth account-a.json --b-auth account-b.json --output bola.json
+```
+
+The output is a JSON report with a coverage record and any cross-account
+signals. A matching response still needs an ownership and privacy check before
+it is treated as a vulnerability.
 
 ## Environment variables
 
@@ -235,10 +294,13 @@ for the matching flags, so they can be set once per engagement.
 
 ## Reading results and piping a scan
 
-All scan commands print a grouped triage view to stdout and send progress to
-stderr. Secrets remain complete. Each row carries severity (priority), confidence
-in the signal, evidence and its source. Technologies are signature matches;
-secret validity is not tested. XSS reflections, SQL errors, sensitive-file and
+All scan commands print a prioritized triage view to stdout and send progress to
+stderr. Vulnerability and secret leads appear first, followed by technologies,
+the top eight surface observations, and a coverage summary. The JSON report
+retains every finding and its full evidence; `webrev report --format text` shows
+the complete human-readable version. Secrets remain complete. Lead rows show
+severity (priority), status, confidence, and a short evidence excerpt.
+Technologies are signature matches; secret validity is not tested. XSS reflections, SQL errors, sensitive-file and
 IDOR-lite observations require manual verification, independently of their
 severity. Template arithmetic can confirm expression evaluation, while OS RCE is not
 tested. A count of zero is not proof of coverage.

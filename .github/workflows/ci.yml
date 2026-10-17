@@ -21,13 +21,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install Python runtime
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
       # ubuntu-latest ships gcc/cmake, so rustls/aws-lc build
       # without extra packages. No Chromium is installed:
       # the browser tests are #[ignore] and never run here.
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
-          components: clippy
+          components: clippy, rustfmt
 
       - name: Cache cargo artifacts
         uses: Swatinem/rust-cache@v2
@@ -35,8 +40,56 @@ jobs:
       - name: Check source file size
         run: python3 scripts/check_source_size.py
 
-      - name: Clippy (all targets, warnings = errors)
-        run: cargo clippy --workspace --all-targets -- -D warnings
+      - name: Check Rust formatting
+        run: cargo fmt --all -- --check
+
+      - name: Test synthetic Rust detector regression corpus
+        run: cargo test -p webrev-extract --test reliability_benchmark -- --nocapture
+
+      - name: Test labeled static detector corpus
+        run: cargo test -p webrev-extract --test static_corpus -- --nocapture
+
+      - name: Probe pinned OWASP Juice Shop positives (diagnostic)
+        run: cargo test -p webrev-extract --test juice_shop_external -- --nocapture
+
+      - name: Probe pinned multi-file DOM XSS corpus (recall-only diagnostic)
+        run: cargo test -p webrev-extract --test domxss_multifile_external -- --nocapture
+
+      - name: Probe pinned SWIPE DOM XSS fixtures (diagnostic)
+        run: cargo test -p webrev-extract --test swipe_domxss_external -- --nocapture
+
+      - name: Verify pinned SWIPE fixtures
+        working-directory: benchmarks/external-candidates/swipe-v1
+        run: sha256sum -c SHA256SUMS
+
+      - name: Probe pinned external secret fixtures (diagnostic)
+        run: cargo test -p webrev-extract --test sdc_secrets_external -- --nocapture
+
+      - name: Verify pinned external secret fixtures
+        working-directory: benchmarks/external-secrets/sdc-v1
+        run: sha256sum -c SHA256SUMS
+
+      - name: Verify pinned Juice Shop probe fixtures
+        working-directory: benchmarks/juice-shop/v19.0.0
+        run: sha256sum -c SHA256SUMS
+
+      - name: Verify pinned multi-file DOM XSS corpus
+        working-directory: benchmarks/external-domxss/multifile-v1
+        run: sha256sum -c SHA256SUMS
+
+      - name: Test Python benchmark adapter
+        run: python3 -m unittest discover -s scripts -p 'test_*.py' -v
+
+      - name: Verify archived VulnerableApp benchmark artifacts
+        working-directory: benchmarks/vulnerableapp/2026-10-16/open-redirect
+        run: sha256sum -c SHA256SUMS
+
+      - name: Verify archived baseline artifacts
+        working-directory: benchmarks/vulnerableapp/2026-10-16/open-redirect/baseline
+        run: sha256sum -c SHA256SUMS
+
+      - name: Clippy (all targets and features, warnings = errors)
+        run: cargo clippy --workspace --all-targets --all-features -- -D warnings
 
       - name: Build
         run: cargo build --workspace --all-targets

@@ -89,7 +89,8 @@ do not establish coverage of third-party products or production CVEs.
 
 Validated on Windows: 151 workspace tests passed; the separately enabled real
 Chrome loopback test also passed (152 successful Cargo tests total). The external
-browser smoke test remains ignored. Strict workspace/all-target Clippy passed;
+browser smoke test remains ignored in the default suite, but its local-only
+Chromium run is separately recorded in the reliability changelog. Strict workspace/all-target Clippy passed;
 the largest Rust source has 488 lines. Debug and release CLI runs against real
 Jinja2 each produced one expression finding for the vulnerable renderer and none
 for the safe renderer. Both release binaries were installed and hash-matched;
