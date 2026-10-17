@@ -1,0 +1,9 @@
+# Review is required from the owner for everything, and the paths below decide
+# whether Webrev stays inside scope and keeps credentials out of its output.
+*                                   @MikeRoss27
+/crates/webrev-core/src/security/   @MikeRoss27
+/crates/webrev-browser/src/         @MikeRoss27
+/crates/webrev-pipeline/src/active/ @MikeRoss27
+/.github/                           @MikeRoss27
+/deny.toml                          @MikeRoss27
+/benchmarks/                        @MikeRoss27
