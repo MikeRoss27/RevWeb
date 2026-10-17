@@ -2,97 +2,213 @@ name: CI
 
 on:
   push:
-    branches: [master, main]
+    branches: [main, master]
   pull_request:
+  merge_group:
+  workflow_dispatch:
+  # Reused by release.yml so a tag cannot ship without a green CI.
+  workflow_call:
 
-# Cancel superseded runs on the same ref.
+# Least privilege by default; jobs that need more declare it themselves.
+permissions:
+  contents: read
+
+# Cancel superseded runs on the same ref (never on main, so every merge is built).
 concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 env:
   CARGO_TERM_COLOR: always
-  RUSTFLAGS: -D warnings
+  CARGO_INCREMENTAL: "0"
+  CARGO_NET_RETRY: "10"
+  RUST_BACKTRACE: "1"
+  # Pinned so a new stable release cannot turn CI red by adding lints. The
+  # scheduled canary workflow builds against floating stable and beta.
+  RUST_TOOLCHAIN: "1.98.1"
 
 jobs:
-  check:
-    name: build · test · clippy (linux)
-    runs-on: ubuntu-latest
+  lint:
+    name: lint (fmt, clippy, docs)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Python runtime
-        uses: actions/setup-python@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.12"
-
-      # ubuntu-latest ships gcc/cmake, so rustls/aws-lc build
-      # without extra packages. No Chromium is installed:
-      # the browser tests are #[ignore] and never run here.
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # v1
         with:
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
           components: clippy, rustfmt
-
-      - name: Cache cargo artifacts
-        uses: Swatinem/rust-cache@v2
-
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          shared-key: lint
       - name: Check source file size
         run: python3 scripts/check_source_size.py
-
-      - name: Check Rust formatting
+      - name: Check formatting
         run: cargo fmt --all -- --check
+      - name: Clippy (all targets and features, warnings are errors)
+        run: cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
+      - name: Rustdoc (broken links and warnings are errors)
+        env:
+          RUSTDOCFLAGS: -D warnings
+        run: cargo doc --workspace --no-deps --locked
 
-      - name: Test synthetic Rust detector regression corpus
-        run: cargo test -p webrev-extract --test reliability_benchmark -- --nocapture
+  test:
+    name: test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    # Linux is the supported, required platform. macOS and Windows are built and
+    # tested for visibility; they do not block merges until observed green.
+    continue-on-error: ${{ matrix.experimental }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            experimental: false
+          - os: macos-15
+            experimental: true
+          - os: windows-2025
+            experimental: true
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # v1
+        with:
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          shared-key: test-${{ matrix.os }}
+      # No Chromium here: browser tests are #[ignore] and run in the `browser` job.
+      - name: Build
+        run: cargo build --workspace --all-targets --locked
+      - name: Test
+        run: cargo test --workspace --locked
 
-      - name: Test labeled static detector corpus
-        run: cargo test -p webrev-extract --test static_corpus -- --nocapture
+  msrv:
+    name: msrv (rust-version)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Read rust-version from Cargo.toml
+        id: msrv
+        run: |
+          version=$(python3 -c "import tomllib;print(tomllib.load(open('Cargo.toml','rb'))['workspace']['package']['rust-version'])")
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # v1
+        with:
+          toolchain: ${{ steps.msrv.outputs.version }}
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          shared-key: msrv
+      - name: Check against the declared minimum Rust version
+        run: cargo check --workspace --all-targets --locked
 
-      - name: Probe pinned OWASP Juice Shop positives (diagnostic)
-        run: cargo test -p webrev-extract --test juice_shop_external -- --nocapture
+  # Deterministic detector regression: pinned corpora, checksums, coverage floors.
+  # These assert exact floors (for example 105/122 cross-file DOM XSS flows,
+  # zero false positives on the negative sets), so a regression fails the build.
+  detection:
+    name: detection regression (pinned corpora)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # v1
+        with:
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          shared-key: detection
+      - name: Verify every pinned corpus and archived artifact checksum
+        run: |
+          set -euo pipefail
+          status=0
+          while IFS= read -r sums; do
+            dir=$(dirname "$sums")
+            echo "::group::sha256sum -c $sums"
+            (cd "$dir" && sha256sum -c SHA256SUMS) || status=1
+            echo "::endgroup::"
+          done < <(find benchmarks -name SHA256SUMS | sort)
+          exit "$status"
+      - name: Detector regression tests over the pinned corpora
+        run: >
+          cargo test --locked -p webrev-extract
+          --test reliability_benchmark
+          --test static_corpus
+          --test juice_shop_external
+          --test domxss_multifile_external
+          --test domxss_multifile_negatives
+          --test swipe_domxss_external
+          --test sdc_secrets_external
+          -- --nocapture
 
-      - name: Probe pinned multi-file DOM XSS corpus (recall-only diagnostic)
-        run: cargo test -p webrev-extract --test domxss_multifile_external -- --nocapture
-
-      - name: Probe pinned SWIPE DOM XSS fixtures (diagnostic)
-        run: cargo test -p webrev-extract --test swipe_domxss_external -- --nocapture
-
-      - name: Verify pinned SWIPE fixtures
-        working-directory: benchmarks/external-candidates/swipe-v1
-        run: sha256sum -c SHA256SUMS
-
-      - name: Probe pinned external secret fixtures (diagnostic)
-        run: cargo test -p webrev-extract --test sdc_secrets_external -- --nocapture
-
-      - name: Verify pinned external secret fixtures
-        working-directory: benchmarks/external-secrets/sdc-v1
-        run: sha256sum -c SHA256SUMS
-
-      - name: Verify pinned Juice Shop probe fixtures
-        working-directory: benchmarks/juice-shop/v19.0.0
-        run: sha256sum -c SHA256SUMS
-
-      - name: Verify pinned multi-file DOM XSS corpus
-        working-directory: benchmarks/external-domxss/multifile-v1
-        run: sha256sum -c SHA256SUMS
-
-      - name: Test Python benchmark adapter
+  scripts:
+    name: python scripts
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Byte-compile every script
+        run: python3 -m compileall -q scripts
+      - name: Unit tests
         run: python3 -m unittest discover -s scripts -p 'test_*.py' -v
 
-      - name: Verify archived VulnerableApp benchmark artifacts
-        working-directory: benchmarks/vulnerableapp/2026-10-16/open-redirect
-        run: sha256sum -c SHA256SUMS
+  # Chromium integration tests (loopback fixtures only, no external network).
+  # Informational until it has a track record on hosted runners: it is not part
+  # of the `ci` gate below, so a flaky browser cannot block merges.
+  browser:
+    name: browser integration (chromium)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # v1
+        with:
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          shared-key: browser
+      - uses: browser-actions/setup-chrome@48ad923757ca74d66703209fe939badbdf80f2f4 # v2.2.0
+        id: chrome
+        with:
+          chrome-version: stable
+      - name: Run ignored Chromium tests
+        env:
+          CHROME: ${{ steps.chrome.outputs.chrome-path }}
+        run: |
+          "$CHROME" --version
+          cargo test --locked -p webrev-browser -- --include-ignored --nocapture
 
-      - name: Verify archived baseline artifacts
-        working-directory: benchmarks/vulnerableapp/2026-10-16/open-redirect/baseline
-        run: sha256sum -c SHA256SUMS
-
-      - name: Clippy (all targets and features, warnings = errors)
-        run: cargo clippy --workspace --all-targets --all-features -- -D warnings
-
-      - name: Build
-        run: cargo build --workspace --all-targets
-
-      - name: Test
-        run: cargo test --workspace
+  # Single stable name for branch protection: require only `ci`.
+  ci:
+    name: ci
+    if: always()
+    needs: [lint, test, msrv, detection, scripts]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Require every gated job to succeed
+        run: |
+          echo '${{ toJSON(needs) }}'
+          if [ "${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'skipped') }}" = "true" ]; then
+            echo "A gated job did not succeed" >&2
+            exit 1
+          fi
