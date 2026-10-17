@@ -25,12 +25,15 @@
 //! target or user.
 
 pub mod dynamic;
+pub(crate) mod egress_proxy;
 pub mod har;
 pub mod hooks;
+pub mod policy;
 pub mod pool;
 pub mod profile;
 
-pub use dynamic::run_dynamic;
+pub use dynamic::{run_dynamic, run_dynamic_with_report};
 pub use har::{Har, HarEntry};
+pub use policy::{DynamicRunReport, InteractionPolicy, RefusalReason, RefusedRequest};
 pub use pool::{BrowserPool, PooledBrowser};
 pub use profile::BrowserProfile;
