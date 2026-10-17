@@ -1,0 +1,355 @@
+{
+  "tool_version": "0.1.0",
+  "mission": {
+    "id": "08725a27-d282-4084-92b7-cfc2752c69aa",
+    "name": "webrev-mission",
+    "scope": {
+      "include": [
+        "172.20.0.7"
+      ],
+      "exclude": []
+    },
+    "seeds": [
+      "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_12?returnTo=http%3A%2F%2F172.20.0.7%2F"
+    ]
+  },
+  "summary": {
+    "total": 6,
+    "by_kind": {
+      "config": 3,
+      "parameter": 1,
+      "scan_coverage": 1,
+      "vulnerability": 1
+    },
+    "by_confidence": {
+      "high": 2,
+      "low": 3,
+      "medium": 1
+    },
+    "by_severity": {
+      "info": 5,
+      "low": 1
+    },
+    "by_status": {
+      "inconclusive": 1,
+      "observed": 5
+    },
+    "endpoints_by_scope": {}
+  },
+  "endpoints": [],
+  "findings": [
+    {
+      "id": "0ae971e0-3a5f-41d8-8c2c-44c1b4cc430c",
+      "session_id": "08725a27-d282-4084-92b7-cfc2752c69aa",
+      "kind": "Parameter",
+      "url": null,
+      "value": "returnTo",
+      "confidence": "Low",
+      "provenance": {
+        "source": "JsRegex",
+        "location": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_12?returnTo=http%3A%2F%2F172.20.0.7%2F"
+      },
+      "provenances": [
+        {
+          "source": "JsRegex",
+          "location": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_12?returnTo=http%3A%2F%2F172.20.0.7%2F"
+        }
+      ],
+      "detectors": [
+        "params"
+      ],
+      "status": "observed"
+    },
+    {
+      "id": "fed14558-066b-479f-acdc-72d34068c33b",
+      "session_id": "08725a27-d282-4084-92b7-cfc2752c69aa",
+      "kind": "Config",
+      "url": null,
+      "value": "no Content-Security-Policy present",
+      "confidence": "Medium",
+      "provenance": {
+        "source": "Html",
+        "location": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_12?returnTo=http%3A%2F%2F172.20.0.7%2F"
+      },
+      "provenances": [
+        {
+          "source": "Html",
+          "location": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_12?returnTo=http%3A%2F%2F172.20.0.7%2F"
+        }
+      ],
+      "detectors": [
+        "csp"
+      ],
+      "status": "observed"
+    },
+    {
+      "id": "09ba0271-7e85-4725-9e56-082f00d4fafc",
+      "session_id": "08725a27-d282-4084-92b7-cfc2752c69aa",
+      "kind": "Config",
+      "url": null,
+      "value": "missing X-Frame-Options header (clickjacking exposure)",
+      "confidence": "Low",
+      "provenance": {
+        "source": "Html",
+        "location": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_12?returnTo=http%3A%2F%2F172.20.0.7%2F"
+      },
+      "provenances": [
+        {
+          "source": "Html",
+          "location": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_12?returnTo=http%3A%2F%2F172.20.0.7%2F"
+        }
+      ],
+      "detectors": [
+        "csp"
+      ],
+      "status": "observed"
+    },
+    {
+      "id": "e0afff12-5890-4fdc-8c1e-23d757969ecd",
+      "session_id": "08725a27-d282-4084-92b7-cfc2752c69aa",
+      "kind": "Config",
+      "url": null,
+      "value": "missing Referrer-Policy header",
+      "confidence": "Low",
+      "provenance": {
+        "source": "Html",
+        "location": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_12?returnTo=http%3A%2F%2F172.20.0.7%2F"
+      },
+      "provenances": [
+        {
+          "source": "Html",
+          "location": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_12?returnTo=http%3A%2F%2F172.20.0.7%2F"
+        }
+      ],
+      "detectors": [
+        "csp"
+      ],
+      "status": "observed"
+    },
+    {
+      "id": "76ae932e-6c81-4830-b96c-da468a742b41",
+      "session_id": "08725a27-d282-4084-92b7-cfc2752c69aa",
+      "kind": "Vulnerability",
+      "url": "http://172.20.0.7/",
+      "value": "missing security header(s): Content-Security-Policy, X-Content-Type-Options, X-Frame-Options",
+      "confidence": "High",
+      "provenance": {
+        "source": "Active",
+        "location": null
+      },
+      "provenances": [
+        {
+          "source": "Active",
+          "location": null
+        }
+      ],
+      "detectors": [
+        "headers_and_cookies"
+      ],
+      "status": "observed",
+      "justification": "Header and cookie observations are advisory; application exploitability was not tested.",
+      "evidence": {
+        "check": "headers_and_cookies",
+        "parameter": null,
+        "verdict": "observed",
+        "observations": [
+          {
+            "role": "baseline",
+            "method": "GET",
+            "url": "http://172.20.0.7/",
+            "status": 200,
+            "authenticated": false,
+            "content_type": "text/html",
+            "body_bytes": 2398,
+            "excerpt": ""
+          }
+        ],
+        "limitation": "Header and cookie observations are advisory; application exploitability was not tested."
+      }
+    },
+    {
+      "id": "7839ce39-a287-44e6-8ac1-13aab29cc4c8",
+      "session_id": "08725a27-d282-4084-92b7-cfc2752c69aa",
+      "kind": "ScanCoverage",
+      "url": null,
+      "value": "active coverage: incomplete / no clean verdict; 25 / 160 requests, 25 responses, 0 transport errors, 0 HTTP refused, 0 scope refused, 0 oversized, 0 method skips, 0 query-auth skips; cancelled=false, budget_exhausted=false, target_limit=false, parameter_limit=false",
+      "confidence": "High",
+      "provenance": {
+        "source": "Active",
+        "location": null
+      },
+      "provenances": [
+        {
+          "source": "Active",
+          "location": null
+        }
+      ],
+      "detectors": [
+        "active_coverage"
+      ],
+      "status": "inconclusive",
+      "justification": "incomplete / no clean verdict",
+      "coverage": {
+        "request_limit": 160,
+        "requests": 25,
+        "responses": 25,
+        "transport_errors": 0,
+        "refused_responses": 0,
+        "oversized_responses": 0,
+        "out_of_scope": 0,
+        "skipped_methods": 0,
+        "skipped_query_auth": 0,
+        "cancelled": false,
+        "budget_exhausted": false,
+        "target_limit_reached": false,
+        "parameter_limit_reached": false,
+        "checks": {
+          "anonymous_access": {
+            "attempted": 0,
+            "executed": 0,
+            "not_executed": 0,
+            "not_selected": 1,
+            "negative": 0,
+            "refused": 0,
+            "scope_refused": 0,
+            "errors": 0,
+            "findings": 0,
+            "inconclusive": 0
+          },
+          "api_cors": {
+            "attempted": 1,
+            "executed": 1,
+            "not_executed": 0,
+            "not_selected": 0,
+            "negative": 1,
+            "refused": 0,
+            "scope_refused": 0,
+            "errors": 0,
+            "findings": 0,
+            "inconclusive": 0
+          },
+          "crlf_injection": {
+            "attempted": 1,
+            "executed": 1,
+            "not_executed": 0,
+            "not_selected": 0,
+            "negative": 1,
+            "refused": 0,
+            "scope_refused": 0,
+            "errors": 0,
+            "findings": 0,
+            "inconclusive": 0
+          },
+          "graphql_introspection": {
+            "attempted": 0,
+            "executed": 0,
+            "not_executed": 0,
+            "not_selected": 1,
+            "negative": 0,
+            "refused": 0,
+            "scope_refused": 0,
+            "errors": 0,
+            "findings": 0,
+            "inconclusive": 0
+          },
+          "open_redirect": {
+            "attempted": 1,
+            "executed": 1,
+            "not_executed": 0,
+            "not_selected": 0,
+            "negative": 1,
+            "refused": 0,
+            "scope_refused": 0,
+            "errors": 0,
+            "findings": 0,
+            "inconclusive": 0
+          },
+          "origin": {
+            "attempted": 1,
+            "executed": 1,
+            "not_executed": 0,
+            "not_selected": 0,
+            "negative": 0,
+            "refused": 0,
+            "scope_refused": 0,
+            "errors": 0,
+            "findings": 1,
+            "inconclusive": 0
+          },
+          "parameter_fuzz": {
+            "attempted": 1,
+            "executed": 1,
+            "not_executed": 0,
+            "not_selected": 0,
+            "negative": 0,
+            "refused": 0,
+            "scope_refused": 0,
+            "errors": 0,
+            "findings": 0,
+            "inconclusive": 1
+          },
+          "path_traversal": {
+            "attempted": 0,
+            "executed": 0,
+            "not_executed": 0,
+            "not_selected": 1,
+            "negative": 0,
+            "refused": 0,
+            "scope_refused": 0,
+            "errors": 0,
+            "findings": 0,
+            "inconclusive": 0
+          },
+          "prototype_pollution": {
+            "attempted": 1,
+            "executed": 1,
+            "not_executed": 0,
+            "not_selected": 0,
+            "negative": 1,
+            "refused": 0,
+            "scope_refused": 0,
+            "errors": 0,
+            "findings": 0,
+            "inconclusive": 0
+          },
+          "ssrf_signal": {
+            "attempted": 1,
+            "executed": 1,
+            "not_executed": 0,
+            "not_selected": 0,
+            "negative": 0,
+            "refused": 0,
+            "scope_refused": 0,
+            "errors": 0,
+            "findings": 0,
+            "inconclusive": 1
+          },
+          "subdomain_takeover": {
+            "attempted": 1,
+            "executed": 1,
+            "not_executed": 0,
+            "not_selected": 0,
+            "negative": 1,
+            "refused": 0,
+            "scope_refused": 0,
+            "errors": 0,
+            "findings": 0,
+            "inconclusive": 0
+          },
+          "template_arithmetic": {
+            "attempted": 1,
+            "executed": 1,
+            "not_executed": 0,
+            "not_selected": 0,
+            "negative": 0,
+            "refused": 0,
+            "scope_refused": 0,
+            "errors": 0,
+            "findings": 0,
+            "inconclusive": 1
+          }
+        }
+      }
+    }
+  ]
+}

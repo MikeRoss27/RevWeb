@@ -29,3 +29,8 @@ desktop.ini
 
 # Local Python helper bytecode
 __pycache__/
+
+# Archived benchmark evidence is pinned by SHA256SUMS and must be committed even
+# though it matches the report patterns above.
+!benchmarks/**/*-report.json
+!benchmarks/**/webrev-report.json

@@ -43,6 +43,11 @@ impl LocalBrowserFixture {
                 for candidate in [&listener, &canary_listener] {
                     match candidate.accept() {
                         Ok(connection) => {
+                            // Accepted sockets inherit the listener's non-blocking mode on Windows and BSD.
+                            connection
+                                .0
+                                .set_nonblocking(false)
+                                .expect("blocking socket");
                             accepted = Some(connection);
                             break;
                         }

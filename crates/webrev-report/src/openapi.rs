@@ -25,7 +25,7 @@
 //!   endpoints collapse to the same path+method, the first in sorted order wins
 //!   (deterministic).
 //! - **Path parameters.** `{id}` / `{uuid}` / `{hash}` / `{token}` / any
-//!   `{...}` segment produced by [`normalize_url`](webrev_core::normalize_url)
+//!   `{...}` segment produced by [`normalize_url`]
 //!   becomes a required `in: path` string parameter at the path-item level
 //!   (shared by every method on that path).
 //! - **Query parameters.** Discovered [`FindingKind::Parameter`] findings are
