@@ -1,0 +1,993 @@
+{
+  "tool_version": "0.1.0",
+  "mission": {
+    "id": "fb7bf2c9-dff9-46ee-aa24-62a072f9e522",
+    "name": "webrev-mission",
+    "scope": {
+      "include": [
+        "172.20.0.7"
+      ],
+      "exclude": []
+    },
+    "seeds": [
+      "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_1?returnTo=http%3A%2F%2F172.20.0.7%2F",
+      "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_2?returnTo=http%3A%2F%2F172.20.0.7%2F",
+      "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_3?returnTo=http%3A%2F%2F172.20.0.7%2F",
+      "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_4?returnTo=http%3A%2F%2F172.20.0.7%2F",
+      "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_5?returnTo=http%3A%2F%2F172.20.0.7%2F",
+      "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_6?returnTo=http%3A%2F%2F172.20.0.7%2F",
+      "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_7?returnTo=http%3A%2F%2F172.20.0.7%2F",
+      "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_8?returnTo=http%3A%2F%2F172.20.0.7%2F",
+      "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_9?returnTo=http%3A%2F%2F172.20.0.7%2F",
+      "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_10?returnTo=http%3A%2F%2F172.20.0.7%2F",
+      "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_11?returnTo=http%3A%2F%2F172.20.0.7%2F",
+      "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_12?returnTo=http%3A%2F%2F172.20.0.7%2F"
+    ]
+  },
+  "summary": {
+    "total": 18,
+    "by_kind": {
+      "config": 3,
+      "parameter": 1,
+      "scan_coverage": 1,
+      "script": 3,
+      "technology": 1,
+      "vulnerability": 9
+    },
+    "by_confidence": {
+      "high": 14,
+      "low": 3,
+      "medium": 1
+    },
+    "by_severity": {
+      "info": 9,
+      "low": 1,
+      "medium": 8
+    },
+    "by_status": {
+      "inconclusive": 1,
+      "observed": 17
+    },
+    "endpoints_by_scope": {}
+  },
+  "endpoints": [],
+  "findings": [
+    {
+      "id": "cd65d6dc-7d8d-441b-82ec-3124e557aec2",
+      "session_id": "fb7bf2c9-dff9-46ee-aa24-62a072f9e522",
+      "kind": "Script",
+      "url": "GlobalUtility.js",
+      "value": "GlobalUtility.js",
+      "confidence": "High",
+      "provenance": {
+        "source": "Html",
+        "location": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_1?returnTo=http%3A%2F%2F172.20.0.7%2F"
+      },
+      "provenances": [
+        {
+          "source": "Html",
+          "location": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_1?returnTo=http%3A%2F%2F172.20.0.7%2F"
+        },
+        {
+          "source": "Html",
+          "location": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_9?returnTo=http%3A%2F%2F172.20.0.7%2F"
+        },
+        {
+          "source": "Html",
+          "location": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_10?returnTo=http%3A%2F%2F172.20.0.7%2F"
+        }
+      ],
+      "detectors": [
+        "html"
+      ],
+      "status": "observed"
+    },
+    {
+      "id": "ba41dce5-59e4-4555-b082-6eea33f7b563",
+      "session_id": "fb7bf2c9-dff9-46ee-aa24-62a072f9e522",
+      "kind": "Script",
+      "url": "/static/js/2.84b3f739.chunk.js",
+      "value": "/static/js/2.84b3f739.chunk.js",
+      "confidence": "High",
+      "provenance": {
+        "source": "Html",
+        "location": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_1?returnTo=http%3A%2F%2F172.20.0.7%2F"
+      },
+      "provenances": [
+        {
+          "source": "Html",
+          "location": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_1?returnTo=http%3A%2F%2F172.20.0.7%2F"
+        },
+        {
+          "source": "Html",
+          "location": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_9?returnTo=http%3A%2F%2F172.20.0.7%2F"
+        },
+        {
+          "source": "Html",
+          "location": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_10?returnTo=http%3A%2F%2F172.20.0.7%2F"
+        }
+      ],
+      "detectors": [
+        "html"
+      ],
+      "status": "observed"
+    },
+    {
+      "id": "1a08df78-a44d-48df-ae8e-2c48792ea3cd",
+      "session_id": "fb7bf2c9-dff9-46ee-aa24-62a072f9e522",
+      "kind": "Script",
+      "url": "/static/js/main.f15785fd.chunk.js",
+      "value": "/static/js/main.f15785fd.chunk.js",
+      "confidence": "High",
+      "provenance": {
+        "source": "Html",
+        "location": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_1?returnTo=http%3A%2F%2F172.20.0.7%2F"
+      },
+      "provenances": [
+        {
+          "source": "Html",
+          "location": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_1?returnTo=http%3A%2F%2F172.20.0.7%2F"
+        },
+        {
+          "source": "Html",
+          "location": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_9?returnTo=http%3A%2F%2F172.20.0.7%2F"
+        },
+        {
+          "source": "Html",
+          "location": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_10?returnTo=http%3A%2F%2F172.20.0.7%2F"
+        }
+      ],
+      "detectors": [
+        "html"
+      ],
+      "status": "observed"
+    },
+    {
+      "id": "cdfaa529-a9bb-4c1e-a694-285b86ba0ed1",
+      "session_id": "fb7bf2c9-dff9-46ee-aa24-62a072f9e522",
+      "kind": "Technology",
+      "url": null,
+      "value": "Webpack (build)",
+      "confidence": "High",
+      "provenance": {
+        "source": "Html",
+        "location": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_1?returnTo=http%3A%2F%2F172.20.0.7%2F"
+      },
+      "provenances": [
+        {
+          "source": "Html",
+          "location": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_1?returnTo=http%3A%2F%2F172.20.0.7%2F"
+        },
+        {
+          "source": "Html",
+          "location": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_9?returnTo=http%3A%2F%2F172.20.0.7%2F"
+        },
+        {
+          "source": "Html",
+          "location": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_10?returnTo=http%3A%2F%2F172.20.0.7%2F"
+        }
+      ],
+      "detectors": [
+        "tech"
+      ],
+      "status": "observed"
+    },
+    {
+      "id": "ed36b78c-e606-4208-b4bb-92bc4c029cef",
+      "session_id": "fb7bf2c9-dff9-46ee-aa24-62a072f9e522",
+      "kind": "Parameter",
+      "url": null,
+      "value": "returnTo",
+      "confidence": "Low",
+      "provenance": {
+        "source": "JsRegex",
+        "location": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_1?returnTo=http%3A%2F%2F172.20.0.7%2F"
+      },
+      "provenances": [
+        {
+          "source": "JsRegex",
+          "location": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_1?returnTo=http%3A%2F%2F172.20.0.7%2F"
+        },
+        {
+          "source": "JsRegex",
+          "location": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_2?returnTo=http%3A%2F%2F172.20.0.7%2F"
+        },
+        {
+          "source": "JsRegex",
+          "location": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_3?returnTo=http%3A%2F%2F172.20.0.7%2F"
+        },
+        {
+          "source": "JsRegex",
+          "location": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_4?returnTo=http%3A%2F%2F172.20.0.7%2F"
+        },
+        {
+          "source": "JsRegex",
+          "location": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_5?returnTo=http%3A%2F%2F172.20.0.7%2F"
+        },
+        {
+          "source": "JsRegex",
+          "location": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_6?returnTo=http%3A%2F%2F172.20.0.7%2F"
+        },
+        {
+          "source": "JsRegex",
+          "location": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_7?returnTo=http%3A%2F%2F172.20.0.7%2F"
+        },
+        {
+          "source": "JsRegex",
+          "location": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_8?returnTo=http%3A%2F%2F172.20.0.7%2F"
+        },
+        {
+          "source": "JsRegex",
+          "location": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_9?returnTo=http%3A%2F%2F172.20.0.7%2F"
+        },
+        {
+          "source": "JsRegex",
+          "location": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_10?returnTo=http%3A%2F%2F172.20.0.7%2F"
+        },
+        {
+          "source": "JsRegex",
+          "location": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_11?returnTo=http%3A%2F%2F172.20.0.7%2F"
+        },
+        {
+          "source": "JsRegex",
+          "location": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_12?returnTo=http%3A%2F%2F172.20.0.7%2F"
+        }
+      ],
+      "detectors": [
+        "params"
+      ],
+      "status": "observed"
+    },
+    {
+      "id": "97c9af93-2fe2-4654-9fe2-7057f34c15fb",
+      "session_id": "fb7bf2c9-dff9-46ee-aa24-62a072f9e522",
+      "kind": "Config",
+      "url": null,
+      "value": "no Content-Security-Policy present",
+      "confidence": "Medium",
+      "provenance": {
+        "source": "Html",
+        "location": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_1?returnTo=http%3A%2F%2F172.20.0.7%2F"
+      },
+      "provenances": [
+        {
+          "source": "Html",
+          "location": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_1?returnTo=http%3A%2F%2F172.20.0.7%2F"
+        },
+        {
+          "source": "Html",
+          "location": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_2?returnTo=http%3A%2F%2F172.20.0.7%2F"
+        },
+        {
+          "source": "Html",
+          "location": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_3?returnTo=http%3A%2F%2F172.20.0.7%2F"
+        },
+        {
+          "source": "Html",
+          "location": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_4?returnTo=http%3A%2F%2F172.20.0.7%2F"
+        },
+        {
+          "source": "Html",
+          "location": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_5?returnTo=http%3A%2F%2F172.20.0.7%2F"
+        },
+        {
+          "source": "Html",
+          "location": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_6?returnTo=http%3A%2F%2F172.20.0.7%2F"
+        },
+        {
+          "source": "Html",
+          "location": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_7?returnTo=http%3A%2F%2F172.20.0.7%2F"
+        },
+        {
+          "source": "Html",
+          "location": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_8?returnTo=http%3A%2F%2F172.20.0.7%2F"
+        },
+        {
+          "source": "Html",
+          "location": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_9?returnTo=http%3A%2F%2F172.20.0.7%2F"
+        },
+        {
+          "source": "Html",
+          "location": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_10?returnTo=http%3A%2F%2F172.20.0.7%2F"
+        },
+        {
+          "source": "Html",
+          "location": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_11?returnTo=http%3A%2F%2F172.20.0.7%2F"
+        },
+        {
+          "source": "Html",
+          "location": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_12?returnTo=http%3A%2F%2F172.20.0.7%2F"
+        }
+      ],
+      "detectors": [
+        "csp"
+      ],
+      "status": "observed"
+    },
+    {
+      "id": "d22f4692-3b6a-433e-aa8b-f9715d3570b0",
+      "session_id": "fb7bf2c9-dff9-46ee-aa24-62a072f9e522",
+      "kind": "Config",
+      "url": null,
+      "value": "missing X-Frame-Options header (clickjacking exposure)",
+      "confidence": "Low",
+      "provenance": {
+        "source": "Html",
+        "location": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_1?returnTo=http%3A%2F%2F172.20.0.7%2F"
+      },
+      "provenances": [
+        {
+          "source": "Html",
+          "location": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_1?returnTo=http%3A%2F%2F172.20.0.7%2F"
+        },
+        {
+          "source": "Html",
+          "location": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_2?returnTo=http%3A%2F%2F172.20.0.7%2F"
+        },
+        {
+          "source": "Html",
+          "location": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_3?returnTo=http%3A%2F%2F172.20.0.7%2F"
+        },
+        {
+          "source": "Html",
+          "location": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_4?returnTo=http%3A%2F%2F172.20.0.7%2F"
+        },
+        {
+          "source": "Html",
+          "location": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_5?returnTo=http%3A%2F%2F172.20.0.7%2F"
+        },
+        {
+          "source": "Html",
+          "location": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_6?returnTo=http%3A%2F%2F172.20.0.7%2F"
+        },
+        {
+          "source": "Html",
+          "location": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_7?returnTo=http%3A%2F%2F172.20.0.7%2F"
+        },
+        {
+          "source": "Html",
+          "location": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_8?returnTo=http%3A%2F%2F172.20.0.7%2F"
+        },
+        {
+          "source": "Html",
+          "location": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_9?returnTo=http%3A%2F%2F172.20.0.7%2F"
+        },
+        {
+          "source": "Html",
+          "location": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_10?returnTo=http%3A%2F%2F172.20.0.7%2F"
+        },
+        {
+          "source": "Html",
+          "location": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_11?returnTo=http%3A%2F%2F172.20.0.7%2F"
+        },
+        {
+          "source": "Html",
+          "location": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_12?returnTo=http%3A%2F%2F172.20.0.7%2F"
+        }
+      ],
+      "detectors": [
+        "csp"
+      ],
+      "status": "observed"
+    },
+    {
+      "id": "0364a4ba-be16-4351-96d9-987937c7518b",
+      "session_id": "fb7bf2c9-dff9-46ee-aa24-62a072f9e522",
+      "kind": "Config",
+      "url": null,
+      "value": "missing Referrer-Policy header",
+      "confidence": "Low",
+      "provenance": {
+        "source": "Html",
+        "location": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_1?returnTo=http%3A%2F%2F172.20.0.7%2F"
+      },
+      "provenances": [
+        {
+          "source": "Html",
+          "location": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_1?returnTo=http%3A%2F%2F172.20.0.7%2F"
+        },
+        {
+          "source": "Html",
+          "location": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_2?returnTo=http%3A%2F%2F172.20.0.7%2F"
+        },
+        {
+          "source": "Html",
+          "location": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_3?returnTo=http%3A%2F%2F172.20.0.7%2F"
+        },
+        {
+          "source": "Html",
+          "location": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_4?returnTo=http%3A%2F%2F172.20.0.7%2F"
+        },
+        {
+          "source": "Html",
+          "location": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_5?returnTo=http%3A%2F%2F172.20.0.7%2F"
+        },
+        {
+          "source": "Html",
+          "location": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_6?returnTo=http%3A%2F%2F172.20.0.7%2F"
+        },
+        {
+          "source": "Html",
+          "location": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_7?returnTo=http%3A%2F%2F172.20.0.7%2F"
+        },
+        {
+          "source": "Html",
+          "location": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_8?returnTo=http%3A%2F%2F172.20.0.7%2F"
+        },
+        {
+          "source": "Html",
+          "location": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_9?returnTo=http%3A%2F%2F172.20.0.7%2F"
+        },
+        {
+          "source": "Html",
+          "location": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_10?returnTo=http%3A%2F%2F172.20.0.7%2F"
+        },
+        {
+          "source": "Html",
+          "location": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_11?returnTo=http%3A%2F%2F172.20.0.7%2F"
+        },
+        {
+          "source": "Html",
+          "location": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_12?returnTo=http%3A%2F%2F172.20.0.7%2F"
+        }
+      ],
+      "detectors": [
+        "csp"
+      ],
+      "status": "observed"
+    },
+    {
+      "id": "7fe7a095-8b26-4b7b-8132-cf0ebeddd612",
+      "session_id": "fb7bf2c9-dff9-46ee-aa24-62a072f9e522",
+      "kind": "Vulnerability",
+      "url": "http://172.20.0.7/",
+      "value": "missing security header(s): Content-Security-Policy, X-Content-Type-Options, X-Frame-Options",
+      "confidence": "High",
+      "provenance": {
+        "source": "Active",
+        "location": null
+      },
+      "provenances": [
+        {
+          "source": "Active",
+          "location": null
+        }
+      ],
+      "detectors": [
+        "headers_and_cookies"
+      ],
+      "status": "observed",
+      "justification": "Header and cookie observations are advisory; application exploitability was not tested.",
+      "evidence": {
+        "check": "headers_and_cookies",
+        "parameter": null,
+        "verdict": "observed",
+        "observations": [
+          {
+            "role": "baseline",
+            "method": "GET",
+            "url": "http://172.20.0.7/",
+            "status": 200,
+            "authenticated": false,
+            "content_type": "text/html",
+            "body_bytes": 2398,
+            "excerpt": ""
+          }
+        ],
+        "limitation": "Header and cookie observations are advisory; application exploitability was not tested."
+      }
+    },
+    {
+      "id": "5fe862d0-11ec-4cda-b9a6-df32280b7f6b",
+      "session_id": "fb7bf2c9-dff9-46ee-aa24-62a072f9e522",
+      "kind": "Vulnerability",
+      "url": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_1?returnTo=https%3A%2F%2Fwebrev-redirect-probe.invalid%2Ff872b6d6c68589c6",
+      "value": "open redirect via 'returnTo' parameter (Location: https://webrev-redirect-probe.invalid/f872b6d6c68589c6)",
+      "confidence": "High",
+      "provenance": {
+        "source": "Active",
+        "location": null
+      },
+      "provenances": [
+        {
+          "source": "Active",
+          "location": null
+        }
+      ],
+      "detectors": [
+        "open_redirect"
+      ],
+      "status": "observed",
+      "justification": "The randomized external .invalid destination was present as the resolved Location; the scanner did not follow it.",
+      "evidence": {
+        "check": "open_redirect",
+        "parameter": "returnTo",
+        "verdict": "observed",
+        "observations": [
+          {
+            "role": "probe",
+            "method": "GET",
+            "url": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_1?returnTo=https%3A%2F%2Fwebrev-redirect-probe.invalid%2Ff872b6d6c68589c6",
+            "status": 302,
+            "authenticated": false,
+            "content_type": "",
+            "body_bytes": 0,
+            "excerpt": "https://webrev-redirect-probe.invalid/f872b6d6c68589c6"
+          }
+        ],
+        "limitation": "The randomized external .invalid destination was present as the resolved Location; the scanner did not follow it."
+      }
+    },
+    {
+      "id": "1253d327-de94-492c-a175-c83004654e27",
+      "session_id": "fb7bf2c9-dff9-46ee-aa24-62a072f9e522",
+      "kind": "Vulnerability",
+      "url": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_2?returnTo=%2F%2Fwebrev-redirect-probe.invalid%2F83e6f6cb4a9cd7f0",
+      "value": "open redirect via 'returnTo' parameter (protocol-relative destination) (Location: //webrev-redirect-probe.invalid/83e6f6cb4a9cd7f0)",
+      "confidence": "High",
+      "provenance": {
+        "source": "Active",
+        "location": null
+      },
+      "provenances": [
+        {
+          "source": "Active",
+          "location": null
+        }
+      ],
+      "detectors": [
+        "open_redirect"
+      ],
+      "status": "observed",
+      "justification": "The randomized external .invalid destination was present as the resolved Location; the scanner did not follow it.",
+      "evidence": {
+        "check": "open_redirect",
+        "parameter": "returnTo",
+        "verdict": "observed",
+        "observations": [
+          {
+            "role": "probe",
+            "method": "GET",
+            "url": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_2?returnTo=%2F%2Fwebrev-redirect-probe.invalid%2F83e6f6cb4a9cd7f0",
+            "status": 302,
+            "authenticated": false,
+            "content_type": "",
+            "body_bytes": 0,
+            "excerpt": "//webrev-redirect-probe.invalid/83e6f6cb4a9cd7f0"
+          }
+        ],
+        "limitation": "The randomized external .invalid destination was present as the resolved Location; the scanner did not follow it."
+      }
+    },
+    {
+      "id": "aca8c9dc-c6dd-4a81-92c2-eb0838f27170",
+      "session_id": "fb7bf2c9-dff9-46ee-aa24-62a072f9e522",
+      "kind": "Vulnerability",
+      "url": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_3?returnTo=%09%2F%2Fwebrev-redirect-probe.invalid%2F5e88151d7db8e10c",
+      "value": "open redirect via 'returnTo' parameter (tab-prefixed protocol-relative destination) (Location: //webrev-redirect-probe.invalid/5e88151d7db8e10c)",
+      "confidence": "High",
+      "provenance": {
+        "source": "Active",
+        "location": null
+      },
+      "provenances": [
+        {
+          "source": "Active",
+          "location": null
+        }
+      ],
+      "detectors": [
+        "open_redirect"
+      ],
+      "status": "observed",
+      "justification": "The randomized external .invalid destination was present as the resolved Location; the scanner did not follow it.",
+      "evidence": {
+        "check": "open_redirect",
+        "parameter": "returnTo",
+        "verdict": "observed",
+        "observations": [
+          {
+            "role": "probe",
+            "method": "GET",
+            "url": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_3?returnTo=%09%2F%2Fwebrev-redirect-probe.invalid%2F5e88151d7db8e10c",
+            "status": 302,
+            "authenticated": false,
+            "content_type": "",
+            "body_bytes": 0,
+            "excerpt": "//webrev-redirect-probe.invalid/5e88151d7db8e10c"
+          }
+        ],
+        "limitation": "The randomized external .invalid destination was present as the resolved Location; the scanner did not follow it."
+      }
+    },
+    {
+      "id": "54ee1a77-6217-4637-a1db-a125078582c9",
+      "session_id": "fb7bf2c9-dff9-46ee-aa24-62a072f9e522",
+      "kind": "Vulnerability",
+      "url": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_4?returnTo=%09%2F%2Fwebrev-redirect-probe.invalid%2Fa6c3cb6faf30b87e",
+      "value": "open redirect via 'returnTo' parameter (tab-prefixed protocol-relative destination) (Location: //webrev-redirect-probe.invalid/a6c3cb6faf30b87e)",
+      "confidence": "High",
+      "provenance": {
+        "source": "Active",
+        "location": null
+      },
+      "provenances": [
+        {
+          "source": "Active",
+          "location": null
+        }
+      ],
+      "detectors": [
+        "open_redirect"
+      ],
+      "status": "observed",
+      "justification": "The randomized external .invalid destination was present as the resolved Location; the scanner did not follow it.",
+      "evidence": {
+        "check": "open_redirect",
+        "parameter": "returnTo",
+        "verdict": "observed",
+        "observations": [
+          {
+            "role": "probe",
+            "method": "GET",
+            "url": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_4?returnTo=%09%2F%2Fwebrev-redirect-probe.invalid%2Fa6c3cb6faf30b87e",
+            "status": 302,
+            "authenticated": false,
+            "content_type": "",
+            "body_bytes": 0,
+            "excerpt": "//webrev-redirect-probe.invalid/a6c3cb6faf30b87e"
+          }
+        ],
+        "limitation": "The randomized external .invalid destination was present as the resolved Location; the scanner did not follow it."
+      }
+    },
+    {
+      "id": "341f6317-95d4-4b27-9c54-33fcbbf941c9",
+      "session_id": "fb7bf2c9-dff9-46ee-aa24-62a072f9e522",
+      "kind": "Vulnerability",
+      "url": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_5?returnTo=%5C%2Fwebrev-redirect-probe.invalid%2Fc787d6a295517c28",
+      "value": "open redirect via 'returnTo' parameter (backslash URL separator) (Location: \\/webrev-redirect-probe.invalid/c787d6a295517c28)",
+      "confidence": "High",
+      "provenance": {
+        "source": "Active",
+        "location": null
+      },
+      "provenances": [
+        {
+          "source": "Active",
+          "location": null
+        }
+      ],
+      "detectors": [
+        "open_redirect"
+      ],
+      "status": "observed",
+      "justification": "The randomized external .invalid destination was present as the resolved Location; the scanner did not follow it.",
+      "evidence": {
+        "check": "open_redirect",
+        "parameter": "returnTo",
+        "verdict": "observed",
+        "observations": [
+          {
+            "role": "probe",
+            "method": "GET",
+            "url": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_5?returnTo=%5C%2Fwebrev-redirect-probe.invalid%2Fc787d6a295517c28",
+            "status": 302,
+            "authenticated": false,
+            "content_type": "",
+            "body_bytes": 0,
+            "excerpt": "\\/webrev-redirect-probe.invalid/c787d6a295517c28"
+          }
+        ],
+        "limitation": "The randomized external .invalid destination was present as the resolved Location; the scanner did not follow it."
+      }
+    },
+    {
+      "id": "f67196e3-0091-48d8-98d0-eb47994aba24",
+      "session_id": "fb7bf2c9-dff9-46ee-aa24-62a072f9e522",
+      "kind": "Vulnerability",
+      "url": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_6?returnTo=%40webrev-redirect-probe.invalid%2F461aa5ebb3d8674c",
+      "value": "open redirect via 'returnTo' parameter (authority-prefix bypass) (Location: http://VulnerableApp-base:9090@webrev-redirect-probe.invalid/461aa5ebb3d8674c)",
+      "confidence": "High",
+      "provenance": {
+        "source": "Active",
+        "location": null
+      },
+      "provenances": [
+        {
+          "source": "Active",
+          "location": null
+        }
+      ],
+      "detectors": [
+        "open_redirect"
+      ],
+      "status": "observed",
+      "justification": "The randomized external .invalid destination was present as the resolved Location; the scanner did not follow it.",
+      "evidence": {
+        "check": "open_redirect",
+        "parameter": "returnTo",
+        "verdict": "observed",
+        "observations": [
+          {
+            "role": "probe",
+            "method": "GET",
+            "url": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_6?returnTo=%40webrev-redirect-probe.invalid%2F461aa5ebb3d8674c",
+            "status": 302,
+            "authenticated": false,
+            "content_type": "",
+            "body_bytes": 0,
+            "excerpt": "http://VulnerableApp-base:9090@webrev-redirect-probe.invalid/461aa5ebb3d8674c"
+          }
+        ],
+        "limitation": "The randomized external .invalid destination was present as the resolved Location; the scanner did not follow it."
+      }
+    },
+    {
+      "id": "f336cb30-ecef-459c-ae97-4e1ae349326b",
+      "session_id": "fb7bf2c9-dff9-46ee-aa24-62a072f9e522",
+      "kind": "Vulnerability",
+      "url": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_9?returnTo=https%3A%2F%2Fwebrev-redirect-probe.invalid%2F194dbe294dac6e6c",
+      "value": "open redirect via 'returnTo' parameter (Location: https://webrev-redirect-probe.invalid/194dbe294dac6e6c)",
+      "confidence": "High",
+      "provenance": {
+        "source": "Active",
+        "location": null
+      },
+      "provenances": [
+        {
+          "source": "Active",
+          "location": null
+        }
+      ],
+      "detectors": [
+        "open_redirect"
+      ],
+      "status": "observed",
+      "justification": "The randomized external .invalid destination was present as the resolved Location; the scanner did not follow it.",
+      "evidence": {
+        "check": "open_redirect",
+        "parameter": "returnTo",
+        "verdict": "observed",
+        "observations": [
+          {
+            "role": "probe",
+            "method": "GET",
+            "url": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_9?returnTo=https%3A%2F%2Fwebrev-redirect-probe.invalid%2F194dbe294dac6e6c",
+            "status": 302,
+            "authenticated": false,
+            "content_type": "",
+            "body_bytes": 0,
+            "excerpt": "https://webrev-redirect-probe.invalid/194dbe294dac6e6c"
+          }
+        ],
+        "limitation": "The randomized external .invalid destination was present as the resolved Location; the scanner did not follow it."
+      }
+    },
+    {
+      "id": "26bd8dee-a1d8-482c-9f03-13bde5312db3",
+      "session_id": "fb7bf2c9-dff9-46ee-aa24-62a072f9e522",
+      "kind": "Vulnerability",
+      "url": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_10?returnTo=https%3A%2F%2Fwebrev-redirect-probe.invalid%2F1ad7103c2eb04baa",
+      "value": "open redirect via 'returnTo' parameter (Location: https://webrev-redirect-probe.invalid/1ad7103c2eb04baa)",
+      "confidence": "High",
+      "provenance": {
+        "source": "Active",
+        "location": null
+      },
+      "provenances": [
+        {
+          "source": "Active",
+          "location": null
+        }
+      ],
+      "detectors": [
+        "open_redirect"
+      ],
+      "status": "observed",
+      "justification": "The randomized external .invalid destination was present as the resolved Location; the scanner did not follow it.",
+      "evidence": {
+        "check": "open_redirect",
+        "parameter": "returnTo",
+        "verdict": "observed",
+        "observations": [
+          {
+            "role": "probe",
+            "method": "GET",
+            "url": "http://172.20.0.7/VulnerableApp/Http3xxStatusCodeBasedInjection/LEVEL_10?returnTo=https%3A%2F%2Fwebrev-redirect-probe.invalid%2F1ad7103c2eb04baa",
+            "status": 302,
+            "authenticated": false,
+            "content_type": "",
+            "body_bytes": 0,
+            "excerpt": "https://webrev-redirect-probe.invalid/1ad7103c2eb04baa"
+          }
+        ],
+        "limitation": "The randomized external .invalid destination was present as the resolved Location; the scanner did not follow it."
+      }
+    },
+    {
+      "id": "c75a0a94-8888-4955-9100-b049c6a494c9",
+      "session_id": "fb7bf2c9-dff9-46ee-aa24-62a072f9e522",
+      "kind": "ScanCoverage",
+      "url": null,
+      "value": "active coverage: incomplete / no clean verdict; 160 / 160 requests, 160 responses, 0 transport errors, 12 HTTP refused, 0 scope refused, 0 oversized, 0 method skips, 0 query-auth skips; cancelled=false, budget_exhausted=true, target_limit=false, parameter_limit=false",
+      "confidence": "High",
+      "provenance": {
+        "source": "Active",
+        "location": null
+      },
+      "provenances": [
+        {
+          "source": "Active",
+          "location": null
+        }
+      ],
+      "detectors": [
+        "active_coverage"
+      ],
+      "status": "inconclusive",
+      "justification": "incomplete / no clean verdict",
+      "coverage": {
+        "request_limit": 160,
+        "requests": 160,
+        "responses": 160,
+        "transport_errors": 0,
+        "refused_responses": 12,
+        "oversized_responses": 0,
+        "out_of_scope": 0,
+        "skipped_methods": 0,
+        "skipped_query_auth": 0,
+        "cancelled": false,
+        "budget_exhausted": true,
+        "target_limit_reached": false,
+        "parameter_limit_reached": false,
+        "checks": {
+          "anonymous_access": {
+            "attempted": 0,
+            "executed": 0,
+            "not_executed": 0,
+            "not_selected": 1,
+            "negative": 0,
+            "refused": 0,
+            "scope_refused": 0,
+            "errors": 0,
+            "findings": 0,
+            "inconclusive": 0
+          },
+          "api_cors": {
+            "attempted": 1,
+            "executed": 1,
+            "not_executed": 0,
+            "not_selected": 0,
+            "negative": 1,
+            "refused": 0,
+            "scope_refused": 0,
+            "errors": 0,
+            "findings": 0,
+            "inconclusive": 0
+          },
+          "crlf_injection": {
+            "attempted": 11,
+            "executed": 11,
+            "not_executed": 0,
+            "not_selected": 0,
+            "negative": 10,
+            "refused": 1,
+            "scope_refused": 0,
+            "errors": 0,
+            "findings": 0,
+            "inconclusive": 0
+          },
+          "graphql_introspection": {
+            "attempted": 0,
+            "executed": 0,
+            "not_executed": 0,
+            "not_selected": 1,
+            "negative": 0,
+            "refused": 0,
+            "scope_refused": 0,
+            "errors": 0,
+            "findings": 0,
+            "inconclusive": 0
+          },
+          "open_redirect": {
+            "attempted": 11,
+            "executed": 11,
+            "not_executed": 0,
+            "not_selected": 0,
+            "negative": 2,
+            "refused": 1,
+            "scope_refused": 0,
+            "errors": 0,
+            "findings": 8,
+            "inconclusive": 0
+          },
+          "origin": {
+            "attempted": 1,
+            "executed": 1,
+            "not_executed": 0,
+            "not_selected": 0,
+            "negative": 0,
+            "refused": 0,
+            "scope_refused": 0,
+            "errors": 0,
+            "findings": 1,
+            "inconclusive": 0
+          },
+          "parameter_fuzz": {
+            "attempted": 11,
+            "executed": 11,
+            "not_executed": 0,
+            "not_selected": 0,
+            "negative": 0,
+            "refused": 1,
+            "scope_refused": 0,
+            "errors": 0,
+            "findings": 0,
+            "inconclusive": 6
+          },
+          "path_traversal": {
+            "attempted": 0,
+            "executed": 0,
+            "not_executed": 0,
+            "not_selected": 1,
+            "negative": 0,
+            "refused": 0,
+            "scope_refused": 0,
+            "errors": 0,
+            "findings": 0,
+            "inconclusive": 0
+          },
+          "prototype_pollution": {
+            "attempted": 11,
+            "executed": 11,
+            "not_executed": 0,
+            "not_selected": 0,
+            "negative": 10,
+            "refused": 1,
+            "scope_refused": 0,
+            "errors": 0,
+            "findings": 0,
+            "inconclusive": 0
+          },
+          "ssrf_signal": {
+            "attempted": 11,
+            "executed": 11,
+            "not_executed": 0,
+            "not_selected": 0,
+            "negative": 0,
+            "refused": 1,
+            "scope_refused": 0,
+            "errors": 0,
+            "findings": 0,
+            "inconclusive": 11
+          },
+          "subdomain_takeover": {
+            "attempted": 1,
+            "executed": 1,
+            "not_executed": 0,
+            "not_selected": 0,
+            "negative": 1,
+            "refused": 0,
+            "scope_refused": 0,
+            "errors": 0,
+            "findings": 0,
+            "inconclusive": 0
+          },
+          "template_arithmetic": {
+            "attempted": 11,
+            "executed": 11,
+            "not_executed": 0,
+            "not_selected": 0,
+            "negative": 0,
+            "refused": 1,
+            "scope_refused": 0,
+            "errors": 0,
+            "findings": 0,
+            "inconclusive": 6
+          }
+        }
+      }
+    }
+  ]
+}

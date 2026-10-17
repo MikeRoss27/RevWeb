@@ -6,6 +6,20 @@ use tokio::net::{TcpListener, TcpStream};
 use tokio::time::timeout;
 use webrev_core::Scope;
 
+/// Linux routes all of 127.0.0.0/8 to loopback; macOS and others only 127.0.0.1.
+fn loopback_alias_available() -> bool {
+    std::net::TcpListener::bind(("127.0.0.2", 0)).is_ok()
+}
+
+macro_rules! require_loopback_alias {
+    () => {
+        if !loopback_alias_available() {
+            eprintln!("skipped: 127.0.0.2 is not bindable on this platform");
+            return;
+        }
+    };
+}
+
 async fn listener(host: &str) -> TcpListener {
     TcpListener::bind((host, 0)).await.unwrap()
 }
@@ -50,6 +64,7 @@ async fn authorized_http_preserves_body_auth_and_host() {
 
 #[tokio::test]
 async fn refused_http_upgrade_and_connect_never_reach_destination() {
+    require_loopback_alias!();
     let target = listener("127.0.0.2").await;
     let address = target.local_addr().unwrap();
     let proxy = ScopedEgressProxy::start(scope(), None).await.unwrap();
@@ -240,6 +255,7 @@ async fn silent(target: &TcpListener) -> bool {
 
 #[tokio::test]
 async fn ip_spellings_cannot_bypass_address_exclusion() {
+    require_loopback_alias!();
     // Decimal, hex, octal, short and IPv4-mapped forms of an excluded loopback IP.
     let target = listener("127.0.0.2").await;
     let port = target.local_addr().unwrap().port();
@@ -295,6 +311,7 @@ async fn trailing_dot_and_case_cannot_bypass_hostname_exclusion() {
 
 #[tokio::test]
 async fn userinfo_and_authority_tricks_are_rejected() {
+    require_loopback_alias!();
     let target = listener("127.0.0.2").await;
     let port = target.local_addr().unwrap().port();
     let proxy = ScopedEgressProxy::start(scope(), None).await.unwrap();
@@ -366,6 +383,7 @@ async fn ipv6_literal_connect_is_scoped_and_relayed() {
 
 #[tokio::test]
 async fn redirects_are_not_followed_and_next_hop_is_rechecked() {
+    require_loopback_alias!();
     let allowed = listener("127.0.0.1").await;
     let forbidden = listener("127.0.0.2").await;
     let port = allowed.local_addr().unwrap().port();

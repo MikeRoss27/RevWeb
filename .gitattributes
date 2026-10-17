@@ -1,0 +1,7 @@
+# Pinned corpora and archived evidence are hashed byte for byte: never convert
+# line endings, or checksums and recorded sizes break on Windows checkouts.
+benchmarks/** -text
+
+# Scripts must keep LF endings to run on every platform.
+*.sh text eol=lf
+*.py text eol=lf
