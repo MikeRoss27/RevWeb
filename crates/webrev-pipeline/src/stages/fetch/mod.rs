@@ -71,7 +71,7 @@ impl Stage for FetchStage {
             ));
         }
 
-        let client = build_client(&ctx.opsec)?;
+        let client = build_client(&ctx.opsec, &ctx.mission.scope)?;
         // Constant patterns; covered by the `resolves_and_discovers` unit test.
         let script_re = Regex::new(r#"(?i)<script[^>]+src\s*=\s*["']([^"']+)["']"#)
             .expect("constant script-src pattern must compile");
@@ -120,7 +120,9 @@ impl Stage for FetchStage {
             // Assemble the next wave of up to `effective_concurrency` fresh,
             // in-scope URLs (dedup + scope filtering happen here, at dequeue
             // time).
-            let effective_concurrency = (max_concurrency >> backoff_strikes.min(3)).max(1);
+            let effective_concurrency = (max_concurrency >> backoff_strikes.min(3))
+                .max(1)
+                .min(max_pages - processed);
             let mut wave: Vec<(String, usize)> = Vec::new();
             while wave.len() < effective_concurrency {
                 let Some((url, depth)) = queue.pop_front() else {

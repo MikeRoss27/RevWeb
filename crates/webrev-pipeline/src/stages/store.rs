@@ -8,7 +8,7 @@ use crate::stage::{PipelineItem, Stage, StageContext};
 use async_trait::async_trait;
 use std::collections::BTreeSet;
 use tokio::sync::{broadcast, mpsc};
-use webrev_core::{normalize_url, Endpoint, FindingKind, Method, Result};
+use webrev_core::{normalize_url_with_pattern, Endpoint, FindingKind, Method, Result};
 
 /// The persistence stage. Terminal in the standard pipeline; it forwards each
 /// *stored* finding downstream so the engine can count unique results.
@@ -44,10 +44,8 @@ impl Stage for StoreStage {
             stage: self.name().to_owned(),
         });
         let mut seen: BTreeSet<String> = BTreeSet::new();
-        // Endpoints are deduplicated separately, by normalized route, so the
-        // endpoints table lists `/users/{id}` once instead of every instance.
-        let mut seen_endpoints: BTreeSet<String> = BTreeSet::new();
         let mut stored = 0usize;
+        let mut resolver = crate::targets::EndpointResolver::new(&ctx.mission);
 
         loop {
             let item = tokio::select! {
@@ -64,15 +62,17 @@ impl Stage for StoreStage {
             };
 
             // Merge repeated resources without dropping distinct facts on one URL.
-            if !seen.insert(finding.dedup_key()) {
-                continue;
-            }
-
             if let Err(e) = ctx.storage.insert_finding(&finding).await {
                 let _ = events.send(PipelineEvent::Error {
                     stage: self.name().to_owned(),
                     message: format!("insert_finding: {e}"),
                 });
+                continue;
+            }
+            // Storage merges provenance and independent evidence even when
+            // this stage suppresses duplicate events and endpoint rows.
+            let first_seen = seen.insert(finding.dedup_key());
+            if !first_seen && finding.kind != FindingKind::Endpoint {
                 continue;
             }
 
@@ -84,25 +84,24 @@ impl Stage for StoreStage {
                         .split_whitespace()
                         .next()
                         .map_or(Method::Unknown, Method::parse);
-                    let raw = crate::targets::resolve_endpoint_url(&ctx.mission, &finding)
-                        .map_or_else(
-                            || finding.url.clone().unwrap_or_else(|| finding.value.clone()),
-                            |url| url.to_string(),
-                        );
-                    let normalized = normalize_url(&raw);
+                    let raw = resolver.resolve(&finding).map_or_else(
+                        || finding.url.clone().unwrap_or_else(|| finding.value.clone()),
+                        |url| url.to_string(),
+                    );
+                    let (normalized, inferred_pattern) = normalize_url_with_pattern(&raw);
                     // Classify against the mission scope on the raw (host-bearing)
                     // URL before normalization strips nothing host-relevant.
                     let endpoint_scope = ctx.mission.scope.classify(&raw);
-                    if seen_endpoints.insert(format!("{method} {normalized}")) {
-                        let endpoint = Endpoint::new(normalized, method, finding.provenance.source)
-                            .with_scope(endpoint_scope);
-                        if let Err(e) = ctx.storage.insert_endpoint(ctx.session_id, &endpoint).await
-                        {
-                            let _ = events.send(PipelineEvent::Error {
-                                stage: self.name().to_owned(),
-                                message: format!("insert_endpoint: {e}"),
-                            });
-                        }
+                    let mut endpoint = Endpoint::new(normalized, method, finding.provenance.source)
+                        .with_scope(endpoint_scope);
+                    if inferred_pattern {
+                        endpoint = endpoint.with_inferred_pattern();
+                    }
+                    if let Err(e) = ctx.storage.insert_endpoint(ctx.session_id, &endpoint).await {
+                        let _ = events.send(PipelineEvent::Error {
+                            stage: self.name().to_owned(),
+                            message: format!("insert_endpoint: {e}"),
+                        });
                     }
                 }
                 FindingKind::Secret => {
@@ -135,6 +134,10 @@ impl Stage for StoreStage {
                 | FindingKind::Vulnerability
                 | FindingKind::Idor
                 | FindingKind::ScanCoverage => {}
+            }
+
+            if !first_seen {
+                continue;
             }
 
             let _ = events.send(PipelineEvent::Finding(Box::new(finding.clone())));

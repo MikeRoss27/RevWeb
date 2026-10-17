@@ -7,7 +7,10 @@
 
 use std::sync::Arc;
 use tokio_util::sync::CancellationToken;
-use webrev_core::{FindingKind, Mission, OpsecConfig, Scope};
+use webrev_core::{
+    Confidence, EndpointConfidence, Finding, FindingKind, Mission, OpsecConfig, Provenance, Scope,
+    Source,
+};
 use webrev_extract::{ContentKind, ExtractorRegistry};
 use webrev_pipeline::stages::{StaticExtractStage, StoreStage};
 use webrev_pipeline::{PipelineBuilder, PipelineItem, StageContext};
@@ -115,4 +118,119 @@ async fn pipeline_extracts_and_stores_fixture_findings() {
     );
     assert!(has(FindingKind::GraphQl, "CurrentUser"), "graphql op");
     assert!(has(FindingKind::Route, "/dashboard"), "spa route");
+}
+
+#[tokio::test]
+async fn endpoint_confidence_tracks_observation_and_pattern_inference() {
+    let mission = Mission::new(
+        "confidence",
+        Scope::new(vec!["fixture.test".into()], vec![]),
+        vec!["https://fixture.test".into()],
+    );
+    let storage: Arc<dyn Storage> = Arc::new(InMemoryStorage::new());
+    storage.create_session(&mission).await.unwrap();
+    let ctx = StageContext::new(
+        Arc::new(mission.clone()),
+        Arc::new(OpsecConfig::default()),
+        Arc::new(ExtractorRegistry::with_defaults()),
+        Arc::clone(&storage),
+        CancellationToken::new(),
+    );
+    let endpoint = |path: &str, source| {
+        Finding::new(
+            mission.id,
+            FindingKind::Endpoint,
+            Some(format!("https://fixture.test{path}")),
+            format!("GET {path}"),
+            Confidence::Medium,
+            Provenance::new(source, None),
+        )
+    };
+    PipelineBuilder::new()
+        .add_stage(Arc::new(StoreStage::new()))
+        .run(
+            ctx,
+            vec![
+                PipelineItem::Finding(endpoint("/api/users", Source::JsAst)),
+                PipelineItem::Finding(endpoint("/api/users", Source::Browser)),
+                PipelineItem::Finding(endpoint("/api/users/123", Source::Browser)),
+            ],
+        )
+        .await
+        .unwrap();
+
+    let endpoints = storage.endpoints_by_session(mission.id).await.unwrap();
+    assert_eq!(endpoints.len(), 2);
+    let exact = endpoints
+        .iter()
+        .find(|e| e.url.ends_with("/api/users"))
+        .unwrap();
+    assert_eq!(exact.source, Source::Browser);
+    assert_eq!(exact.confidence, EndpointConfidence::Observed);
+    let template = endpoints
+        .iter()
+        .find(|e| e.url.ends_with("/api/users/{id}"))
+        .unwrap();
+    assert_eq!(template.source, Source::Browser);
+    assert_eq!(template.confidence, EndpointConfidence::Inferred);
+}
+
+#[tokio::test]
+async fn static_stage_links_only_collected_modules_when_dom_detector_is_registered() {
+    for enabled in [true, false] {
+        let mission = Mission::new(
+            "modules",
+            Scope::new(vec!["fixture.test".into()], vec![]),
+            vec![],
+        );
+        let session = mission.id;
+        let storage: Arc<dyn Storage> = Arc::new(InMemoryStorage::new());
+        storage.create_session(&mission).await.expect("session");
+        let mut registry = ExtractorRegistry::new();
+        if enabled {
+            registry.register(Box::new(webrev_extract::extractors::DomSinkExtractor::new()));
+        }
+        let ctx = StageContext::new(
+            Arc::new(mission),
+            Arc::new(OpsecConfig::default()),
+            Arc::new(registry),
+            Arc::clone(&storage),
+            CancellationToken::new(),
+        );
+        let seed = [
+            ("source.js", "export const payload = location.hash;"),
+            (
+                "sink.js",
+                "import {payload} from './source.js'; eval(payload);",
+            ),
+        ]
+        .into_iter()
+        .map(|(file, body)| PipelineItem::Content {
+            url: Some(format!("https://fixture.test/{file}")),
+            kind: ContentKind::JavaScript,
+            body: body.to_owned(),
+            headers: Vec::new(),
+            bytes: None,
+        })
+        .collect();
+        PipelineBuilder::new()
+            .add_stage(Arc::new(StaticExtractStage::new()))
+            .add_stage(Arc::new(StoreStage::new()))
+            .run(ctx, seed)
+            .await
+            .expect("pipeline");
+        let stored = storage
+            .findings_by_session(session)
+            .await
+            .expect("findings");
+        let flows: Vec<_> = stored
+            .iter()
+            .filter(|finding| finding.value == "DOM XSS: location.hash -> eval")
+            .collect();
+        assert_eq!(flows.len(), usize::from(enabled));
+        if enabled {
+            assert_eq!(flows[0].status, webrev_core::FindingStatus::Suspicious);
+            assert_eq!(flows[0].provenances.len(), 2);
+        }
+    }
 }

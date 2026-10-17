@@ -4,6 +4,29 @@ use super::*;
 use std::time::Duration;
 use webrev_core::Scope;
 
+#[tokio::test]
+async fn crawl_client_stops_before_out_of_scope_redirect() {
+    use std::io::{Read, Write};
+    let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+    let port = listener.local_addr().unwrap().port();
+    let server = std::thread::spawn(move || {
+        let (mut stream, _) = listener.accept().unwrap();
+        let mut request = [0u8; 512];
+        let _ = stream.read(&mut request);
+        stream.write_all(b"HTTP/1.1 302 Found\r\nLocation: http://localhost:9/out\r\nContent-Length: 0\r\nConnection: close\r\n\r\n").unwrap();
+    });
+    let scope = Scope::new(vec!["127.0.0.1".into()], vec![]);
+    let client =
+        super::request::build_client(&webrev_core::OpsecConfig::default(), &scope).unwrap();
+    let response = client
+        .get(format!("http://127.0.0.1:{port}/start"))
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(response.status(), reqwest::StatusCode::FOUND);
+    server.join().unwrap();
+}
+
 #[test]
 fn resolves_and_discovers() {
     let re = Regex::new(r#"(?i)<script[^>]+src\s*=\s*["']([^"']+)["']"#).unwrap();

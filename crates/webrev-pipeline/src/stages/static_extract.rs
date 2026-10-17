@@ -7,7 +7,7 @@ use crate::stage::{PipelineItem, Stage, StageContext};
 use async_trait::async_trait;
 use tokio::sync::{broadcast, mpsc};
 use webrev_core::Result;
-use webrev_extract::ExtractInput;
+use webrev_extract::{extractors::DomSinkExtractor, ExtractInput};
 
 /// The static analysis stage.
 pub struct StaticExtractStage;
@@ -42,6 +42,8 @@ impl Stage for StaticExtractStage {
             stage: self.name().to_owned(),
         });
         let mut emitted = 0usize;
+        let link_modules = ctx.registry.names().contains(&"dom-sinks");
+        let mut modules = Vec::new();
 
         loop {
             let item = tokio::select! {
@@ -72,6 +74,9 @@ impl Stage for StaticExtractStage {
                         }
                         emitted += 1;
                     }
+                    if link_modules {
+                        DomSinkExtractor::retain_module_input(&mut modules, extract_input);
+                    }
                     let _ = events.send(PipelineEvent::Progress {
                         stage: self.name().to_owned(),
                         processed: emitted,
@@ -83,6 +88,15 @@ impl Stage for StaticExtractStage {
                         return Ok(());
                     }
                 }
+            }
+        }
+
+        if !ctx.cancel.is_cancelled() && !modules.is_empty() && link_modules {
+            for finding in DomSinkExtractor::extract_modules(&modules) {
+                if out.send(PipelineItem::Finding(finding)).await.is_err() {
+                    return Ok(());
+                }
+                emitted += 1;
             }
         }
 
