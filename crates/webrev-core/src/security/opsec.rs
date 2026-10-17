@@ -9,10 +9,11 @@
 
 use crate::model::session::Mission;
 use crate::security::auth::AuthConfig;
+use crate::security::sanitize::redact_url;
 use serde::{Deserialize, Serialize};
 
 /// How outbound requests leave the host.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct EgressPolicy {
     /// Optional proxy URL (e.g. `http://127.0.0.1:8080` for an intercepting
     /// proxy during an engagement). `None` means direct.
@@ -20,6 +21,16 @@ pub struct EgressPolicy {
     /// Whether direct (non-proxied) egress is permitted when `proxy` is `None`.
     /// Fail-closed engagements set this to `false` together with a proxy.
     pub allow_direct: bool,
+}
+
+/// `Debug` masks proxy userinfo (`user:pass@`) and token-like query values.
+impl std::fmt::Debug for EgressPolicy {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("EgressPolicy")
+            .field("proxy", &self.proxy.as_deref().map(redact_url))
+            .field("allow_direct", &self.allow_direct)
+            .finish()
+    }
 }
 
 impl Default for EgressPolicy {
@@ -32,13 +43,25 @@ impl Default for EgressPolicy {
 }
 
 /// DNS resolution strategy.
-#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub enum DnsPolicy {
     /// Use the system resolver.
     #[default]
     System,
     /// Resolve via DNS-over-HTTPS at the given endpoint.
     DnsOverHttps(String),
+}
+
+impl std::fmt::Debug for DnsPolicy {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::System => f.write_str("System"),
+            Self::DnsOverHttps(url) => f
+                .debug_tuple("DnsOverHttps")
+                .field(&redact_url(url))
+                .finish(),
+        }
+    }
 }
 
 /// User-agent rotation policy. The pool defaults to a single current Chrome UA;
@@ -170,6 +193,27 @@ impl MissionProfile {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn debug_masks_proxy_userinfo_and_auth_values() {
+        let cfg = OpsecConfig {
+            egress: EgressPolicy {
+                proxy: Some("http://op:proxy-pass-9@127.0.0.1:8080".into()),
+                allow_direct: false,
+            },
+            dns: DnsPolicy::DnsOverHttps("https://dns.test/q?token=doh-secret-8".into()),
+            auth: AuthConfig {
+                bearer: Some("bearer-secret-7".into()),
+                ..AuthConfig::default()
+            },
+            ..OpsecConfig::default()
+        };
+        let shown = format!("{cfg:?} {cfg:#?}");
+        for secret in ["proxy-pass-9", "doh-secret-8", "bearer-secret-7", "op:"] {
+            assert!(!shown.contains(secret), "{secret} leaked: {shown}");
+        }
+        assert!(shown.contains("127.0.0.1:8080"));
+    }
 
     #[test]
     fn rotation_cycles_with_period() {

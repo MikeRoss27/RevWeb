@@ -39,6 +39,92 @@ impl std::fmt::Debug for SessionKey {
     }
 }
 
+const REDACTED: &str = "[REDACTED]";
+
+/// Substrings of a query/fragment parameter name that mark its value as
+/// credential-like for log and error output.
+const SENSITIVE_PARAM_HINTS: [&str; 12] = [
+    "token",
+    "key",
+    "secret",
+    "pass",
+    "pwd",
+    "auth",
+    "sig",
+    "session",
+    "sid",
+    "jwt",
+    "bearer",
+    "credential",
+];
+
+fn is_sensitive_param(name: &str) -> bool {
+    let lower = name.to_ascii_lowercase();
+    lower == "code" || SENSITIVE_PARAM_HINTS.iter().any(|h| lower.contains(h))
+}
+
+fn redact_pairs(part: &str) -> String {
+    part.split('&')
+        .map(|pair| match pair.split_once('=') {
+            Some((name, _)) if is_sensitive_param(name) => format!("{name}={REDACTED}"),
+            _ => pair.to_owned(),
+        })
+        .collect::<Vec<_>>()
+        .join("&")
+}
+
+/// Mask credentials embedded in a URL before it enters a log line, an error
+/// message or a `Debug` rendering: `user:pass@` userinfo and the values of
+/// credential-like query or fragment parameters (`token`, `key`, `secret`,
+/// `password`, `sig`, `session`, ...). Everything else is left intact so the
+/// URL stays recognisable. This is for diagnostics only; findings, reports
+/// and detected secret plaintext are never passed through it.
+#[must_use]
+pub fn redact_url(raw: &str) -> String {
+    let (rest, fragment) = match raw.split_once('#') {
+        Some((r, f)) => (r, Some(f)),
+        None => (raw, None),
+    };
+    let (base, query) = match rest.split_once('?') {
+        Some((b, q)) => (b, Some(q)),
+        None => (rest, None),
+    };
+    let mut out = String::with_capacity(raw.len());
+    // Userinfo lives in the authority, i.e. before the first '/' after "://".
+    if let Some((scheme, after)) = base.split_once("://") {
+        let (authority, path) = match after.find('/') {
+            Some(i) => after.split_at(i),
+            None => (after, ""),
+        };
+        out.push_str(scheme);
+        out.push_str("://");
+        match authority.rsplit_once('@') {
+            Some((_, host)) => {
+                out.push_str(REDACTED);
+                out.push('@');
+                out.push_str(host);
+            }
+            None => out.push_str(authority),
+        }
+        out.push_str(path);
+    } else {
+        out.push_str(base);
+    }
+    if let Some(q) = query {
+        out.push('?');
+        out.push_str(&redact_pairs(q));
+    }
+    if let Some(f) = fragment {
+        out.push('#');
+        if f.contains('=') {
+            out.push_str(&redact_pairs(f));
+        } else {
+            out.push_str(f);
+        }
+    }
+    out
+}
+
 /// Redacts secrets from free text and fingerprints known secrets.
 pub struct Sanitizer {
     patterns: Vec<Regex>,
@@ -164,6 +250,26 @@ mod tests {
             s.scrub_header("Accept", "application/json"),
             "application/json"
         );
+    }
+
+    #[test]
+    fn redact_url_masks_userinfo_and_sensitive_params() {
+        assert_eq!(
+            redact_url("http://user:p%40ss@proxy.test:8080/x?a=1&access_token=abc&Api_Key=k#id_token=zzz"),
+            "http://[REDACTED]@proxy.test:8080/x?a=1&access_token=[REDACTED]&Api_Key=[REDACTED]#id_token=[REDACTED]"
+        );
+        assert_eq!(
+            redact_url("socks5://onlyuser@h:1"),
+            "socks5://[REDACTED]@h:1"
+        );
+        // Non-sensitive URLs are unchanged, '@' in the path is not userinfo.
+        for plain in [
+            "https://x.test/a@b?page=2&q=hi#top",
+            "/rel?x=1",
+            "not a url",
+        ] {
+            assert_eq!(redact_url(plain), plain);
+        }
     }
 
     #[test]

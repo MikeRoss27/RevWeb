@@ -8,7 +8,8 @@
 use serde::{Deserialize, Serialize};
 
 /// Credentials/headers to attach to every in-scope request.
-#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default)]
 pub struct AuthConfig {
     /// Arbitrary `(name, value)` headers.
     pub headers: Vec<(String, String)>,
@@ -16,6 +17,24 @@ pub struct AuthConfig {
     pub cookies: Vec<(String, String)>,
     /// Optional bearer token, sent as `Authorization: Bearer <token>`.
     pub bearer: Option<String>,
+}
+
+/// `Debug` shows names only: values (tokens, cookies, header values) must not
+/// reach logs or panic messages through `{:?}`. Serialization is unchanged.
+impl std::fmt::Debug for AuthConfig {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("AuthConfig")
+            .field(
+                "headers",
+                &self.headers.iter().map(|(k, _)| k).collect::<Vec<_>>(),
+            )
+            .field(
+                "cookies",
+                &self.cookies.iter().map(|(k, _)| k).collect::<Vec<_>>(),
+            )
+            .field("bearer", &self.bearer.as_ref().map(|_| "<redacted>"))
+            .finish()
+    }
 }
 
 impl AuthConfig {
@@ -63,7 +82,29 @@ mod tests {
     }
 
     #[test]
+    fn debug_never_shows_credential_values() {
+        let auth = AuthConfig {
+            headers: vec![("X-Api-Key".into(), "hdr-secret-1".into())],
+            cookies: vec![("sid".into(), "cookie-secret-2".into())],
+            bearer: Some("bearer-secret-3".into()),
+        };
+        let shown = format!("{auth:?} {auth:#?}");
+        for secret in ["hdr-secret-1", "cookie-secret-2", "bearer-secret-3"] {
+            assert!(!shown.contains(secret), "{secret} leaked: {shown}");
+        }
+        assert!(shown.contains("X-Api-Key") && shown.contains("sid"));
+    }
+
+    #[test]
     fn empty_by_default() {
         assert!(AuthConfig::default().is_empty());
+    }
+
+    #[test]
+    fn minimal_account_file_deserializes() {
+        let auth: AuthConfig = serde_json::from_str(r#"{"bearer":"test-token"}"#).unwrap();
+        assert_eq!(auth.bearer.as_deref(), Some("test-token"));
+        assert!(auth.headers.is_empty());
+        assert!(auth.cookies.is_empty());
     }
 }

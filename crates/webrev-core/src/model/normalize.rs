@@ -13,13 +13,21 @@
 /// `{token}`.
 #[must_use]
 pub fn normalize_url(url: &str) -> String {
+    normalize_url_with_pattern(url).0
+}
+
+/// Normalize a URL and report whether a volatile path segment became a
+/// placeholder. Removing query strings or trailing slashes alone does not
+/// make the route inferred.
+#[must_use]
+pub fn normalize_url_with_pattern(url: &str) -> (String, bool) {
     // Separate an optional `scheme://host` prefix from the path.
     let (prefix, path) = match url.split_once("://") {
         Some((scheme, rest)) => {
             let (host, path) = rest.split_once('/').map_or((rest, ""), |(h, p)| (h, p));
-            (format!("{scheme}://{host}"), path.to_owned())
+            (format!("{scheme}://{host}"), path)
         }
-        None => (String::new(), url.trim_start_matches('/').to_owned()),
+        None => (String::new(), url.trim_start_matches('/')),
     };
 
     // Drop query and fragment.
@@ -30,15 +38,18 @@ pub fn normalize_url(url: &str) -> String {
         .trim_end_matches('/');
 
     let mut out = prefix;
+    let mut inferred_pattern = false;
     if path.is_empty() {
         out.push('/');
-        return out;
+        return (out, false);
     }
     for segment in path.split('/') {
         out.push('/');
-        out.push_str(normalize_segment(segment));
+        let normalized = normalize_segment(segment);
+        inferred_pattern |= normalized != segment;
+        out.push_str(normalized);
     }
-    out
+    (out, inferred_pattern)
 }
 
 fn normalize_segment(segment: &str) -> &str {
@@ -69,13 +80,17 @@ fn is_year_like(s: &str) -> bool {
 }
 
 fn is_uuid(s: &str) -> bool {
-    let groups = [8usize, 4, 4, 4, 12];
-    let parts: Vec<&str> = s.split('-').collect();
-    parts.len() == 5
-        && parts
-            .iter()
-            .zip(groups)
-            .all(|(p, n)| p.len() == n && p.chars().all(|c| c.is_ascii_hexdigit()))
+    // Ordinary path segments need no allocation or UUID group collection.
+    if s.len() != 36 {
+        return false;
+    }
+    s.bytes().enumerate().all(|(index, byte)| {
+        if matches!(index, 8 | 13 | 18 | 23) {
+            byte == b'-'
+        } else {
+            byte.is_ascii_hexdigit()
+        }
+    })
 }
 
 fn is_hex(s: &str) -> bool {
@@ -142,5 +157,21 @@ mod tests {
         // Non-year numerics still collapse.
         assert_eq!(normalize_url("/users/123"), "/users/{id}");
         assert_eq!(normalize_url("/items/12345"), "/items/{id}");
+    }
+
+    #[test]
+    fn reports_only_pattern_inference() {
+        assert_eq!(
+            normalize_url_with_pattern("/users/123?q=x"),
+            ("/users/{id}".into(), true)
+        );
+        assert_eq!(
+            normalize_url_with_pattern("/users/{id}?q=x"),
+            ("/users/{id}".into(), false)
+        );
+        assert_eq!(
+            normalize_url_with_pattern("/search/?q=x"),
+            ("/search".into(), false)
+        );
     }
 }
