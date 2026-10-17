@@ -7,7 +7,7 @@ fn auth(sid: &str) -> AuthConfig {
     }
 }
 
-async fn check_fixture(vulnerable: bool) -> (Vec<Finding>, usize) {
+async fn check_fixture(vulnerable: bool) -> (Vec<Finding>, Vec<String>) {
     let fixture = Fixture::new(move |request| {
         let path = fixture::path(request);
         let is_a = path == "/api/users/101";
@@ -52,14 +52,25 @@ async fn check_fixture(vulnerable: bool) -> (Vec<Finding>, usize) {
     )
     .await
     .unwrap();
-    let requests = fixture.requests.lock().unwrap().len();
+    // Keep only the request line so a failure shows what reached the server.
+    let requests = fixture
+        .requests
+        .lock()
+        .unwrap()
+        .iter()
+        .map(|request| request.lines().next().unwrap_or_default().to_owned())
+        .collect();
     (findings, requests)
 }
 
 #[tokio::test]
 async fn detects_readable_private_objects_with_four_controls() {
     let (findings, requests) = check_fixture(true).await;
-    assert_eq!(requests, 4);
+    assert_eq!(
+        requests.len(),
+        4,
+        "requests seen by the fixture: {requests:?}"
+    );
     let signal = findings
         .iter()
         .find(|f| f.kind == FindingKind::Idor)
@@ -78,6 +89,10 @@ async fn detects_readable_private_objects_with_four_controls() {
 #[tokio::test]
 async fn protected_objects_produce_no_bola_signal() {
     let (findings, requests) = check_fixture(false).await;
-    assert_eq!(requests, 4);
+    assert_eq!(
+        requests.len(),
+        4,
+        "requests seen by the fixture: {requests:?}"
+    );
     assert!(!findings.iter().any(|f| f.kind == FindingKind::Idor));
 }
