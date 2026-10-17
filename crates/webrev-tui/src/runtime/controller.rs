@@ -78,7 +78,9 @@ impl Controller {
         let cancel = self.cancel.clone();
 
         tokio::spawn(async move {
-            let profile = match BrowserProfile::from_opsec(&opsec) {
+            let profile = match BrowserProfile::from_opsec(&opsec)
+                .map(|p| p.with_scope(mission.scope.clone()))
+            {
                 Ok(profile) => profile,
                 Err(e) => {
                     let _ = ui_tx.send(UiEvent::ScanFinished(format!(

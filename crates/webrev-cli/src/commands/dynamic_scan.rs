@@ -5,7 +5,7 @@ use super::{build_mission, write_session_report};
 use crate::cli::ScanArgs;
 use std::time::Duration;
 use tokio_util::sync::CancellationToken;
-use webrev_browser::{run_dynamic, BrowserPool, BrowserProfile};
+use webrev_browser::{run_dynamic_with_report, BrowserPool, BrowserProfile, InteractionPolicy};
 use webrev_core::{Endpoint, FindingKind, Method};
 use webrev_storage::{InMemoryStorage, Storage};
 
@@ -14,10 +14,11 @@ pub async fn run(args: ScanArgs) -> anyhow::Result<()> {
     let storage = InMemoryStorage::new();
     storage.create_session(&mission).await?;
     eprintln!("mission '{}' — dynamic scan", mission.name);
-    let total = run_pass(
+    let total = run_pass_with_policy(
         &opsec,
         &mission,
         args.duration_secs,
+        interaction_policy(args.observation_only),
         &CancellationToken::new(),
         &storage,
     )
@@ -36,17 +37,46 @@ pub(super) async fn run_pass(
     cancel: &CancellationToken,
     storage: &dyn Storage,
 ) -> webrev_core::Result<usize> {
-    let profile = BrowserProfile::from_opsec(opsec)?;
+    run_pass_with_policy(
+        opsec,
+        mission,
+        duration_secs,
+        InteractionPolicy::Explore,
+        cancel,
+        storage,
+    )
+    .await
+}
+
+pub(super) fn interaction_policy(observation_only: bool) -> InteractionPolicy {
+    if observation_only {
+        InteractionPolicy::ObserveOnly
+    } else {
+        InteractionPolicy::Explore
+    }
+}
+
+pub(super) async fn run_pass_with_policy(
+    opsec: &webrev_core::OpsecConfig,
+    mission: &webrev_core::Mission,
+    duration_secs: u64,
+    policy: InteractionPolicy,
+    cancel: &CancellationToken,
+    storage: &dyn Storage,
+) -> webrev_core::Result<usize> {
+    let profile = BrowserProfile::from_opsec(opsec)?
+        .with_scope(mission.scope.clone())
+        .with_interaction_policy(policy);
     let pool = BrowserPool::new(1);
     let result: webrev_core::Result<usize> = async {
         let mut total = 0usize;
         for seed in &mission.seeds {
             if !mission.scope.allows(seed) {
-                eprintln!("skip out-of-scope: {seed}");
+                eprintln!("skip out-of-scope: {}", webrev_core::redact_url(seed));
                 continue;
             }
-            eprintln!("dynamic: {seed}");
-            let findings = run_dynamic(
+            eprintln!("dynamic: {}", webrev_core::redact_url(seed));
+            let report = run_dynamic_with_report(
                 &pool,
                 &profile,
                 seed,
@@ -55,6 +85,9 @@ pub(super) async fn run_pass(
                 cancel.clone(),
             )
             .await?;
+            let coverage = report.coverage_finding(mission.id, seed, policy);
+            storage.insert_finding(&coverage).await?;
+            let findings = report.findings;
             for finding in &findings {
                 storage.insert_finding(finding).await?;
                 if finding.kind == FindingKind::Endpoint {
@@ -72,7 +105,7 @@ pub(super) async fn run_pass(
                         .await?;
                 }
             }
-            total += findings.len();
+            total += findings.len() + 1;
         }
         Ok(total)
     }

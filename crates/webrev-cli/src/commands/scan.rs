@@ -57,10 +57,11 @@ pub async fn run(args: ScanAllArgs) -> anyhow::Result<()> {
 
     // --- optional dynamic pass (same session) -----------------------------
     if dynamic {
-        let dyn_total = super::dynamic_scan::run_pass(
+        let dyn_total = super::dynamic_scan::run_pass_with_policy(
             opsec.as_ref(),
             &mission,
             scan.duration_secs,
+            super::dynamic_scan::interaction_policy(scan.observation_only),
             &cancel,
             storage.as_ref(),
         )
