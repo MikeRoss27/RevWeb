@@ -3874,6 +3874,7 @@ dependencies = [
  "tempfile",
  "tokio",
  "tokio-util",
+ "url",
  "webrev-core",
 ]
 
@@ -3883,6 +3884,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "clap",
+ "ipnet",
  "reqwest",
  "serde_json",
  "tempfile",
@@ -3904,9 +3906,11 @@ version = "0.1.0"
 dependencies = [
  "hex",
  "hmac",
+ "ipnet",
  "rand 0.10.3",
  "regex",
  "serde",
+ "serde_json",
  "sha2 0.11.0",
  "thiserror 2.0.21",
  "uuid",
@@ -3920,6 +3924,7 @@ dependencies = [
  "regex",
  "serde_json",
  "swc_core",
+ "url",
  "wasmparser",
  "webrev-core",
 ]
@@ -3931,6 +3936,7 @@ dependencies = [
  "async-trait",
  "base64 0.23.1",
  "futures",
+ "hex",
  "http",
  "rand 0.10.3",
  "rand_distr",
@@ -3938,6 +3944,7 @@ dependencies = [
  "reqwest",
  "serde",
  "serde_json",
+ "sha2 0.11.0",
  "tokio",
  "tokio-util",
  "tracing",
@@ -3960,6 +3967,7 @@ name = "webrev-storage"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "serde",
  "tokio",
  "webrev-core",
 ]

@@ -10,6 +10,7 @@ authors.workspace = true
 [dependencies]
 webrev-core.workspace = true
 regex.workspace = true
+url = "2.5"
 lol_html.workspace = true
 swc_core.workspace = true
 serde_json.workspace = true
