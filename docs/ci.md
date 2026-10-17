@@ -51,11 +51,24 @@ positives on the maintainer-written negative set, SDC secrets TP=3 FP=0).
 Those floors are regression guards on small, maintainer-reviewed and correlated
 corpora. They are not accuracy claims; see `docs/benchmark-methodology.md`.
 
+## Observed on hosted runners
+
+The first runs of this pipeline (PR #5) found and fixed real problems that no
+local run could show: archived benchmark reports ignored by `.gitignore` and
+never committed, Windows line-ending conversion breaking pinned corpora, tests
+binding `127.0.0.2` (absent on macOS), and fixture sockets inheriting
+non-blocking mode on Windows. After those fixes one run was green on Linux,
+macOS, Windows and the Chromium job. That is a single green run per platform,
+not a track record: macOS, Windows and `browser` stay informational until they
+have stayed green for a while.
+
 ## Known gaps
 
-- The `browser` job and the macOS/Windows test legs have not yet been observed
-  on hosted runners; treat their first results as unverified.
 - No code coverage, fuzzing or SBOM generation yet.
+- `release.yml` and `bundles.yml` have not been exercised (they need a tag or a
+  manual dispatch); `release.yml` additionally skips attestations while the
+  repository is private.
+- CodeQL and dependency review stay off while the repository is private.
 - `cargo-deny` allows duplicate crate versions with a warning only.
 - The first `cargo-deny` run found four RUSTSEC advisories in `rustls 0.23.45`;
   the lockfile now pins 0.23.46.
