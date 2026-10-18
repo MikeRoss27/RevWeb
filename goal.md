@@ -189,11 +189,16 @@ workflow GitHub distant a depuis été exécuté et est vert (voir « Mise à jo
 2026-10-18 » ci-dessous). Le contrôle de taille de source
 n'a plus d'exception : `domsinks.rs` a été découpé en modules (PR #10).
 
-**État de l'étape 5 : EN COURS — non validée.** La remesure du 2026-10-18 sur
-le code actuel de `main` (3 runs, voir « Remesure performance » plus bas) donne
-un p95 conforme (+11,74 / +15,16 / +13,81%, limite +20%) mais une RSS qui
-dépasse la limite de +25% dans 2 runs sur 3 (+6,54 / +45,13 / +41,28%). Le
-critère de performance n'est donc pas validé. Les profils antérieurs ci-dessus,
+**État de l'étape 5 : EN COURS — non validée.** La remesure sur machine calme du
+2026-10-18 (`main` b3f5e42, binaires fixes, 10 invocations propres de 30 paires,
+voir « Remesure performance sur machine calme » plus bas) donne, poolé sur 300
+paires, un p95 de +16,8% (limite +20%) et une RSS de +13,3% en médiane / +11,1%
+au max (limite +25%). Mais un p95 isolé de 30 paires dépasse 20% dans 3
+invocations sur 10 (+20,1 / +24,7 / +21,1%) et une invocation a montré une base
+anormalement basse (+48% de RSS, non reproduite, cause non établie) : le critère
+tel qu'écrit n'est pas atteint de façon reproductible et reste non coché. La
+remesure précédente (3 runs avec rebuilds, base instable) est conservée plus bas.
+Les profils antérieurs ci-dessus,
 dont le PASS du 2026-10-17 (p95 +18,64%, RSS +6,69%), sont historiques. Le corpus
 statique ne montre plus de régression regex. La couverture externe DOM XSS
 inter-fichiers atteint 105/122 sur les catégories compatibles (26/122 était un jalon
@@ -270,6 +275,35 @@ fiable et aucun PASS n'est revendiqué. Machine non isolée (charge 1 min de 3,7
 à 5 avant chaque run, 14-17 juste après; les builds du script précèdent la
 mesure). Le PASS ci-dessous date d'avant ces changements.
 
+**Remesure performance sur machine calme (2026-10-18, `main` b3f5e42) : RSS
+conforme, p95 conforme en poolé mais pas de façon reproductible → non validé.**
+Les deux binaires sont construits une seule fois et réutilisés (`--baseline-bin`,
+`--current-bin`; un second build de la base donne un binaire identique, SHA-256
+`082e27b3…`). 14 invocations de 30 paires (seeds différents, base `61b843d`,
+120 pages, profil site), archivées sous
+`benchmarks/performance/2026-10-18/spa-site-remeasure-quiet/` (README, JSON,
+`SHA256SUMS`). Charge 1 min de 1,0 à 1,8 au départ des invocations propres.
+
+| Mesure (invocations propres 2-11, 300 paires par révision) | Base | Actuel | Δ | Limite |
+|---|---:|---:|---:|---:|
+| p95 poolé | 77,2 ms | 90,2 ms | +16,8% | +20% |
+| temps médian | 72,6 ms | 84,2 ms | +16,0% | – |
+| RSS médiane | 19 130 KiB | 21 676 KiB | +13,3% | – |
+| RSS max | 20 328 KiB | 22 580 KiB | +11,1% | +25% |
+
+- RSS : de +9,8% à +15,5% (max) dans 10 invocations sur 10 quand la base est dans
+  son mode habituel (19,1 MiB). Une invocation (la première après les builds) a
+  mesuré une base à 14,4 MiB, soit +48%; non reproduite sur les 13 suivantes. Pas
+  la cause : le build (binaire identique), l'ordre des runs, la charge (19,1 MiB
+  aussi à charge 8-11). Hypothèse non démontrée : état du cache de pages ou THP
+  (`always` sur cet hôte). Un échauffement non mesuré (2 runs par binaire) a été
+  ajouté au script.
+- p95 : un p95 de 30 paires est la 29e valeur sur 30 et varie de +9,9% à +24,7%
+  sur les mêmes binaires; 3 invocations sur 10 dépassent 20% (+20,1 / +24,7 /
+  +21,1%). Le médian est stable à environ +16%.
+- Les temps absolus sont environ deux fois ceux du 2026-10-17 (p95 base 77 ms
+  contre 38 ms) : comparer les rapports, pas les millisecondes.
+
 **Résultat performance intégré du 2026-10-17 : PASS (historique).** Avec 30 paires et un lanceur C
 qui isole la mémoire du scanner de celle du harness Python, p95
 38,081 → 45,178 ms (**+18,64%**), RSS max 20 748 → 22 136 KiB (**+6,69%**),
@@ -294,7 +328,7 @@ de généralisation à tous les sites.
 - [x] Équivalents locaux CI passés : formatage, taille source, 12 tests Python, checksums, tests workspace, Clippy strict.
 - [x] Workflow GitHub distant exécuté et vert sur `main` (run CI 39073647553, commit 6cfd10f); équivalents locaux exécutés avec Python 3.12.14 via `uv`.
 - [x] Tests workspace et corpus relancés après les changements actuels; aucun échec observé.
-- [ ] Profil SPA sur le code actuel de `main` : p95 conforme dans 3 runs sur 3 (+11,74 / +15,16 / +13,81% ≤20%), RSS non conforme dans 2 runs sur 3 (+45,13 / +41,28% > 25%, run 1 : +6,54%); base instable, cause non établie. Le PASS du 2026-10-17 (p95 +18,64%, RSS +6,69%, 60/60 scans réussis) précède ces changements. Pour mémoire, le lockfile baseline est réécrit pour ses arêtes locales, sans changement de version/source/checksum des paquets externes.
+- [ ] Profil SPA sur le code actuel de `main` (b3f5e42, machine calme, binaires fixes, 300 paires) : p95 poolé +16,8% (≤20%) mais >20% dans 3 invocations sur 10 de 30 paires; RSS +9,8 à +15,5% (≤25%) dans 10 invocations sur 10, avec une invocation à base anormalement basse (+48%) non reproduite, cause non établie. Non reproductible au sens du critère écrit, donc non coché. Le PASS du 2026-10-17 (p95 +18,64%, RSS +6,69%, 60/60 scans réussis) précède ces changements. Pour mémoire, le lockfile baseline est réécrit pour ses arêtes locales, sans changement de version/source/checksum des paquets externes.
 - [ ] Corpus externe représentatif avec positifs et négatifs, labels examinés indépendamment.
 
 **Objectifs de performance :**

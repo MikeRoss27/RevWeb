@@ -144,6 +144,15 @@ def main() -> int:
     ap.add_argument("--pages", type=int, default=40)
     ap.add_argument("--profile", choices=("micro", "site"), default="micro")
     ap.add_argument("--output", type=pathlib.Path, required=True)
+    ap.add_argument("--seed", type=int, default=20261016,
+                    help="seed of the shuffled run order")
+    ap.add_argument("--baseline-bin", type=pathlib.Path,
+                    help="prebuilt baseline binary; skips the baseline checkout and build")
+    ap.add_argument("--current-bin", type=pathlib.Path,
+                    help="prebuilt current binary; skips the current build")
+    ap.add_argument("--max-load", type=float, default=0.0,
+                    help="wait (bounded to 15 minutes) for the 1-minute load average to drop "
+                         "below this before measuring; 0 disables the wait")
     args = ap.parse_args()
     if args.runs < 10 or args.pages < 10:
         ap.error("use at least 10 runs and 10 pages")
@@ -154,15 +163,24 @@ def main() -> int:
     with tempfile.TemporaryDirectory(prefix="webrev-perf-") as tmp:
         temp = pathlib.Path(tmp)
         base_tree = temp / "baseline"
-        subprocess.run(["git", "worktree", "add", "--detach", str(base_tree),
-                        args.baseline_ref], cwd=ROOT, check=True,
-                       stdout=subprocess.DEVNULL)
+        if not args.baseline_bin:
+            subprocess.run(["git", "worktree", "add", "--detach", str(base_tree),
+                            args.baseline_ref], cwd=ROOT, check=True,
+                           stdout=subprocess.DEVNULL)
         try:
             # Use the current dependency lock for both builds when it is
             # compatible. The baseline checkout remains otherwise untouched.
-            shutil.copy2(ROOT / "Cargo.lock", base_tree / "Cargo.lock")
-            baseline_bin = build(base_tree, temp / "target-baseline")
-            current_bin = build(ROOT, temp / "target-current")
+            if args.baseline_bin:
+                baseline_bin = args.baseline_bin.resolve()
+            else:
+                shutil.copy2(ROOT / "Cargo.lock", base_tree / "Cargo.lock")
+                baseline_bin = build(base_tree, temp / "target-baseline")
+            current_bin = (args.current_bin.resolve() if args.current_bin
+                           else build(ROOT, temp / "target-current"))
+            if args.max_load > 0:
+                deadline = time.monotonic() + 900
+                while os.getloadavg()[0] >= args.max_load and time.monotonic() < deadline:
+                    time.sleep(10)
 
             fixture = temp / "fixture"
             (make_site_fixture if args.profile == "site" else make_fixture)(fixture, args.pages)
@@ -184,10 +202,21 @@ def main() -> int:
             subprocess.run(["cc", "-O2", "-Wall", "-Wextra", "-Werror",
                             str(ROOT / "scripts" / "measure_process.c"), "-o", str(launcher)], check=True)
             rows: list[dict] = []
-            rng = random.Random(20261016)
+            rng = random.Random(args.seed)
             sequence = ["baseline", "current"] * args.runs
             rng.shuffle(sequence)
             binaries = {"baseline": baseline_bin, "current": current_bin}
+            # Unmeasured warm-up: the first runs of a freshly built binary page it in
+            # from a cold or partly evicted page cache, which shifted baseline RSS by
+            # several MiB between otherwise identical invocations.
+            for label in ("baseline", "current"):
+                for warm in range(2):
+                    subprocess.run([str(binaries[label]), "static", "--seed",
+                                    f"http://127.0.0.1:{port}/", "--scope", "127.0.0.1",
+                                    "--max-pages", str(args.pages), "--max-depth", "2",
+                                    "--max-concurrency", "4", "--delay-min-ms", "0",
+                                    "--delay-max-ms", "0", "--report", str(temp / f"warm-{label}-{warm}.json")],
+                                   check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             for index, label in enumerate(sequence):
                 report = temp / f"report-{index}.json"
                 command = [str(binaries[label]), "static", "--seed",
@@ -209,6 +238,7 @@ def main() -> int:
                     except (ValueError, OSError):
                         pass
                 rows.append({"order": index, "revision": label,
+                             "loadavg_1m_after": os.getloadavg()[0],
                              "exit_code": exit_code, "wall_seconds": elapsed,
                              "max_rss_kib": rss_kb, "report_valid": report_ok,
                              "finding_count": findings})
@@ -226,6 +256,9 @@ def main() -> int:
                     "runs": len(sample), "runtime_median_seconds": statistics.median(times),
                     "runtime_p95_seconds": percentile95(times),
                     "max_rss_kib_max": max(rss),
+                    "max_rss_kib_median": statistics.median(rss),
+                    "max_rss_kib_min": min(rss),
+                    "binary_sha256": hashlib.sha256(binaries[label].read_bytes()).hexdigest(),
                     "finding_counts": sorted(set(r["finding_count"] for r in sample)),
                     "failures": sum(r["exit_code"] != 0 for r in sample),
                 }
@@ -249,13 +282,14 @@ def main() -> int:
                             "assets": sum(1 for f in fixture.rglob("*") if f.is_file()) - args.pages,
                             "max_depth": 2, "concurrency": 4,
                             "delay_ms": 0, "scope": "127.0.0.1"},
-                "method": {"runs_each": args.runs, "order": "seeded shuffled alternating labels",
+                "method": {"runs_each": args.runs, "order": "seeded shuffled alternating labels after two unmeasured warm-up runs per binary",
                            "runtime": "native monotonic clock around fork/exec/wait4 includes scanner process startup; excludes builds and launcher startup",
                            "p95": "nearest rank", "rss": "native C parent fork/exec/wait4 ru_maxrss, scanner process peak in KiB; excludes inherited Python high-water mark"},
                 "summaries": summaries,
                 "relative_change": {
                     "runtime_p95_percent": (c["runtime_p95_seconds"] / b["runtime_p95_seconds"] - 1) * 100,
                     "max_rss_percent": (c["max_rss_kib_max"] / b["max_rss_kib_max"] - 1) * 100,
+                    "median_rss_percent": (c["max_rss_kib_median"] / b["max_rss_kib_median"] - 1) * 100,
                 },
                 "raw_runs": rows,
                 "fixture_sha256": hashlib.sha256("".join(
@@ -271,9 +305,10 @@ def main() -> int:
             (args.output / "results.json").write_text(json.dumps(result, indent=2) + "\n")
             print(json.dumps({"summaries": summaries, "relative_change": result["relative_change"]}, indent=2))
         finally:
-            subprocess.run(["git", "worktree", "remove", "--force", str(base_tree)],
-                           cwd=ROOT, check=False, stdout=subprocess.DEVNULL,
-                           stderr=subprocess.DEVNULL)
+            if not args.baseline_bin:
+                subprocess.run(["git", "worktree", "remove", "--force", str(base_tree)],
+                               cwd=ROOT, check=False, stdout=subprocess.DEVNULL,
+                               stderr=subprocess.DEVNULL)
     return 0
 
 
