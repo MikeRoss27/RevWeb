@@ -1,14 +1,15 @@
 //! Bounded ES-module linking. Explicit named/default values and named function
 //! summaries cross file boundaries; unresolved imports, namespace imports, dynamic
 //! imports and cycles without a concrete source never invent a flow.
+use super::ast::{live_arms, pat_ident_name};
+use super::taint::{ImportedFunction, TaintVisitor};
 use super::{
-    live_arms, pat_ident_name, BTreeMap, BTreeSet, BytePos, Confidence, ContentKind,
-    DomSinkExtractor, EsSyntax, Expr, ExtractInput, FileName, Finding, FindingKind,
-    ImportedFunction, Lrc, Parser, Provenance, Source, SourceMap, StringInput, Syntax,
-    TaintVisitor, VisitWith,
+    BytePos, Confidence, ContentKind, DomSinkExtractor, EsSyntax, ExtractInput, FileName, Finding,
+    FindingKind, Lrc, Parser, Provenance, Source, SourceMap, StringInput, Syntax, VisitWith,
 };
+use std::collections::{BTreeMap, BTreeSet};
 use swc_core::ecma::ast::{
-    Decl, ExportSpecifier, IfStmt, ImportSpecifier, Module, ModuleDecl, ModuleExportName,
+    Decl, ExportSpecifier, Expr, IfStmt, ImportSpecifier, Module, ModuleDecl, ModuleExportName,
     ModuleItem, Stmt, VarDecl, VarDeclKind,
 };
 use url::Url;
