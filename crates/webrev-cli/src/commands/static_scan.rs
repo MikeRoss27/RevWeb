@@ -34,6 +34,6 @@ pub async fn run(args: ScanArgs) -> anyhow::Result<()> {
     eprintln!("stages: {}", summary.stages.join(" -> "));
     eprintln!("findings stored: {}", summary.findings_emitted);
     eprintln!("stage errors:    {}", summary.errors);
-    write_session_report(&mission, storage.as_ref(), &args.report).await?;
+    write_session_report(&mission, storage.as_ref(), &args.report, !args.unredacted).await?;
     Ok(())
 }

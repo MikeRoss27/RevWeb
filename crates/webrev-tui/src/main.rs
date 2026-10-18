@@ -25,6 +25,9 @@ struct Args {
     /// Report output path for the 'r' key.
     #[arg(long, default_value = "webrev-report.json")]
     report: PathBuf,
+    /// Keep credentials in the exported report (masked by default).
+    #[arg(long, env = "WEBREV_REPORT_UNREDACTED", action = clap::ArgAction::SetTrue, value_parser = clap::builder::BoolishValueParser::new())]
+    unredacted: bool,
     /// Optional egress proxy (e.g. http://127.0.0.1:8080).
     #[arg(long, env = "WEBREV_PROXY")]
     proxy: Option<String>,
@@ -61,6 +64,7 @@ async fn main() -> anyhow::Result<()> {
     run(TuiOptions {
         profile: MissionProfile::new(mission, opsec),
         report_path: args.report,
+        redact_report: !args.unredacted,
     })
     .await
 }

@@ -80,7 +80,7 @@ pub async fn run(args: BolaArgs) -> anyhow::Result<()> {
         .filter(|f| f.kind == webrev_core::FindingKind::Idor)
         .count();
     let report = SessionReport::build(a.mission.clone(), findings, Vec::new());
-    let rendered = report.to_json()?;
+    let rendered = report.export_json(!args.unredacted)?;
     if args.output == std::path::Path::new("-") {
         super::report::write_stdout(&rendered)?;
     } else {
@@ -142,7 +142,15 @@ async fn capture_account(
 fn read_report(path: &std::path::Path) -> anyhow::Result<SessionReport> {
     let bytes =
         std::fs::read(path).with_context(|| format!("reading report {}", path.display()))?;
-    serde_json::from_slice(&bytes).with_context(|| format!("parsing report {}", path.display()))
+    let report: SessionReport = serde_json::from_slice(&bytes)
+        .with_context(|| format!("parsing report {}", path.display()))?;
+    anyhow::ensure!(
+        !report.redacted,
+        "report {} was exported with credentials masked, so the object ids BOLA replays are gone; \
+         capture it again with --unredacted (or WEBREV_REPORT_UNREDACTED=1)",
+        path.display()
+    );
+    Ok(report)
 }
 
 fn read_auth(path: &std::path::Path) -> anyhow::Result<AuthConfig> {
@@ -186,6 +194,7 @@ mod tests {
             max_requests: 4,
             proxy: None,
             duration_secs: 0,
+            unredacted: false,
         })
         .await
         .unwrap();
@@ -193,5 +202,27 @@ mod tests {
             serde_json::from_slice(&std::fs::read(output).unwrap()).unwrap();
         assert_eq!(result.findings.len(), 1);
         assert!(result.findings[0].coverage.is_some());
+    }
+
+    #[test]
+    fn masked_reports_are_refused_because_their_object_ids_are_gone() {
+        let directory = tempfile::tempdir().unwrap();
+        let mission = Mission::new(
+            "test",
+            Scope::new(vec!["example.test".into()], vec![]),
+            vec!["https://example.test/".into()],
+        );
+        let report = SessionReport::build(mission, Vec::new(), Vec::new());
+        let masked = directory.path().join("masked.json");
+        std::fs::write(&masked, report.export_json(true).unwrap()).unwrap();
+        let raw = directory.path().join("raw.json");
+        std::fs::write(&raw, report.export_json(false).unwrap()).unwrap();
+
+        let error = read_report(&masked).unwrap_err().to_string();
+        assert!(
+            error.contains("masked") && error.contains("--unredacted"),
+            "{error}"
+        );
+        assert!(read_report(&raw).is_ok());
     }
 }

@@ -14,6 +14,11 @@ pub struct SessionReport {
     pub summary: Summary,
     pub endpoints: Vec<Endpoint>,
     pub findings: Vec<Finding>,
+    /// Set when credentials were masked on export (see [`SessionReport::redacted`]).
+    /// Consumers that replay captured URLs, such as `webrev bola`, refuse such
+    /// a report because the original object ids and tokens are gone.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub redacted: bool,
 }
 
 impl SessionReport {
@@ -28,10 +33,23 @@ impl SessionReport {
             summary,
             endpoints,
             findings,
+            redacted: false,
         }
     }
 
-    /// Render the report as pretty-printed JSON.
+    /// Pretty JSON for a report that leaves the process: credentials are
+    /// masked unless `redact` is false (`--unredacted`).
+    pub fn export_json(&self, redact: bool) -> Result<String> {
+        if redact {
+            self.redacted().to_json()
+        } else {
+            self.to_json()
+        }
+    }
+
+    /// Render the report as pretty-printed JSON, exactly as held in memory.
+    /// Use [`SessionReport::export_json`] or [`SessionReport::render`] for
+    /// anything written to a file, a pipe or a terminal.
     pub fn to_json(&self) -> Result<String> {
         serde_json::to_string_pretty(self)
             .map_err(|e| WebrevError::Config(format!("serializing report: {e}")))

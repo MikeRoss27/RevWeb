@@ -1556,8 +1556,19 @@ name = "webrev-fuzz"
 version = "0.0.0"
 dependencies = [
  "libfuzzer-sys",
+ "serde_json",
  "webrev-core",
  "webrev-extract",
+ "webrev-report",
+]
+
+[[package]]
+name = "webrev-report"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "webrev-core",
 ]
 
 [[package]]

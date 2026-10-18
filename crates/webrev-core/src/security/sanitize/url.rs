@@ -111,7 +111,8 @@ fn redact_pairs(part: &str) -> String {
 /// (`token`, `key`, `secret`, `password`, `sig`, `session`, `code`, ...) and of
 /// any parameter whose value is credential-shaped whatever its name
 /// (`?tok=...`). Everything else is left intact so the URL stays recognisable.
-/// Exported reports and detected secret plaintext are never passed through it.
+/// Detected secret plaintext is never passed through it; exported reports are,
+/// by `webrev_report::SessionReport::redacted`.
 #[must_use]
 pub fn redact_url(raw: &str) -> String {
     let (rest, fragment) = match raw.split_once('#') {

@@ -61,6 +61,9 @@ pub struct RenderOptions {
     pub min_confidence: Confidence,
     /// Findings below this severity are dropped from finding-oriented output.
     pub min_severity: Severity,
+    /// Mask credentials in URLs, evidence and finding text (the default).
+    /// Detected secret plaintext is kept. Disable with `--unredacted`.
+    pub redact: bool,
 }
 
 impl Default for RenderOptions {
@@ -70,6 +73,7 @@ impl Default for RenderOptions {
             scope: ScopeFilter::All,
             min_confidence: Confidence::Low,
             min_severity: Severity::Info,
+            redact: true,
         }
     }
 }
@@ -77,6 +81,14 @@ impl Default for RenderOptions {
 impl SessionReport {
     /// Render the report in the requested format, applying the filters.
     pub fn render(&self, opts: RenderOptions) -> Result<String> {
+        if opts.redact {
+            return self.redacted().render_unmasked(opts);
+        }
+        self.render_unmasked(opts)
+    }
+
+    /// Format dispatch on the report as held; masking is `render`'s job.
+    fn render_unmasked(&self, opts: RenderOptions) -> Result<String> {
         match opts.format {
             ReportFormat::Text => Ok(self.render_text(opts)),
             ReportFormat::Json => self.render_json(opts),
@@ -252,6 +264,7 @@ mod tests {
             scope,
             min_confidence: min,
             min_severity: Severity::Info,
+            redact: false,
         }
     }
 
@@ -320,6 +333,7 @@ mod tests {
             scope: ScopeFilter::All,
             min_confidence: Confidence::Low,
             min_severity: Severity::Medium,
+            redact: false,
         };
         let out = r.render(opts).unwrap();
         // Only the /api/v1 endpoint (medium) survives; the info-level param is cut.
