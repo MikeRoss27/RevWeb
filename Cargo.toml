@@ -11,6 +11,8 @@ members = [
     "crates/webrev-tui",
     "crates/webrev-cli",
 ]
+# cargo-fuzz targets are nightly-only and live in their own workspace.
+exclude = ["fuzz"]
 
 [workspace.package]
 version = "0.1.0"

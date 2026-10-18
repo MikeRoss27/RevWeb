@@ -1,0 +1,9 @@
+import * as ns from "./m1.js";
+const t = location.hash;
+el.innerHTML = ns.wrap(t);
+//@@
+export function wrap(x) { return x + ""; }
+export { wrap as render } from "./m2.js";
+//@@
+export * from "./m3.js";
+export function render(v) { document.write(v); }

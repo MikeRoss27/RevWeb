@@ -187,7 +187,7 @@ fn run_taint(body: &str) -> TaintResult {
     });
     let mut parser = Parser::new(syntax, parser_input, None);
 
-    let Ok(module) = parser.parse_module() else {
+    let Some(module) = crate::js_parse::guarded(|| parser.parse_module()) else {
         return (Vec::new(), Vec::new());
     };
 

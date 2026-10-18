@@ -144,4 +144,24 @@ mod tests {
             ]
         );
     }
+
+    /// Found by fuzzing: an unterminated string followed by a `/` made swc's
+    /// lexer trip an internal assertion in builds with debug assertions.
+    /// Hostile input must degrade to "unparseable", never unwind.
+    #[test]
+    fn lexer_assertion_input_is_contained() {
+        let hostile = "import\"\n=======\n/";
+        let reg = ExtractorRegistry::with_defaults();
+        let url = Some("https://fuzz.test/m0.js".to_owned());
+        let input = ExtractInput::new(
+            webrev_core::SessionId::new(),
+            url,
+            ContentKind::JavaScript,
+            hostile,
+        );
+        let _ = reg.run(&input);
+
+        let modules = vec![input];
+        let _ = DomSinkExtractor::extract_modules(&modules);
+    }
 }

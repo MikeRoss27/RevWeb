@@ -251,7 +251,7 @@ impl Extractor for JsAstExtractor {
 
         // Unparseable input (e.g. TypeScript or exotic syntax) is not an error
         // here: the regex extractor is the fallback for such files.
-        let Ok(module) = parser.parse_module() else {
+        let Some(module) = crate::js_parse::guarded(|| parser.parse_module()) else {
             return Vec::new();
         };
 

@@ -63,7 +63,7 @@ fn parse(input: &ExtractInput) -> Option<ParsedModule> {
         StringInput::new(&fm.src, BytePos(0), BytePos(len)),
         None,
     );
-    let module = parser.parse_module().ok()?;
+    let module = crate::js_parse::guarded(|| parser.parse_module())?;
     if !parser.take_errors().is_empty() {
         return None;
     }

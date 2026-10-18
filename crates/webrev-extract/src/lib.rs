@@ -15,6 +15,7 @@
 //! each HTML page and JavaScript file it fetches.
 
 pub mod extractors;
+mod js_parse;
 pub mod registry;
 pub mod traits;
 
