@@ -13,6 +13,10 @@ use hmac::{Hmac, KeyInit, Mac};
 use rand::TryRng;
 use regex::Regex;
 use sha2::Sha256;
+use std::sync::OnceLock;
+
+mod url;
+pub use url::redact_url;
 
 type HmacSha256 = Hmac<Sha256>;
 
@@ -41,26 +45,25 @@ impl std::fmt::Debug for SessionKey {
 
 const REDACTED: &str = "[REDACTED]";
 
-/// Substrings of a query/fragment parameter name that mark its value as
-/// credential-like for log and error output.
-const SENSITIVE_PARAM_HINTS: [&str; 12] = [
-    "token",
-    "key",
-    "secret",
-    "pass",
-    "pwd",
-    "auth",
-    "sig",
-    "session",
-    "sid",
-    "jwt",
-    "bearer",
-    "credential",
-];
+/// Credentials recognised by their structure or vendor prefix wherever they
+/// appear: JWTs, AWS and Google keys, GitHub, GitLab, Slack and Stripe tokens.
+const KNOWN_TOKENS: &str = concat!(
+    r"eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}",
+    r"|(?:AKIA|ASIA)[0-9A-Z]{16}",
+    r"|AIza[0-9A-Za-z\-_]{35}",
+    r"|gh[pousr]_[A-Za-z0-9]{36}|github_pat_[A-Za-z0-9_]{22,}",
+    r"|glpat-[A-Za-z0-9_\-]{20}",
+    r"|xox[abprs]-[A-Za-z0-9\-]{10,}",
+    r"|[sr]k_(?:live|test)_[A-Za-z0-9]{16,}",
+);
 
-fn is_sensitive_param(name: &str) -> bool {
-    let lower = name.to_ascii_lowercase();
-    lower == "code" || SENSITIVE_PARAM_HINTS.iter().any(|h| lower.contains(h))
+fn known_tokens() -> &'static Regex {
+    static RE: OnceLock<Regex> = OnceLock::new();
+    RE.get_or_init(|| Regex::new(KNOWN_TOKENS).expect("constant sanitizer pattern must compile"))
+}
+
+fn contains_known_token(text: &str) -> bool {
+    known_tokens().is_match(text)
 }
 
 /// Heuristic for a credential-shaped value, independent of the name it is
@@ -106,71 +109,6 @@ fn looks_like_secret(value: &str) -> bool {
     entropy >= 3.2
 }
 
-fn redact_pairs(part: &str) -> String {
-    part.split('&')
-        .map(|pair| match pair.split_once('=') {
-            Some((name, value)) if is_sensitive_param(name) || looks_like_secret(value) => {
-                format!("{name}={REDACTED}")
-            }
-            _ => pair.to_owned(),
-        })
-        .collect::<Vec<_>>()
-        .join("&")
-}
-
-/// Mask credentials embedded in a URL before it enters a log line, an error
-/// message or a `Debug` rendering: `user:pass@` userinfo and the values of
-/// credential-like query or fragment parameters (`token`, `key`, `secret`,
-/// `password`, `sig`, `session`, ...) and of any parameter whose value is
-/// credential-shaped whatever its name (`?tok=...`). Everything else is left intact so the
-/// URL stays recognisable. This is for diagnostics only; findings, reports
-/// and detected secret plaintext are never passed through it.
-#[must_use]
-pub fn redact_url(raw: &str) -> String {
-    let (rest, fragment) = match raw.split_once('#') {
-        Some((r, f)) => (r, Some(f)),
-        None => (raw, None),
-    };
-    let (base, query) = match rest.split_once('?') {
-        Some((b, q)) => (b, Some(q)),
-        None => (rest, None),
-    };
-    let mut out = String::with_capacity(raw.len());
-    // Userinfo lives in the authority, i.e. before the first '/' after "://".
-    if let Some((scheme, after)) = base.split_once("://") {
-        let (authority, path) = match after.find('/') {
-            Some(i) => after.split_at(i),
-            None => (after, ""),
-        };
-        out.push_str(scheme);
-        out.push_str("://");
-        match authority.rsplit_once('@') {
-            Some((_, host)) => {
-                out.push_str(REDACTED);
-                out.push('@');
-                out.push_str(host);
-            }
-            None => out.push_str(authority),
-        }
-        out.push_str(path);
-    } else {
-        out.push_str(base);
-    }
-    if let Some(q) = query {
-        out.push('?');
-        out.push_str(&redact_pairs(q));
-    }
-    if let Some(f) = fragment {
-        out.push('#');
-        if f.contains('=') {
-            out.push_str(&redact_pairs(f));
-        } else {
-            out.push_str(f);
-        }
-    }
-    out
-}
-
 /// Redacts secrets from free text and fingerprints known secrets.
 pub struct Sanitizer {
     patterns: Vec<Regex>,
@@ -179,6 +117,11 @@ pub struct Sanitizer {
     /// it is credential-shaped, so `"session_timeout": "30000000000000"` and
     /// prose such as `session: connected` are left alone.
     named_values: Regex,
+    /// `name: value` pairs whose name is unambiguously a credential (`password`,
+    /// `db_password`, `client-secret`, `api_key`, `token`, `sessionid`,
+    /// `PHPSESSID`, ...). The value is masked whatever its shape, from four
+    /// characters up, except literals such as `true` or `null`.
+    credential_values: Regex,
 }
 
 impl Sanitizer {
@@ -202,12 +145,8 @@ impl Sanitizer {
         // Each pattern targets a well-known credential shape. They are constant
         // and covered by a test, so `expect` here cannot fire at runtime.
         let raw = [
-            // Bearer / JWT-ish tokens
-            r"eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}",
-            // AWS access key id
-            r"AKIA[0-9A-Z]{16}",
-            // Google API key
-            r"AIza[0-9A-Za-z\-_]{35}",
+            // JWTs and vendor-prefixed keys
+            KNOWN_TOKENS,
             // Generic "key"/"token"/"secret" = "<value>" assignments, in both
             // code (`apiKey = "..."`) and JSON shape (`"apiKey":"..."`) where
             // the key's own closing quote sits before the separator.
@@ -218,12 +157,17 @@ impl Sanitizer {
             .map(|p| Regex::new(p).expect("constant sanitizer pattern must compile"))
             .collect();
         let named_values = Regex::new(
-            r#"(?i)(["']?[A-Za-z0-9_\-]*(?:session|sid|auth|credential|passwd|pwd|jwt|bearer|cookie)[A-Za-z0-9_\-]*["']?\s*[:=]\s*["']?)([A-Za-z0-9\-_.~+/=%]{16,})"#,
+            r#"(?i)(["']?[A-Za-z0-9_\-]*(?:session|sid|auth|credential|passwd|pwd|jwt|bearer|cookie|csrf|xsrf|signature|hmac|saml|ticket|secret|token|key|pass)[A-Za-z0-9_\-]*["']?\s*[:=]\s*["']?)([A-Za-z0-9\-_.~+/=%]{16,})"#,
+        )
+        .expect("constant sanitizer pattern must compile");
+        let credential_values = Regex::new(
+            r#"(?im)((?:^|[^A-Za-z0-9_\-.])["']?[A-Za-z0-9_\-.]*?(?:password|passwd|passphrase|pwd|secret|api[_\-]?key|access[_\-]?token|refresh[_\-]?token|id[_\-]?token|auth[_\-]?token|token|private[_\-]?key|session[_\-]?id|sessid|sid)["']?\s*[:=]\s*["']?)([^\s"'&;,<>{}\[\]()]{4,})"#,
         )
         .expect("constant sanitizer pattern must compile");
         Self {
             patterns,
             named_values,
+            credential_values,
         }
     }
 
@@ -234,12 +178,25 @@ impl Sanitizer {
         for re in &self.patterns {
             out = re.replace_all(&out, "[REDACTED]").into_owned();
         }
-        self.named_values
+        let out = self
+            .named_values
             .replace_all(&out, |caps: &regex::Captures<'_>| {
                 if looks_like_secret(&caps[2]) {
                     format!("{}{REDACTED}", &caps[1])
                 } else {
                     caps[0].to_owned()
+                }
+            })
+            .into_owned();
+        self.credential_values
+            .replace_all(&out, |caps: &regex::Captures<'_>| {
+                let literal = ["true", "false", "null", "none", "undefined"]
+                    .iter()
+                    .any(|l| caps[2].eq_ignore_ascii_case(l));
+                if literal {
+                    caps[0].to_owned()
+                } else {
+                    format!("{}{REDACTED}", &caps[1])
                 }
             })
             .into_owned()
@@ -319,53 +276,6 @@ mod tests {
     }
 
     #[test]
-    fn redact_url_masks_userinfo_and_sensitive_params() {
-        assert_eq!(
-            redact_url("http://user:p%40ss@proxy.test:8080/x?a=1&access_token=abc&Api_Key=k#id_token=zzz"),
-            "http://[REDACTED]@proxy.test:8080/x?a=1&access_token=[REDACTED]&Api_Key=[REDACTED]#id_token=[REDACTED]"
-        );
-        assert_eq!(
-            redact_url("socks5://onlyuser@h:1"),
-            "socks5://[REDACTED]@h:1"
-        );
-        // Non-sensitive URLs are unchanged, '@' in the path is not userinfo.
-        for plain in [
-            "https://x.test/a@b?page=2&q=hi#top",
-            "/rel?x=1",
-            "not a url",
-        ] {
-            assert_eq!(redact_url(plain), plain);
-        }
-    }
-
-    #[test]
-    fn redact_url_masks_credential_shaped_values_under_any_name() {
-        // `tok` is not a known sensitive name; the value gives it away.
-        assert_eq!(
-            redact_url("https://app.test/cb?tok=Zk3Jq9XvT2bLm8Rw4NpYs7Ad&page=2"),
-            "https://app.test/cb?tok=[REDACTED]&page=2"
-        );
-        assert_eq!(
-            redact_url(
-                "https://app.test/?h=9f86d081884c7d659a2feaa0c55ad015#x=Zk3Jq9XvT2bLm8Rw4NpYs7Ad"
-            ),
-            "https://app.test/?h=[REDACTED]#x=[REDACTED]"
-        );
-    }
-
-    #[test]
-    fn redact_url_keeps_ordinary_values_readable() {
-        for plain in [
-            "https://x.test/?page=2&sort=created_at_desc&lang=en-US",
-            "https://x.test/?next=/dashboard/settings&q=hello+world",
-            "https://x.test/?ts=1700000000000&version=2024-10-18T12:00:00",
-            "https://x.test/?title=internationalization-guidelines",
-        ] {
-            assert_eq!(redact_url(plain), plain);
-        }
-    }
-
-    #[test]
     fn scrubs_session_shaped_values_in_bodies() {
         let s = Sanitizer::with_default_patterns();
         let out = s.scrub(r#"{"session":"Zk3Jq9XvT2bLm8Rw4NpYs7Ad","ok":true}"#);
@@ -385,6 +295,57 @@ mod tests {
         ] {
             assert_eq!(s.scrub(plain), plain);
         }
+    }
+
+    #[test]
+    fn scrubs_short_values_under_credential_names() {
+        let s = Sanitizer::with_default_patterns();
+        for (input, expected) in [
+            ("password=hunter2", "password=[REDACTED]"),
+            (
+                r#"{"db_password":"abc1"}"#,
+                r#"{"db_password":"[REDACTED]"}"#,
+            ),
+            ("X-Client-Secret: s3cr", "X-Client-Secret: [REDACTED]"),
+            (r#"{"sid": "4242"}"#, r#"{"sid": "[REDACTED]"}"#),
+            (
+                "Cookie: PHPSESSID=8f2a; theme=dark",
+                "Cookie: PHPSESSID=[REDACTED]; theme=dark",
+            ),
+            (
+                r#"{"refresh_token": "1234"}"#,
+                r#"{"refresh_token": "[REDACTED]"}"#,
+            ),
+        ] {
+            assert_eq!(s.scrub(input), expected, "input: {input}");
+        }
+    }
+
+    #[test]
+    fn leaves_credential_named_settings_alone() {
+        let s = Sanitizer::with_default_patterns();
+        for plain in [
+            "password_policy: strict",
+            r#"{"password": true, "passwordless": "enabled"}"#,
+            "tokens: 42",
+            r#"{"token_count": 1234}"#,
+            "inside: yes",
+        ] {
+            assert_eq!(s.scrub(plain), plain);
+        }
+    }
+
+    #[test]
+    fn scrubs_off_list_names_and_vendor_tokens() {
+        let s = Sanitizer::with_default_patterns();
+        let out = s.scrub(r#"{"csrf_mw":"Zk3Jq9XvT2bLm8Rw4NpYs7Ad"}"#);
+        assert_eq!(out, r#"{"csrf_mw":"[REDACTED]"}"#);
+        let out = s.scrub("x-signature: 9f86d081884c7d659a2feaa0c55ad015");
+        assert_eq!(out, "x-signature: [REDACTED]");
+        let out = s.scrub("push with ghp_A1b2C3d4E5f6G7h8I9j0K1l2M3n4O5p6Q7r8 now");
+        assert_eq!(out, "push with [REDACTED] now");
+        let out = s.scrub("slack xoxb-1234567890-abcdefghij ok");
+        assert_eq!(out, "slack [REDACTED] ok");
     }
 
     #[test]

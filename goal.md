@@ -80,6 +80,14 @@ cookies et en-têtes à `debug`/`trace`; ces cibles sont plafonnées à `error`
 Le critère « preuves sensibles protégées » reste décoché : paramètres d'URL de
 nom inconnu et secrets de corps de forme inconnue subsistent (voir
 `docs/security.md`).
+**Suivi (2026-10-18, fuzzing) :** le run GitHub 39166754778 de `fuzz.yml` a
+trouvé un JWT non masqué dans un segment de chemin. `redact_url` analyse
+maintenant les segments, les noms de paramètres et les jetons préfixés connus,
+`scrub` masque les valeurs courtes sous un nom sans ambiguïté, et le résumé
+compact sur stdout passe par `redact_url`. Le critère reste décoché : le
+résumé affiche le texte clair des secrets détectés, les rapports exportés ne
+sont pas masqués, et les heuristiques ne couvrent pas les secrets courts sous
+un nom quelconque (voir `docs/security.md`).
 
 ## Étape 5 — Benchmarks et non-régression
 

@@ -252,7 +252,9 @@ Restes constatés :
   forme de valeur » ci-dessous).*
 - Le rapport écrit sur stdout conserve les seeds et les URL d'endpoints
   découverts tels quels (`?tok=…`, `?token=…` dans l'URL d'un `fetch` trouvé dans
-  le JavaScript de la cible), comme déjà documenté.
+  le JavaScript de la cible), comme déjà documenté. *(Le résumé compact est
+  masqué depuis le 2026-10-18 ; les rapports exportés ne le sont pas, voir
+  « Suivi : trous de redaction et fuzzing ».)*
 - ~~Un secret de corps de forme inconnue (`"session":"…"`) restait dans l'extrait
   de preuve.~~ *Corrigé pour les noms session/sid/auth/credential/passwd/pwd/jwt/
   bearer/cookie, voir ci-dessous.*
@@ -278,7 +280,66 @@ Restes constatés :
   caractères (par exemple 20 chiffres), n'est pas reconnu par la forme. Les
   segments de chemin (`/reset/<jeton>`) ne sont pas analysés. Les noms de clé
   hors de la liste ci-dessus ne sont couverts que par les motifs existants
-  (`api_key`, `secret`, `token`, `password`).
+  (`api_key`, `secret`, `token`, `password`). *(Réduit le 2026-10-18, voir
+  « Suivi : trous de redaction et fuzzing ».)*
+
+### Suivi : trous de redaction et fuzzing (2026-10-18)
+
+Le premier run GitHub de `fuzz.yml` (39166754778) a fait échouer la cible
+`redaction` : un JWT placé dans un **segment de chemin**
+(`https://host.test/ht<JWT>…`) traversait `redact_url`, qui n'analysait que
+l'userinfo, la requête et le fragment. L'entrée est dans
+`fuzz/corpus/redaction/jwt-in-path-segment` et dans le test
+`masks_a_secret_glued_to_padding`.
+
+Code : `crates/webrev-core/src/security/sanitize.rs` et
+`security/sanitize/url.rs`.
+
+- **Segments de chemin** (et fragments sans `=`, routes SPA `#/reset/<jeton>`) :
+  un segment est masqué en entier s'il contient un jeton connu (JWT, clés AWS
+  `AKIA`/`ASIA`, Google `AIza`, GitHub `ghp_`…/`github_pat_`, GitLab `glpat-`,
+  Slack `xox?-`, Stripe `sk_live_`/`rk_test_`…), s'il contient une fenêtre de
+  16 caractères alphanumériques avec au moins 2 chiffres, 4 lettres et
+  12 caractères distincts (un jeton collé à du texte ordinaire), ou s'il a la
+  forme d'un secret **et** contient au moins 2 chiffres et 2 lettres. Restent
+  lisibles : ids numériques, slugs, versions, dates, `getUserProfileData`,
+  `app.3f2a1c.js`. Un UUID en segment est masqué (sur-masquage assumé).
+- **Paramètres de requête** : un nom de paramètre qui contient lui-même un
+  secret, ou un paramètre nu (`?<jeton>`), masque toute la paire. Les valeurs
+  passent aussi par les jetons connus et la fenêtre ci-dessus.
+- **Noms de paramètre** ajoutés : `csrf`, `xsrf`, `saml`, `hmac`, `ticket` en
+  sous-chaîne ; `code`, `otp`, `pin`, `mfa` en nom exact (`barcode`,
+  `postcode`, `encode` restent lisibles).
+- **Secrets courts sous un nom sans ambiguïté** (`Sanitizer::scrub`) :
+  `password`, `passwd`, `passphrase`, `pwd`, `secret`, `api_key`,
+  `access_token`, `refresh_token`, `id_token`, `auth_token`, `token`,
+  `private_key`, `session_id`, `sessid`, `sid`, avec un préfixe quelconque
+  (`db_password`, `X-Client-Secret`, `PHPSESSID`) : la valeur est masquée dès
+  4 caractères, quelle que soit sa forme, sauf `true`, `false`, `null`, `none`,
+  `undefined`. `password_policy: strict`, `passwordless`, `tokens: 42`,
+  `token_count` restent lisibles.
+- **Noms de clé hors liste** : le masquage par forme de valeur couvre aussi
+  `csrf`, `xsrf`, `signature`, `hmac`, `saml`, `ticket`, `secret`, `token`,
+  `key`, `pass` ; les jetons préfixés ci-dessus sont masqués partout dans le
+  texte.
+- **Vue compacte sur stdout** (`commands/output.rs`, résumé affiché après
+  chaque scan) : le nom de mission, les URL des findings et les valeurs de
+  surface d'attaque passent par `redact_url`.
+
+Ce qui reste, et pourquoi le critère « preuves sensibles protégées » de
+`goal.md` reste décoché :
+
+- Le résumé compact affiche toujours le **texte clair des secrets détectés**
+  (c'est l'objet du finding) ; il n'est pas masqué.
+- Les **rapports exportés** (fichier, ou `--report -` sur stdout, JSON/texte/
+  OpenAPI) gardent seeds, endpoints et texte clair des secrets tels quels :
+  c'est une exportation explicite, pas une fuite accidentelle, mais rien ne les
+  protège une fois écrits.
+- Les extraits de preuve hors sondes actives ne passent pas par `scrub`.
+- Heuristiques : un secret de moins de 4 caractères sous un nom sensible, ou
+  un secret court sous un nom quelconque sans motif connu, n'est pas reconnu.
+  Les secrets dans le nom d'hôte ne sont pas analysés.
+- TUI et proxy en amont : non audités.
 
 ### Suivi : test d'egress instable (2026-10-18)
 
