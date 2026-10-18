@@ -1,0 +1,40 @@
+# fuzz/Cargo.toml
+[package]
+name = "webrev-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2021"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+webrev-core = { path = "../crates/webrev-core" }
+webrev-extract = { path = "../crates/webrev-extract" }
+
+# Standalone workspace: nightly + libFuzzer stay out of the product build.
+# fuzz/Cargo.lock starts as a copy of the root lock so the fuzzed dependency
+# versions match what ships.
+[workspace]
+
+[[bin]]
+name = "extract_registry"
+path = "fuzz_targets/extract_registry.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "domsinks_modules"
+path = "fuzz_targets/domsinks_modules.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "redaction"
+path = "fuzz_targets/redaction.rs"
+test = false
+doc = false
+bench = false

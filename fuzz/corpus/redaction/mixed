@@ -1,0 +1,3 @@
+https://user:pass@host.test/a?token=abc123&x=1#id_token=zzz
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ4In0.c2lnbmF0dXJl
+api_key="AbCdEfGhIjKlMnOp"

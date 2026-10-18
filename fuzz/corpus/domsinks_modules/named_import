@@ -1,0 +1,4 @@
+import { sink } from "./m1.js";
+sink(location.search);
+//@@
+export function sink(v) { document.body.innerHTML = v; }

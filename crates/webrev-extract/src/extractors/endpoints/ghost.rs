@@ -275,7 +275,7 @@ impl Extractor for GhostEndpointExtractor {
         let parser_input = StringInput::new(&fm.src, BytePos(0), BytePos(len));
         let mut parser = Parser::new(Syntax::Es(EsSyntax::default()), parser_input, None);
 
-        let Ok(module) = parser.parse_module() else {
+        let Some(module) = crate::js_parse::guarded(|| parser.parse_module()) else {
             return Vec::new();
         };
 

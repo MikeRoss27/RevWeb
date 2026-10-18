@@ -1,0 +1,58 @@
+name: Fuzz
+
+# Short libFuzzer runs over the parsers that receive hostile JavaScript and over
+# the redaction code. Never a merge gate: a crash here is a bug report, kept as
+# an artifact, not a red `ci` check. See docs/fuzzing.md.
+on:
+  schedule:
+    - cron: "17 3 * * 1"
+  workflow_dispatch:
+    inputs:
+      seconds:
+        description: "Seconds of fuzzing per target"
+        default: "180"
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  fuzz:
+    name: fuzz ${{ matrix.target }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [extract_registry, domsinks_modules, redaction]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # v1
+        with:
+          toolchain: nightly
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          shared-key: fuzz
+          workspaces: |
+            fuzz
+      - name: Install cargo-fuzz
+        run: cargo install cargo-fuzz --locked --version 0.13.2
+      - name: Build
+        run: cargo fuzz build -s none ${{ matrix.target }}
+      - name: Fuzz
+        env:
+          SECONDS_PER_TARGET: ${{ inputs.seconds || '180' }}
+        run: >
+          cargo fuzz run -s none ${{ matrix.target }} fuzz/corpus/${{ matrix.target }}
+          -- -max_total_time="$SECONDS_PER_TARGET" -timeout=10 -rss_limit_mb=2048
+      - name: Keep crashing inputs
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: fuzz-crash-${{ matrix.target }}
+          path: fuzz/artifacts/${{ matrix.target }}
+          if-no-files-found: ignore
