@@ -1,8 +1,8 @@
-use super::super::{assigned_identifiers, live_arms};
 use super::{
-    exported_locals, locations, pat_ident_name, BTreeMap, BTreeSet, Decl, ExportValue, Expr,
-    ImportedFunction, ModuleDecl, ModuleItem, ParsedModule, Stmt, TaintVisitor, VisitWith,
+    exported_locals, locations, BTreeMap, BTreeSet, Decl, ExportValue, Expr, ImportedFunction,
+    ModuleDecl, ModuleItem, ParsedModule, Stmt, TaintVisitor, VisitWith,
 };
+use crate::extractors::metadata::domsinks::ast::{assigned_identifiers, live_arms, pat_ident_name};
 use swc_core::ecma::ast::{AssignTarget, Function, FunctionBody, SimpleAssignTarget, VarDeclKind};
 use swc_core::ecma::visit::Visit;
 

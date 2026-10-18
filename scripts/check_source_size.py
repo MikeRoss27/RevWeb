@@ -4,14 +4,7 @@ from pathlib import Path
 
 MAX_LINES = 600
 # A larger file requires a concrete reason here, tied to its relative path.
-EXCEPTIONS: dict[str, str] = {
-    # The SWC taint visitor, parser setup, and fallback reporting share span
-    # tracking; splitting them further would require widening several private
-    # interfaces. Keep the regression tests in a separate sibling module.
-    "crates/webrev-extract/src/extractors/metadata/domsinks.rs": (
-        "AST taint analysis and regex fallback share source-span suppression"
-    ),
-}
+EXCEPTIONS: dict[str, str] = {}
 
 
 def main() -> int:
