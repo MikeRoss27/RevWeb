@@ -506,7 +506,7 @@ CVSS values are not calculated.
   corps de réponse ne sont pas masqués.
 - Audit `RUST_LOG=debug` : reqwest 0.12.28 lu seulement; hyper, hyper-util et
   chromiumoxide non lus, rien exécuté contre une fixture. Détails dans
-  `docs/security.md`.
+  `docs/security.md`. *(Remplacé par l'audit exécuté plus bas.)*
 - Limites DOM XSS inter-fichiers inchangées : imports namespace, réexports
   `export … from`, scripts classiques non-module, fermetures, fonction locale à
   paramètre. 105/122 repose sur ce changelog et le plancher du test; les JSON
@@ -531,3 +531,19 @@ CVSS values are not calculated.
 - Vérifié localement : `cargo test -p webrev-extract` (137 tests unitaires et les
   corpus épinglés de détection, sans changement de résultat). Les chiffres
   105/122 ne sont pas recalculés : les JSON archivés n'ont pas été régénérés.
+
+## 2026-10-18 — Audit exécuté de `RUST_LOG`
+
+- Binaire lancé (`scan --dynamic --active`, Chromium système) contre une fixture
+  loopback avec secrets factices, à `info`, `debug` et `trace`. Avant correctif,
+  `chromiumoxide::conn` (dès `debug`) et `tungstenite` (`trace`) écrivaient
+  Bearer, cookies, `X-Api-Key`, `Set-Cookie` et jetons de requête. reqwest et
+  hyper n'écrivaient que l'hôte et le port.
+- Correctif : `crates/webrev-cli/src/logging.rs` plafonne ces deux cibles à
+  `error` après `RUST_LOG`; `WEBREV_LOG_UNSAFE=1` lève le plafond. Après
+  correctif, 0 ligne de journal avec ces secrets aux trois niveaux.
+- Reste : paramètres d'URL de nom inconnu (`tok=`) dans la ligne `dynamic: <seed>`
+  et secrets de corps de forme inconnue (`"session":…`). Détails dans
+  `docs/security.md`.
+- Vérifié : `cargo test -p webrev-cli logging` (4 tests). Pas de
+  `cargo test --workspace` local; la CI le fait.

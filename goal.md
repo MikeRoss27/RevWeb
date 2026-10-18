@@ -73,6 +73,14 @@ de la destination finale derrière proxy, la non-destructivité des interactions
 dynamiques et la protection des secrets/preuves affichés restent à qualifier;
 les critères correspondants ne sont pas déclarés satisfaits.
 
+**Suivi (2026-10-18) :** audit exécuté de `RUST_LOG` contre une fixture avec
+secrets factices : `chromiumoxide::conn` et `tungstenite` fuitaient Bearer,
+cookies et en-têtes à `debug`/`trace`; ces cibles sont plafonnées à `error`
+(`crates/webrev-cli/src/logging.rs`), 0 fuite mesurée aux trois niveaux ensuite.
+Le critère « preuves sensibles protégées » reste décoché : paramètres d'URL de
+nom inconnu et secrets de corps de forme inconnue subsistent (voir
+`docs/security.md`).
+
 ## Étape 5 — Benchmarks et non-régression
 
 **Décision corpus :** XBOW ne sera pas utilisé comme benchmark de précision
