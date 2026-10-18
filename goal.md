@@ -179,7 +179,7 @@ Python, hashes, formatage, build, Clippy et tests workspace. Les équivalents
 locaux sont passés, dont les tests Python sous Python 3.12.14 via `uv`; le
 workflow GitHub distant a depuis été exécuté et est vert (voir « Mise à jour
 2026-10-18 » ci-dessous). Le contrôle de taille de source
-garde une exception motivée pour `domsinks.rs`.
+n'a plus d'exception : `domsinks.rs` a été découpé en modules (PR #10).
 
 **État de l'étape 5 : EN COURS — non validée.** La remesure du 2026-10-18 sur
 le code actuel de `main` (3 runs, voir « Remesure performance » plus bas) donne
@@ -188,7 +188,8 @@ dépasse la limite de +25% dans 2 runs sur 3 (+6,54 / +45,13 / +41,28%). Le
 critère de performance n'est donc pas validé. Les profils antérieurs ci-dessus,
 dont le PASS du 2026-10-17 (p95 +18,64%, RSS +6,69%), sont historiques. Le corpus
 statique ne montre plus de régression regex. La couverture externe DOM XSS
-inter-fichiers atteint 26/122 sur les catégories compatibles; Juice Shop reste
+inter-fichiers atteint 105/122 sur les catégories compatibles (26/122 était un jalon
+historique, voir la mise à jour du 2026-10-18); Juice Shop reste
 à 3/4 positifs.
 Les jeux externes sont positifs seulement ou trop étroits; un corpus négatif
 et des labels indépendamment revus manquent. Python 3.12.14 et les équivalents
@@ -237,7 +238,11 @@ performance précédents restent des mesures historiques.
 - CI distante : exécutée et verte sur `main`, run CI 39073647553 et run
   Security 39073647540 (jobs : test ubuntu/macOS/Windows, lint, msrv, python
   scripts, browser integration chromium, detection regression, gate `ci`).
-- Non vérifié : `bundles.yml` n'a jamais tourné.
+- `bundles.yml` déclenché à la main sur `main` : run 39096637766, vert sur les
+  quatre cibles (x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu,
+  x86_64-apple-darwin, aarch64-apple-darwin), avec build, packaging, vérification
+  d'installation native et envoi des artefacts. Non vérifié : le chemin tag/release
+  (`release.yml`) qui appelle ce workflow.
 
 **Remesure performance (2026-10-18, code de `main` 6bdc3cc, sources Rust
 identiques à 00f58f0) : p95 PASS, RSS FAIL / non validée.** Trois runs de 30
