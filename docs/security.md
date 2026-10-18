@@ -194,8 +194,9 @@ et les journaux internes de reqwest/hyper/chromiumoxide sous `RUST_LOG=debug`.
   dans le rapport JSON. Seuls les motifs de secrets connus sont masqués ; un
   jeton de forme inconnue dans un corps de réponse subsiste.
 - Audit de `RUST_LOG=debug` / `trace` des dépendances : lecture du code de
-  reqwest 0.12.28 uniquement, **aucune exécution contre une fixture** (la
-  machine manquait de mémoire pour compiler le binaire). Constats :
+  reqwest 0.12.28 uniquement, sans exécution. **Remplacé par l'audit exécuté du
+  2026-10-18 ci-dessous**, qui corrige certains de ces constats. Constats de la
+  lecture :
   - `debug` : `starting new connection: {dst:?}` (connect.rs) journalise l'URI
     complète, jetons de requête compris ; `proxy({proxy:?}) intercepts ...`
     journalise la configuration du proxy.
@@ -207,3 +208,51 @@ et les journaux internes de reqwest/hyper/chromiumoxide sous `RUST_LOG=debug`.
   `RUST_LOG` explicite active ces niveaux. Rien n'est corrigé côté code : il
   faudrait filtrer ces cibles, à décider. À ne pas activer avec de vrais
   identifiants.
+
+### Suivi : audit exécuté de `RUST_LOG` (2026-10-18)
+
+Mesuré en lançant le binaire (`scan --dynamic --active`, Chromium système)
+contre une fixture loopback qui exige des secrets factices : `--bearer`,
+`--cookie`, `--header "X-Api-Key: …"`, jeton en paramètre de requête, `Set-Cookie`
+et secrets dans le corps JSON. Trois niveaux : `info`, `debug`, `trace`.
+
+Avant correctif (nombre de lignes de journal contenant le secret, `debug` /
+`trace`) :
+
+| Secret | `debug` | `trace` | Cible qui l'écrit |
+|---|---:|---:|---|
+| Bearer (`Authorization`) | 4 | 32 | `chromiumoxide::conn::raw_ws::parse_errors`, `chromiumoxide::conn`, `tungstenite::protocol` |
+| En-tête `X-Api-Key` | 4 | 32 | idem |
+| `Set-Cookie` de la réponse | 4 | 26 | idem |
+| Cookie `--cookie` | 0 | 16 | `chromiumoxide::conn`, `tungstenite` |
+| Jeton en requête (`token=`) | 0 | 8 | idem |
+
+- chromiumoxide journalise les messages CDP bruts (`Network.*ExtraInfo`) dès
+  `debug`, et tungstenite les trames WebSocket à `trace`. Ce sont eux qui fuient.
+- reqwest et hyper (`hyper_util`, `reqwest::connect`, `reqwest::retry`) n'ont
+  journalisé que l'hôte et le port à `debug`/`trace` : aucun secret sur 132 lignes
+  `hyper_util` et 44 lignes `reqwest` à `trace`. La lecture de code précédente
+  surestimait leur exposition (reqwest 0.12.28 n'écrit plus l'URI complète).
+- Le corps de réponse n'apparaît dans aucun niveau (pas de canari de corps).
+
+Correctif : `crates/webrev-cli/src/logging.rs`. Après le filtre de l'utilisateur
+(`RUST_LOG`), les cibles `chromiumoxide::conn` et `tungstenite` sont ramenées à
+`error`, et une directive explicite telle que `RUST_LOG=chromiumoxide::conn=trace`
+ne les rouvre pas. `WEBREV_LOG_UNSAFE=1` lève ce plafond, pour déboguer avec des
+identifiants jetables. Tests : `cargo test -p webrev-cli logging` (4 tests, dont
+le plafond et la levée).
+
+Après correctif, même fixture : **0 ligne** contenant le Bearer, le cookie,
+`X-Api-Key`, `Set-Cookie` ou le jeton de requête à `info`, `debug` et `trace`.
+
+Restes constatés, non corrigés :
+
+- Le masquage d'URL de `redact_url` se fait par nom de paramètre : `access_token`
+  est masqué, mais `tok` (nom inconnu) apparaît dans la ligne `dynamic: <seed>`
+  à tous les niveaux, y compris `info`.
+- Le rapport écrit sur stdout conserve les seeds et les URL d'endpoints
+  découverts tels quels (`?tok=…`, `?token=…` dans l'URL d'un `fetch` trouvé dans
+  le JavaScript de la cible), comme déjà documenté.
+- Un secret de corps de forme inconnue reste dans l'extrait de preuve :
+  `"api_key"` est masqué, `"session":"…"` ne l'est pas.
+- Non audités : TUI (sa sortie n'est pas du journal stderr), proxy en amont.

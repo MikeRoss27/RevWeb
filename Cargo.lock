@@ -3876,6 +3876,7 @@ dependencies = [
  "tempfile",
  "tokio",
  "tokio-util",
+ "tracing",
  "tracing-subscriber",
  "webrev-browser",
  "webrev-core",
