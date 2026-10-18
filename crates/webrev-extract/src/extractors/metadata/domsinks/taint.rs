@@ -80,16 +80,34 @@ impl TaintVisitor {
         }
     }
 
+    /// `name` is a plain binding or a seeded `namespace.export` path; an inner
+    /// binding of the plain name or of the namespace hides it.
     pub(super) fn imported_function(&self, name: &str) -> Option<&ImportedFunction> {
+        let root = name.split('.').next().unwrap_or(name);
         if self
             .scopes
             .iter()
             .skip(1)
-            .any(|scope| scope.contains_key(name))
+            .any(|scope| scope.contains_key(root))
         {
             return None;
         }
         self.imported_functions.get(name)
+    }
+
+    /// Taint of `namespace.export` for a namespace import. The dotted key only
+    /// exists at module scope, so any inner binding of the namespace hides it.
+    fn namespace_member(&self, path: &str) -> Option<String> {
+        let (namespace, _) = path.split_once('.')?;
+        if self
+            .scopes
+            .iter()
+            .skip(1)
+            .any(|scope| scope.contains_key(namespace))
+        {
+            return None;
+        }
+        self.scopes.first()?.get(path).cloned().flatten()
     }
 
     pub(super) fn clear_var(&mut self, name: &str) {
@@ -126,6 +144,9 @@ impl TaintVisitor {
                     }) {
                         return Some((label, true));
                     }
+                    if let Some(origin) = self.namespace_member(&path) {
+                        return Some((origin, false));
+                    }
                 }
                 // Property of a tainted value stays tainted (conservative).
                 self.classify(&m.obj)
@@ -150,6 +171,14 @@ impl TaintVisitor {
         };
         match &**callee {
             Expr::Member(m) if member_expr_path(m).as_deref() == Some("DOMPurify.sanitize") => None,
+            // `namespace.exported(...)` for a namespace import.
+            Expr::Member(m)
+                if member_expr_path(m)
+                    .is_some_and(|path| self.imported_function(&path).is_some()) =>
+            {
+                let function = self.imported_function(&member_expr_path(m)?)?;
+                function.returns.clone().map(|origin| (origin, false))
+            }
             // `tainted.method(...)` (string methods preserve taint).
             Expr::Member(m) => {
                 let transformation = member_prop_name(m).unwrap_or_else(|| "method".into());
@@ -315,29 +344,30 @@ impl TaintVisitor {
     /// Handle the sink logic of a call expression.
     pub(super) fn call_sink(&mut self, call: &CallExpr) {
         if let Callee::Expr(callee) = &call.callee {
-            if let Expr::Ident(id) = &**callee {
-                if let Some(function) = self
-                    .imported_function(id.sym.as_ref())
-                    .cloned()
-                    .filter(|_| call.args.iter().all(|arg| arg.spread.is_none()))
-                {
-                    for (index, suffix, sink) in function.sinks {
-                        let Some(arg) = call.args.get(index).filter(|arg| arg.spread.is_none())
-                        else {
-                            continue;
-                        };
-                        if let Some((origin, _)) = self.classify(&arg.expr) {
-                            let origin = format!("{origin}{suffix}");
-                            let flow = format!("DOM XSS: {origin} -> {sink}");
-                            self.linked_trace_locations
-                                .entry(flow)
-                                .or_default()
-                                .extend(function.locations.iter().cloned());
-                            self.trace((origin, false), &sink, call.span());
-                        }
+            let name = match &**callee {
+                Expr::Ident(id) => Some(id.sym.to_string()),
+                Expr::Member(m) => member_expr_path(m),
+                _ => None,
+            };
+            if let Some(function) = name
+                .and_then(|name| self.imported_function(&name).cloned())
+                .filter(|_| call.args.iter().all(|arg| arg.spread.is_none()))
+            {
+                for (index, suffix, sink) in function.sinks {
+                    let Some(arg) = call.args.get(index).filter(|arg| arg.spread.is_none()) else {
+                        continue;
+                    };
+                    if let Some((origin, _)) = self.classify(&arg.expr) {
+                        let origin = format!("{origin}{suffix}");
+                        let flow = format!("DOM XSS: {origin} -> {sink}");
+                        self.linked_trace_locations
+                            .entry(flow)
+                            .or_default()
+                            .extend(function.locations.iter().cloned());
+                        self.trace((origin, false), &sink, call.span());
                     }
-                    return;
                 }
+                return;
             }
         }
         let Callee::Expr(callee) = &call.callee else {

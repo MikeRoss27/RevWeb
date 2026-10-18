@@ -35,13 +35,15 @@
 //!
 //! Ordinary extraction is intra-procedural and single-file. The separate
 //! [`DomSinkExtractor::extract_modules`] batch pass links explicit ES-module
-//! value/function imports across already collected files, with bounded work and static
-//! candidates only. Export summaries require straight-line initialization;
-//! module control flow and namespace imports are not modeled. Exported function
-//! summaries require short, synchronous, straight-line declaration bodies.
-//! There is **no**
-//! cross-function propagation (a tainted value passed as an argument is not
-//! tracked into the callee) and **no** aliasing analysis beyond simple
+//! value/function imports (including `ns.name` of namespace imports and
+//! `export {..} from` / `export * from` re-exports) across already collected files,
+//! with bounded work and static candidates only. Export summaries require
+//! straight-line initialization; module control flow is not modeled. Function
+//! summaries require short, synchronous, straight-line declaration bodies; within
+//! one file they also carry a tainted argument or return value through calls to
+//! top-level `function` declarations. There is **no** other cross-function
+//! propagation (closures, methods and nested declarations are not summarized) and
+//! **no** aliasing analysis beyond simple
 //! `x = <tainted>` assignments (no object-field, array-element, or destructuring
 //! tracking). A tainted value's property access / method call is conservatively
 //! assumed to stay tainted (`location.hash.slice(1)` is still tainted). Scope
@@ -65,7 +67,6 @@ use swc_core::common::sync::Lrc;
 use swc_core::common::{BytePos, FileName, SourceMap};
 use swc_core::ecma::parser::{EsSyntax, Parser, Syntax};
 use swc_core::ecma::visit::VisitWith;
-use taint::TaintVisitor;
 use webrev_core::{Confidence, Finding, FindingKind, Provenance, SessionId, Source};
 
 /// How far past a `message` handler to look for an `origin` check.
@@ -190,9 +191,7 @@ fn run_taint(body: &str) -> TaintResult {
         return (Vec::new(), Vec::new());
     };
 
-    let mut visitor = TaintVisitor::new();
-    module.visit_with(&mut visitor);
-    (visitor.traces, visitor.traced_spans)
+    modules::analyze_standalone(module)
 }
 
 /// Push a finding iff its value has not been seen, keeping dedup on `value`.

@@ -8,8 +8,8 @@ use crate::extractors::metadata::domsinks::ast::{
 use std::collections::BTreeMap;
 use swc_core::common::Spanned;
 use swc_core::ecma::ast::{
-    ArrowExpr, AssignExpr, CallExpr, Expr, Function, KeyValueProp, Lit, NewExpr, Pat, PropName,
-    VarDeclarator,
+    ArrowExpr, AssignExpr, CallExpr, Decl, Expr, Function, KeyValueProp, Lit, NewExpr, Pat,
+    PropName, Stmt, VarDeclarator,
 };
 use swc_core::ecma::visit::{Visit, VisitWith};
 
@@ -160,6 +160,17 @@ impl Visit for TaintVisitor {
                     .last_mut()
                     .expect("scope exists")
                     .insert(name, None);
+            }
+        }
+        // A nested declaration hides an outer function of the same name, so a
+        // call inside this body is not attributed to the outer summary.
+        for statement in f.body.iter().flat_map(|body| &body.stmts) {
+            if let Stmt::Decl(Decl::Fn(inner)) = statement {
+                self.scopes
+                    .last_mut()
+                    .expect("scope exists")
+                    .entry(inner.ident.sym.to_string())
+                    .or_insert(None);
             }
         }
         let first_param = f.params.first().and_then(|p| pat_ident_name(&p.pat));

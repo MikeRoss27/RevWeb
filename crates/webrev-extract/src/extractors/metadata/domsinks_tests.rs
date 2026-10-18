@@ -294,3 +294,56 @@ fn negative_and_dedup() {
 fn unparseable_returns_empty_not_error() {
     assert_eq!(run("function (() {{{ <<< "), Vec::new());
 }
+
+fn traced(js: &str) -> Vec<String> {
+    run(js)
+        .into_iter()
+        .map(|f| f.value)
+        .filter(|value| value.starts_with("DOM XSS"))
+        .collect()
+}
+
+#[test]
+fn local_function_parameter_and_return_flows_are_traced() {
+    let found = run("function show(x) { document.body.innerHTML = x; }\nshow(location.hash);");
+    let flow = find_value(&found, "DOM XSS: location.hash -> document.body.innerHTML")
+        .expect("argument flows into the local sink");
+    assert_eq!(flow.confidence, Confidence::Medium);
+    assert_eq!(
+        traced("function get() { return location.hash; }\ndocument.write(get());"),
+        ["DOM XSS: location.hash -> document.write"]
+    );
+    assert_eq!(
+        traced("function show(a, b) { document.write(b); }\nshow('x', location.search);"),
+        ["DOM XSS: location.search -> document.write"]
+    );
+}
+
+#[test]
+fn local_function_flows_respect_arguments_shadowing_and_sanitizers() {
+    for js in [
+        // Safe argument, tainted argument in the wrong position, sanitizer in the callee.
+        "function show(x) { document.body.innerHTML = x; }\nshow('safe');",
+        "function show(a, b) { document.body.innerHTML = b; }\nshow(location.hash, 'x');",
+        "function show(x) { el.innerHTML = DOMPurify.sanitize(x); }\nshow(location.hash);",
+        // The callee name is rebound, a parameter, or redeclared in a nested scope.
+        "function show(x) { el.innerHTML = x; }\nshow = safeShow;\nshow(location.hash);",
+        "function show(x) { el.innerHTML = x; }\nfunction run(show) { show(location.hash); }",
+        "function show(x) { el.innerHTML = x; }\nfunction run() { function show(y) { log(y); } show(location.hash); }",
+        // A helper that never reaches a sink or returns a tainted value.
+        "function show(x) { log(x); }\nel.innerHTML = 'a'; show(location.hash);",
+        "function get() { return 'a'; }\ndocument.write(get());",
+    ] {
+        assert!(traced(js).is_empty(), "{js}: {:?}", traced(js));
+    }
+}
+
+#[test]
+fn closures_and_arrow_helpers_are_still_not_followed() {
+    for js in [
+        "const show = x => { document.body.innerHTML = x; };\nshow(location.hash);",
+        "const show = function (x) { document.body.innerHTML = x; };\nshow(location.hash);",
+    ] {
+        assert!(traced(js).is_empty(), "{js}");
+    }
+}

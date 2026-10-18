@@ -433,9 +433,12 @@ precision and FPR cannot be computed from this corpus.
 The implementation summarizes straight-line value-export initialization and
 named function exports with short, synchronous, straight-line bodies (later
 addition; the archived `multifile-v1` JSON files predate it and were not
-regenerated). Namespace imports, reexports `from`, classic (non-module) scripts,
-closures, local functions taking parameters and general interprocedural flows
-remain unsupported. The pipeline links modules already collected without fetching
+regenerated). Namespace imports (`ns.name`), `export {..} from` and `export * from`
+re-exports, and top-level local functions taking parameters were added later and
+are covered by unit tests only; the archived corpora and their counts were not
+re-run against them. Classic (non-module) scripts across files, closures, computed
+namespace members, `export * as ns from` and general interprocedural flows remain
+unsupported. The pipeline links modules already collected without fetching
 additional imports. Candidates remain `Suspicious` with `Medium` confidence,
 source/sink provenance and no claim of runtime execution. Analysis is bounded to
 128 modules, 512 KiB/module, 8 MiB total and eight linking passes. Negative unit

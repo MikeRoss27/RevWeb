@@ -512,3 +512,22 @@ CVSS values are not calculated.
   paramètre. 105/122 repose sur ce changelog et le plancher du test; les JSON
   archivés de `multifile-v1` n'ont pas été régénérés (ils montrent 63/122).
 - La mesure de performance de l'étape 5 n'a pas été refaite sur ce code.
+
+## 2026-10-18 — limites DOM XSS levées (imports namespace, réexports, fonctions locales)
+
+- Imports namespace : `import * as ns` expose `ns.nom` (valeur ou fonction
+  résumée) ; `ns[x]`, un membre absent ou une liaison locale `ns` ne créent aucun
+  flux.
+- Réexports : `export {a as b} from` et `export * from` (sans `default`). Un nom
+  fourni par deux `export *` différents est ambigu et écarté ; un export local de
+  même nom masque le réexport. Le fichier « barrel » apparaît dans la provenance.
+- Fonctions locales d'un fichier unique : un argument ou une valeur de retour
+  tainted traverse un appel à une déclaration `function` de premier niveau
+  (candidat `Medium`). Arguments sûrs, mauvais indice de paramètre, assainisseur
+  dans la fonction, nom réaffecté ou masqué (paramètre, déclaration imbriquée) ne
+  produisent rien.
+- Inchangé : scripts classiques non-module inter-fichiers, fermetures (flèches,
+  expressions de fonction, méthodes), `ns[x]`, `export * as ns from`.
+- Vérifié localement : `cargo test -p webrev-extract` (137 tests unitaires et les
+  corpus épinglés de détection, sans changement de résultat). Les chiffres
+  105/122 ne sont pas recalculés : les JSON archivés n'ont pas été régénérés.
