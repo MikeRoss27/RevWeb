@@ -177,7 +177,8 @@ intégré ou évalué; le corpus reste trop petit et hétérogène pour valider 
 La CI inclut les corpus Rust (dont le probe diagnostique Juice Shop), tests
 Python, hashes, formatage, build, Clippy et tests workspace. Les équivalents
 locaux sont passés, dont les tests Python sous Python 3.12.14 via `uv`; le
-workflow GitHub distant n'a pas été déclenché. Le contrôle de taille de source
+workflow GitHub distant a depuis été exécuté et est vert (voir « Mise à jour
+2026-10-18 » ci-dessous). Le contrôle de taille de source
 garde une exception motivée pour `domsinks.rs`.
 
 **État de l'étape 5 : EN COURS — non validée.** Le dernier profil complet
@@ -188,7 +189,8 @@ inter-fichiers atteint 26/122 sur les catégories compatibles; Juice Shop reste
 à 3/4 positifs.
 Les jeux externes sont positifs seulement ou trop étroits; un corpus négatif
 et des labels indépendamment revus manquent. Python 3.12.14 et les équivalents
-locaux CI sont vérifiés; seul le workflow GitHub distant n'a pas été déclenché.
+locaux CI sont vérifiés; le workflow GitHub distant a été exécuté (vert, voir
+« Mise à jour 2026-10-18 »).
 Les preuves actuelles ne démontrent donc pas la généralisation.
 
 **Reprise parallèle (2026-10-17, suivi le plus récent) :** la propagation de
@@ -219,6 +221,22 @@ la version intégrée est consigné séparément sous
 `benchmarks/performance/2026-10-17/spa-site-optimized/`; les chiffres de
 performance précédents restent des mesures historiques.
 
+**Mise à jour 2026-10-18 (état de `main` à 6cfd10f, merge de la PR #5) :**
+- Couverture exacte du corpus externe multi-fichiers : **105/122** (et non
+  26/122, qui est un jalon historique). Source : `docs/changelog-reliability.md`
+  (« DOM XSS entre fichiers : branches, boucles, helpers », 63 → 105/122) et
+  plancher de non-régression du test à 105. Les JSON archivés sous
+  `benchmarks/external-domxss/multifile-v1/` (`function-results.json`: 63/122)
+  n'ont pas été régénérés pour 105 : le chiffre repose sur le changelog et le
+  test, pas sur ces fichiers. Ce corpus reste positif seulement.
+- Tests : **350 réussis, 0 échec, 8 ignorés** sur le job `test (ubuntu-24.04)`
+  du run CI 39073647553 (commit 6cfd10f). Le chiffre 299 est historique.
+- CI distante : exécutée et verte sur `main`, run CI 39073647553 et run
+  Security 39073647540 (jobs : test ubuntu/macOS/Windows, lint, msrv, python
+  scripts, browser integration chromium, detection regression, gate `ci`).
+- Non vérifié : `bundles.yml` n'a jamais tourné; la performance ci-dessous
+  précède ces changements (voir ligne performance, non mise à jour ici).
+
 **Résultat performance intégré final : PASS.** Avec 30 paires et un lanceur C
 qui isole la mémoire du scanner de celle du harness Python, p95
 38,081 → 45,178 ms (**+18,64%**), RSS max 20 748 → 22 136 KiB (**+6,69%**),
@@ -241,7 +259,7 @@ de généralisation à tous les sites.
 - [x] Les métriques TP/FP/FN/TN, précision, rappel, FPR et FNR sont calculées et vérifiées sur les corpus/lab exécutés.
 - [x] Le corpus statique distingue les splits dev et validation par famille (sans prétention d’indépendance).
 - [x] Équivalents locaux CI passés : formatage, taille source, 12 tests Python, checksums, tests workspace, Clippy strict.
-- [ ] Workflow GitHub distant à déclencher; équivalents locaux exécutés avec Python 3.12.14 via `uv`.
+- [x] Workflow GitHub distant exécuté et vert sur `main` (run CI 39073647553, commit 6cfd10f); équivalents locaux exécutés avec Python 3.12.14 via `uv`.
 - [x] Tests workspace et corpus relancés après les changements actuels; aucun échec observé.
 - [x] Le dernier profil SPA final respecte p95 (+18,64% ≤20%) et RSS (+6,69% ≤25%); 60/60 scans réussis. Le lockfile baseline est réécrit pour ses arêtes locales, sans changement de version/source/checksum des paquets externes.
 - [ ] Corpus externe représentatif avec positifs et négatifs, labels examinés indépendamment.
