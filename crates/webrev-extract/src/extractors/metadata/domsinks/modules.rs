@@ -1,6 +1,8 @@
-//! Bounded ES-module linking. Explicit named/default values and named function
-//! summaries cross file boundaries; unresolved imports, namespace imports, dynamic
-//! imports and cycles without a concrete source never invent a flow.
+//! Bounded ES-module linking. Explicit named/default values, `ns.name` members of
+//! namespace imports, `export {..} from` / `export * from` re-exports and named
+//! function summaries cross file boundaries; unresolved imports, dynamic imports,
+//! computed namespace members and cycles without a concrete source never invent
+//! a flow.
 use super::ast::{live_arms, pat_ident_name};
 use super::taint::{ImportedFunction, TaintVisitor};
 use super::{
@@ -15,6 +17,7 @@ use swc_core::ecma::ast::{
 use url::Url;
 
 mod functions;
+mod links;
 use functions::{function_exports, local_functions};
 
 /// Limits also apply to the pipeline's retained JavaScript inputs.
@@ -97,6 +100,19 @@ fn seed_imports(
             continue;
         };
         for specifier in &import.specifiers {
+            if let ImportSpecifier::Namespace(namespace) = specifier {
+                // `ns.name` is seeded as a dotted key for every known export.
+                let local = namespace.local.sym.to_string();
+                let members = exports
+                    .range((url.clone(), String::new())..)
+                    .take_while(|((module, _), _)| *module == url);
+                for ((_, name), value) in members {
+                    let key = format!("{local}.{name}");
+                    seed_value(&mut visitor, &key, value);
+                    imports.insert(key, value.clone());
+                }
+                continue;
+            }
             let (local, exported) = match specifier {
                 ImportSpecifier::Named(named) if !named.is_type_only => (
                     named.local.sym.to_string(),
@@ -111,20 +127,24 @@ fn seed_imports(
                 _ => continue,
             };
             if let Some(value) = exports.get(&(url.clone(), exported)) {
-                if let Some(function) = &value.function {
-                    visitor.scopes[0].insert(local.clone(), None);
-                    visitor
-                        .imported_functions
-                        .insert(local.clone(), function.clone());
-                } else {
-                    visitor.insert_var(local.clone(), value.origin.clone());
-                }
+                seed_value(&mut visitor, &local, value);
                 imports.insert(local, value.clone());
             }
         }
     }
     visitor.module_calls_only = true;
     (visitor, imports)
+}
+
+fn seed_value(visitor: &mut TaintVisitor, key: &str, value: &ExportValue) {
+    if let Some(function) = &value.function {
+        visitor.scopes[0].insert(key.to_owned(), None);
+        visitor
+            .imported_functions
+            .insert(key.to_owned(), function.clone());
+    } else {
+        visitor.insert_var(key.to_owned(), value.origin.clone());
+    }
 }
 
 fn exported_locals(module: &Module) -> Vec<(String, String)> {
@@ -244,7 +264,15 @@ fn apply_if(visitor: &mut TaintVisitor, statement: &IfStmt) -> Option<()> {
     Some(())
 }
 
+/// Own exports win over named re-exports, which win over `export *`.
 fn summarize(parsed: &ParsedModule, exports: &Exports) -> BTreeMap<String, ExportValue> {
+    let mut result = links::star_reexports(parsed, exports);
+    result.extend(links::named_reexports(parsed, exports));
+    result.extend(summarize_local(parsed, exports));
+    result
+}
+
+fn summarize_local(parsed: &ParsedModule, exports: &Exports) -> BTreeMap<String, ExportValue> {
     let (mut visitor, imports) = seed_imports(parsed, exports);
     // Declarations hoist, so same-module helpers are callable from any
     // initialization statement.
@@ -323,6 +351,24 @@ fn summarize(parsed: &ParsedModule, exports: &Exports) -> BTreeMap<String, Expor
         result.insert("default".to_owned(), value);
     }
     result
+}
+
+/// Single-file analysis with summaries of the top-level function declarations,
+/// so a tainted argument or return value crosses a call to a local function.
+/// Arrow and function expressions, methods and nested declarations are not
+/// summarized.
+pub(super) fn analyze_standalone(module: Module) -> super::TaintResult {
+    let Ok(url) = Url::parse("file:///standalone.js") else {
+        return (Vec::new(), Vec::new());
+    };
+    let parsed = ParsedModule { url, module };
+    let mut visitor = TaintVisitor::new();
+    for (name, function) in local_functions(&parsed, &visitor, &BTreeMap::new()) {
+        visitor.scopes[0].entry(name.clone()).or_insert(None);
+        visitor.imported_functions.insert(name, function);
+    }
+    parsed.module.visit_with(&mut visitor);
+    (visitor.traces, visitor.traced_spans)
 }
 
 impl DomSinkExtractor {
@@ -447,3 +493,5 @@ impl DomSinkExtractor {
 
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod tests_links;
