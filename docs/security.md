@@ -245,14 +245,51 @@ le plafond et la levée).
 Après correctif, même fixture : **0 ligne** contenant le Bearer, le cookie,
 `X-Api-Key`, `Set-Cookie` ou le jeton de requête à `info`, `debug` et `trace`.
 
-Restes constatés, non corrigés :
+Restes constatés :
 
-- Le masquage d'URL de `redact_url` se fait par nom de paramètre : `access_token`
-  est masqué, mais `tok` (nom inconnu) apparaît dans la ligne `dynamic: <seed>`
-  à tous les niveaux, y compris `info`.
+- ~~`redact_url` masquait par nom de paramètre seulement (`tok` fuyait dans
+  `dynamic: <seed>` à tous les niveaux).~~ *Corrigé (voir « Suivi : redaction par
+  forme de valeur » ci-dessous).*
 - Le rapport écrit sur stdout conserve les seeds et les URL d'endpoints
   découverts tels quels (`?tok=…`, `?token=…` dans l'URL d'un `fetch` trouvé dans
   le JavaScript de la cible), comme déjà documenté.
-- Un secret de corps de forme inconnue reste dans l'extrait de preuve :
-  `"api_key"` est masqué, `"session":"…"` ne l'est pas.
+- ~~Un secret de corps de forme inconnue (`"session":"…"`) restait dans l'extrait
+  de preuve.~~ *Corrigé pour les noms session/sid/auth/credential/passwd/pwd/jwt/
+  bearer/cookie, voir ci-dessous.*
 - Non audités : TUI (sa sortie n'est pas du journal stderr), proxy en amont.
+
+### Suivi : redaction par forme de valeur (2026-10-18)
+
+- `redact_url` masque aussi toute valeur de requête ou de fragment qui a la
+  forme d'un secret, quel que soit le nom du paramètre : au moins 16 caractères
+  de l'alphabet de jeton, au moins deux classes parmi minuscules, majuscules et
+  chiffres, entropie de Shannon d'au moins 3,2 bits par caractère. Le seed
+  `dynamic:` n'est journalisé qu'après ce masquage.
+- `Sanitizer::scrub` masque `nom: valeur` / `"nom":"valeur"` pour les noms
+  contenant `session`, `sid`, `auth`, `credential`, `passwd`, `pwd`, `jwt`,
+  `bearer` ou `cookie`, **seulement si la valeur a cette même forme**.
+  `"session_timeout":"30000000000000"` ou `session: connected-and-healthy`
+  restent lisibles.
+- Biais assumé vers le sur-masquage : un UUID ou un condensat hexadécimal de
+  32 caractères dans une URL de journal est masqué. Les mots courants, ids
+  numériques, horodatages et identifiants `snake_case` ne le sont pas
+  (tests positifs et négatifs dans `security/sanitize.rs`).
+- Limites : un secret de moins de 16 caractères, ou d'une seule classe de
+  caractères (par exemple 20 chiffres), n'est pas reconnu par la forme. Les
+  segments de chemin (`/reset/<jeton>`) ne sont pas analysés. Les noms de clé
+  hors de la liste ci-dessus ne sont couverts que par les motifs existants
+  (`api_key`, `secret`, `token`, `password`).
+
+### Suivi : test d'egress instable (2026-10-18)
+
+`egress_proxy::tests::upstream_is_never_contacted_for_refused_or_unresolvable_destinations`
+a échoué une fois en CI (attente de 3 s expirée dans `exchange`). **Non
+reproduit en local.** Cause probable, déduite du code et non mesurée : le proxy
+résolvait `hidden.invalid` avec le résolveur du système, dont la latence est
+hors de notre contrôle, alors que le client de test n'attend que 3 s et que le
+proxy en accorde 5 (`HANDSHAKE_TIMEOUT`). Le test dépendait donc du DNS de la
+machine. Correctif : `destination` répond localement aux noms `.invalid`
+(RFC 6761, ils ne se résolvent jamais) avec `NotFound`, donc 502, sans requête
+DNS. Le test vérifie maintenant que la réponse arrive en moins d'une seconde,
+et `is_invalid_name` a son propre test. Effet de bord voulu : le nom n'est plus
+envoyé au résolveur.

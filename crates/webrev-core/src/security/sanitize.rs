@@ -63,10 +63,55 @@ fn is_sensitive_param(name: &str) -> bool {
     lower == "code" || SENSITIVE_PARAM_HINTS.iter().any(|h| lower.contains(h))
 }
 
+/// Heuristic for a credential-shaped value, independent of the name it is
+/// stored under: at least 16 characters from the token alphabet, mixing at
+/// least two of lower case, upper case and digits, with enough character
+/// variety (Shannon entropy of 3.2 bits per character or more). Plain words,
+/// numeric ids, timestamps and `snake_case` identifiers stay readable; opaque
+/// hex digests, UUIDs and base64-like blobs are masked. Over-masking in a log
+/// line is the safe direction, so the bias is toward redaction.
+fn looks_like_secret(value: &str) -> bool {
+    const MIN_LEN: usize = 16;
+    if value.len() < MIN_LEN
+        || !value
+            .bytes()
+            .all(|b| b.is_ascii_alphanumeric() || b"-_.~+/=%".contains(&b))
+    {
+        return false;
+    }
+    let classes = [
+        value.bytes().any(|b| b.is_ascii_lowercase()),
+        value.bytes().any(|b| b.is_ascii_uppercase()),
+        value.bytes().any(|b| b.is_ascii_digit()),
+    ]
+    .into_iter()
+    .filter(|present| *present)
+    .count();
+    if classes < 2 {
+        return false;
+    }
+    let mut counts = [0u32; 256];
+    for b in value.bytes() {
+        counts[usize::from(b)] += 1;
+    }
+    let len = f64::from(u32::try_from(value.len()).unwrap_or(u32::MAX));
+    let entropy: f64 = counts
+        .iter()
+        .filter(|&&c| c > 0)
+        .map(|&c| {
+            let p = f64::from(c) / len;
+            -p * p.log2()
+        })
+        .sum();
+    entropy >= 3.2
+}
+
 fn redact_pairs(part: &str) -> String {
     part.split('&')
         .map(|pair| match pair.split_once('=') {
-            Some((name, _)) if is_sensitive_param(name) => format!("{name}={REDACTED}"),
+            Some((name, value)) if is_sensitive_param(name) || looks_like_secret(value) => {
+                format!("{name}={REDACTED}")
+            }
             _ => pair.to_owned(),
         })
         .collect::<Vec<_>>()
@@ -76,7 +121,8 @@ fn redact_pairs(part: &str) -> String {
 /// Mask credentials embedded in a URL before it enters a log line, an error
 /// message or a `Debug` rendering: `user:pass@` userinfo and the values of
 /// credential-like query or fragment parameters (`token`, `key`, `secret`,
-/// `password`, `sig`, `session`, ...). Everything else is left intact so the
+/// `password`, `sig`, `session`, ...) and of any parameter whose value is
+/// credential-shaped whatever its name (`?tok=...`). Everything else is left intact so the
 /// URL stays recognisable. This is for diagnostics only; findings, reports
 /// and detected secret plaintext are never passed through it.
 #[must_use]
@@ -128,6 +174,11 @@ pub fn redact_url(raw: &str) -> String {
 /// Redacts secrets from free text and fingerprints known secrets.
 pub struct Sanitizer {
     patterns: Vec<Regex>,
+    /// `name: value` / `"name":"value"` pairs under session- or auth-like names
+    /// (`session`, `sid`, `auth`, `cookie`, ...). The value is masked only when
+    /// it is credential-shaped, so `"session_timeout": "30000000000000"` and
+    /// prose such as `session: connected` are left alone.
+    named_values: Regex,
 }
 
 impl Sanitizer {
@@ -166,7 +217,14 @@ impl Sanitizer {
             .iter()
             .map(|p| Regex::new(p).expect("constant sanitizer pattern must compile"))
             .collect();
-        Self { patterns }
+        let named_values = Regex::new(
+            r#"(?i)(["']?[A-Za-z0-9_\-]*(?:session|sid|auth|credential|passwd|pwd|jwt|bearer|cookie)[A-Za-z0-9_\-]*["']?\s*[:=]\s*["']?)([A-Za-z0-9\-_.~+/=%]{16,})"#,
+        )
+        .expect("constant sanitizer pattern must compile");
+        Self {
+            patterns,
+            named_values,
+        }
     }
 
     /// Replace every secret-looking substring with `[REDACTED]`.
@@ -176,7 +234,15 @@ impl Sanitizer {
         for re in &self.patterns {
             out = re.replace_all(&out, "[REDACTED]").into_owned();
         }
-        out
+        self.named_values
+            .replace_all(&out, |caps: &regex::Captures<'_>| {
+                if looks_like_secret(&caps[2]) {
+                    format!("{}{REDACTED}", &caps[1])
+                } else {
+                    caps[0].to_owned()
+                }
+            })
+            .into_owned()
     }
 
     /// Redact the value of a sensitive header, passing other headers through.
@@ -269,6 +335,55 @@ mod tests {
             "not a url",
         ] {
             assert_eq!(redact_url(plain), plain);
+        }
+    }
+
+    #[test]
+    fn redact_url_masks_credential_shaped_values_under_any_name() {
+        // `tok` is not a known sensitive name; the value gives it away.
+        assert_eq!(
+            redact_url("https://app.test/cb?tok=Zk3Jq9XvT2bLm8Rw4NpYs7Ad&page=2"),
+            "https://app.test/cb?tok=[REDACTED]&page=2"
+        );
+        assert_eq!(
+            redact_url(
+                "https://app.test/?h=9f86d081884c7d659a2feaa0c55ad015#x=Zk3Jq9XvT2bLm8Rw4NpYs7Ad"
+            ),
+            "https://app.test/?h=[REDACTED]#x=[REDACTED]"
+        );
+    }
+
+    #[test]
+    fn redact_url_keeps_ordinary_values_readable() {
+        for plain in [
+            "https://x.test/?page=2&sort=created_at_desc&lang=en-US",
+            "https://x.test/?next=/dashboard/settings&q=hello+world",
+            "https://x.test/?ts=1700000000000&version=2024-10-18T12:00:00",
+            "https://x.test/?title=internationalization-guidelines",
+        ] {
+            assert_eq!(redact_url(plain), plain);
+        }
+    }
+
+    #[test]
+    fn scrubs_session_shaped_values_in_bodies() {
+        let s = Sanitizer::with_default_patterns();
+        let out = s.scrub(r#"{"session":"Zk3Jq9XvT2bLm8Rw4NpYs7Ad","ok":true}"#);
+        assert_eq!(out, r#"{"session":"[REDACTED]","ok":true}"#);
+        let out = s.scrub("Set sid=9f86d081884c7d659a2feaa0c55ad015; Path=/");
+        assert!(out.contains("sid=[REDACTED]"), "got: {out}");
+    }
+
+    #[test]
+    fn leaves_session_named_but_ordinary_values_alone() {
+        let s = Sanitizer::with_default_patterns();
+        for plain in [
+            r#"{"session_timeout":"30000000000000"}"#,
+            r#"{"sessionState":"connected-successfully"}"#,
+            "session: connected-and-healthy",
+            r#"{"author":"someone-with-a-long-name"}"#,
+        ] {
+            assert_eq!(s.scrub(plain), plain);
         }
     }
 
