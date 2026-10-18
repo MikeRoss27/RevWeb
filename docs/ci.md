@@ -62,6 +62,10 @@ macOS, Windows and the Chromium job. That is a single green run per platform,
 not a track record: macOS, Windows and `browser` stay informational until they
 have stayed green for a while.
 
+Later pull requests (#8, #9, #10) also ran green on Linux, macOS, Windows and
+the Chromium job, with the `ci` gate passing. Still a short history, so those
+jobs remain outside the gate except Linux `test`.
+
 ## Known gaps
 
 - No code coverage, fuzzing or SBOM generation yet.

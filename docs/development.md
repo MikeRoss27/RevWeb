@@ -22,6 +22,8 @@ webrev-extract/src/extractors/
   endpoints/           HTML/JS, GraphQL, SPA routes, source-map references
   metadata/            configuration, manifests, parameters
     tech/              detection engine, tests, signatures grouped by stack layer
+    domsinks.rs        dom-sinks extractor, regex fallback and the taint entry point
+    domsinks/          sources, sinks, ast helpers, taint visitor (taint/visit.rs), module linking
   secrets/             scanner, credential patterns, heuristics, tests
 
 webrev-pipeline/src/

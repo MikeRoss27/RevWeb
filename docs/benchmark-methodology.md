@@ -430,8 +430,11 @@ The additional 44/342 cases with any raw DOM-flow signal must not be counted as
 44 annotated exact matches. All labels remain positive, synthetic and correlated;
 precision and FPR cannot be computed from this corpus.
 
-The implementation summarizes straight-line value-export initialization only.
-Function exports, namespace imports, reexports `from`, and interprocedural flows
+The implementation summarizes straight-line value-export initialization and
+named function exports with short, synchronous, straight-line bodies (later
+addition; the archived `multifile-v1` JSON files predate it and were not
+regenerated). Namespace imports, reexports `from`, classic (non-module) scripts,
+closures, local functions taking parameters and general interprocedural flows
 remain unsupported. The pipeline links modules already collected without fetching
 additional imports. Candidates remain `Suspicious` with `Medium` confidence,
 source/sink provenance and no claim of runtime execution. Analysis is bounded to
