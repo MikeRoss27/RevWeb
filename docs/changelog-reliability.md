@@ -577,6 +577,7 @@ CVSS values are not calculated.
   feuille et reste parsable. `--unredacted` / `WEBREV_REPORT_UNREDACTED=1`
   garde le brut. Un rapport masqué porte `"redacted": true` et `webrev bola
   --a-report/--b-report` le refuse (les identifiants d'objets ont disparu).
+  *(Corrigé le jour même, voir la section suivante.)*
 - Le texte clair des secrets détectés reste exporté (choix de produit
   inchangé). La détection n'est pas affectée : seule la copie exportée change.
 - Tests : 9 unitaires (`redact.rs`, dont idempotence, JSON, prose, données
@@ -585,3 +586,23 @@ CVSS values are not calculated.
   `ephemeral.rs` partage maintenant sa fixture via `tests/common/mod.rs`.
 - Cible de fuzz `report_redaction`.
 - Critère « preuves sensibles protégées » de `goal.md` toujours décoché.
+
+## 2026-10-19 — identifiants d'objets lisibles dans les rapports masqués
+
+- Régression de la PR #21 : les UUID et ids opaques en chemin étaient masqués,
+  donc un résultat `bola` ne disait plus quel objet avait fuité. La redaction
+  vise maintenant les identifiants de connexion, pas les identifiants d'objets.
+- Plus masqués par leur seule forme : nombres, UUID (avec ou sans tirets), ids
+  hexadécimaux de 32 chiffres au plus. Toujours masqués : jetons de forme
+  connue, valeurs sous un nom de paramètre sensible (`session_id=<uuid>`), le
+  segment qui suit `/reset/`, `/invite/`, `/verify/`, `/confirm/`…, les
+  condensats de plus de 32 chiffres.
+- Les noms sensibles se comparent par mot (`access_token`, `apiKey`) et non par
+  sous-chaîne : `author_id`, `passenger_id`, `design_id` ne sont plus masqués.
+- `bola --a-report/--b-report` accepte un rapport masqué ; une paire dont l'URL
+  portait un identifiant de connexion est écartée avec un message.
+- Tests : `sanitize/names.rs` (3), `sanitize/url.rs` (2 nouveaux, 1 adapté),
+  de bout en bout `tests/bola_readable.rs` (IDOR détectée, objet lisible, aucun
+  jeton ; objets protégés sans signal).
+- Compromis : un rapport peut contenir des identifiants sensibles ; il reste
+  confidentiel même masqué. Voir `docs/security.md`.

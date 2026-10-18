@@ -2,38 +2,18 @@
 //! URL redaction for log lines, error messages, `Debug` renderings and the
 //! compact terminal summary.
 
+use super::names::{
+    follows_credential_shape, introduces_credential, is_credential_name, looks_like_object_id,
+};
 use super::{contains_known_token, looks_like_secret, REDACTED};
 
-/// Substrings of a query/fragment parameter name that mark its value as
-/// credential-like for log and error output.
-const SENSITIVE_PARAM_HINTS: [&str; 17] = [
-    "token",
-    "key",
-    "secret",
-    "pass",
-    "pwd",
-    "auth",
-    "sig",
-    "session",
-    "sid",
-    "jwt",
-    "bearer",
-    "credential",
-    "csrf",
-    "xsrf",
-    "saml",
-    "hmac",
-    "ticket",
-];
-
-/// Short names that are too generic for a substring match but are credentials
+/// Short names that are too generic for word matching but are credentials
 /// when they are the whole parameter name (OAuth `code`, one-time codes).
+/// `postal_code` and `barcode` are not.
 const SENSITIVE_PARAM_NAMES: [&str; 4] = ["code", "otp", "pin", "mfa"];
 
 fn is_sensitive_param(name: &str) -> bool {
-    let lower = name.to_ascii_lowercase();
-    SENSITIVE_PARAM_NAMES.contains(&lower.as_str())
-        || SENSITIVE_PARAM_HINTS.iter().any(|h| lower.contains(h))
+    SENSITIVE_PARAM_NAMES.contains(&name.to_ascii_lowercase().as_str()) || is_credential_name(name)
 }
 
 /// True when a 16-character window of an alphanumeric run mixes letters and
@@ -63,23 +43,38 @@ fn has_secret_window(text: &str) -> bool {
 
 /// A path segment or bare fragment worth hiding. Stricter than a query value:
 /// a segment must also contain digits and letters, so `getUserProfileData`,
-/// slugs, versions and numeric ids stay readable.
+/// slugs, versions and numeric ids stay readable. Object identifiers (numbers,
+/// UUIDs, short hex ids) stay readable too: they are what a BOLA/IDOR result
+/// is about. A known token shape is hidden regardless.
 fn segment_hides_secret(segment: &str) -> bool {
+    if contains_known_token(segment) {
+        return true;
+    }
+    if looks_like_object_id(segment) {
+        return false;
+    }
     let digits = segment.bytes().filter(u8::is_ascii_digit).count();
     let letters = segment.bytes().filter(u8::is_ascii_alphabetic).count();
-    contains_known_token(segment)
-        || has_secret_window(segment)
-        || (digits >= 2 && letters >= 2 && looks_like_secret(segment))
+    has_secret_window(segment) || (digits >= 2 && letters >= 2 && looks_like_secret(segment))
 }
 
 fn value_hides_secret(value: &str) -> bool {
-    looks_like_secret(value) || contains_known_token(value) || has_secret_window(value)
+    if contains_known_token(value) {
+        return true;
+    }
+    !looks_like_object_id(value) && (looks_like_secret(value) || has_secret_window(value))
 }
 
 fn redact_path(path: &str) -> String {
+    let mut previous = "";
     path.split('/')
         .map(|segment| {
-            if segment_hides_secret(segment) {
+            // `/reset/<id>`: the segment before says the next one is a
+            // credential, so even an id-shaped value is hidden.
+            let hidden = segment_hides_secret(segment)
+                || (introduces_credential(previous) && follows_credential_shape(segment));
+            previous = segment;
+            if hidden {
                 REDACTED
             } else {
                 segment
@@ -195,9 +190,57 @@ mod tests {
         );
         assert_eq!(
             redact_url(
-                "https://app.test/?h=9f86d081884c7d659a2feaa0c55ad015#x=Zk3Jq9XvT2bLm8Rw4NpYs7Ad"
+                "https://app.test/?h=9f86d081884c7d659a2feaa0c55ad0159f86d081#x=Zk3Jq9XvT2bLm8Rw4NpYs7Ad"
             ),
             "https://app.test/?h=[REDACTED]#x=[REDACTED]"
+        );
+    }
+
+    #[test]
+    fn keeps_object_identifiers_readable() {
+        // What a BOLA/IDOR result is about: which object, of which account.
+        for plain in [
+            "https://x.test/api/orders/550e8400-e29b-41d4-a716-446655440000",
+            "https://x.test/api/orders/550E8400-E29B-41D4-A716-446655440000/items",
+            "https://x.test/api/users/507f1f77bcf86cd799439011",
+            "https://x.test/api/files/550e8400e29b41d4a716446655440000",
+            "https://x.test/api/users/12345678901234",
+            "https://x.test/api/orders?id=550e8400-e29b-41d4-a716-446655440000&page=2",
+            "https://x.test/api/orders?author_id=550e8400-e29b-41d4-a716-446655440000",
+            "https://x.test/api/rides?passenger_id=9f86d081884c7d659a2feaa0c55ad015",
+            "https://x.test/#/orders/550e8400-e29b-41d4-a716-446655440000",
+        ] {
+            assert_eq!(redact_url(plain), plain);
+        }
+    }
+
+    #[test]
+    fn hides_an_id_shaped_value_under_a_credential_name_or_path() {
+        assert_eq!(
+            redact_url("https://x.test/cb?session_id=550e8400-e29b-41d4-a716-446655440000&id=7"),
+            "https://x.test/cb?session_id=[REDACTED]&id=7"
+        );
+        assert_eq!(
+            redact_url("https://x.test/reset/550e8400-e29b-41d4-a716-446655440000/confirm"),
+            "https://x.test/reset/[REDACTED]/confirm"
+        );
+        assert_eq!(
+            redact_url("https://x.test/invite/9f86d081884c7d659a2feaa0c55ad015"),
+            "https://x.test/invite/[REDACTED]"
+        );
+        assert_eq!(
+            redact_url("https://x.test/#/verify/a1b2c3d4e5f6"),
+            "https://x.test/#/verify/[REDACTED]"
+        );
+        // A long hex digest is not an object id.
+        assert_eq!(
+            redact_url("https://x.test/files/9f86d081884c7d659a2feaa0c55ad0159f86d081"),
+            "https://x.test/files/[REDACTED]"
+        );
+        // The word before decides, not a substring of it.
+        assert_eq!(
+            redact_url("https://x.test/tokenizer/550e8400-e29b-41d4-a716-446655440000"),
+            "https://x.test/tokenizer/550e8400-e29b-41d4-a716-446655440000"
         );
     }
 

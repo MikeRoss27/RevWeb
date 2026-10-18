@@ -15,6 +15,7 @@ use regex::Regex;
 use sha2::Sha256;
 use std::sync::OnceLock;
 
+mod names;
 mod url;
 pub use url::redact_url;
 
@@ -181,7 +182,16 @@ impl Sanitizer {
         let out = self
             .named_values
             .replace_all(&out, |caps: &regex::Captures<'_>| {
-                if looks_like_secret(&caps[2]) {
+                // An object id under a name that is not itself a credential
+                // (`author_id=<uuid>`) is data, not a secret.
+                let name: String = caps[1]
+                    .trim_start_matches(['"', '\''])
+                    .chars()
+                    .take_while(|c| c.is_ascii_alphanumeric() || matches!(c, '_' | '-'))
+                    .collect();
+                let object_id =
+                    names::looks_like_object_id(&caps[2]) && !names::is_credential_name(&name);
+                if looks_like_secret(&caps[2]) && !object_id {
                     format!("{}{REDACTED}", &caps[1])
                 } else {
                     caps[0].to_owned()
@@ -282,6 +292,27 @@ mod tests {
         assert_eq!(out, r#"{"session":"[REDACTED]","ok":true}"#);
         let out = s.scrub("Set sid=9f86d081884c7d659a2feaa0c55ad015; Path=/");
         assert!(out.contains("sid=[REDACTED]"), "got: {out}");
+    }
+
+    #[test]
+    fn keeps_object_ids_unless_the_name_is_a_credential() {
+        let s = Sanitizer::with_default_patterns();
+        let id = "550e8400-e29b-41d4-a716-446655440000";
+        for plain in [
+            format!(r#"{{"author_id":"{id}"}}"#),
+            format!("passenger_id={id}"),
+            format!("GET /api/orders?design_id={id}"),
+        ] {
+            assert_eq!(s.scrub(&plain), plain);
+        }
+        assert_eq!(
+            s.scrub(&format!(r#"{{"session":"{id}"}}"#)),
+            r#"{"session":"[REDACTED]"}"#
+        );
+        assert_eq!(
+            s.scrub(&format!("sessionId={id}; Path=/")),
+            "sessionId=[REDACTED]; Path=/"
+        );
     }
 
     #[test]

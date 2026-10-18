@@ -109,3 +109,13 @@ the HTTP/CDP transport and the report writers are not fuzzed. The `wasm`
 extractor gets raw bytes from `extract_registry` only. There is no
 differential or grammar-based JavaScript generator, so deep taint paths in
 `domsinks` depend on the corpus seeds.
+
+### Object identifiers are not canaries
+
+The redaction targets plant credential-shaped canaries (`Zk3J…`, an AWS key, a
+JWT). Since 2026-10-19 a UUID, a number or a short hex id is deliberately *not*
+masked (see `docs/security.md`, « Suivi : identifiants d'objets lisibles »), so
+none of those shapes may be used as a canary: the property "the known secret
+never survives" would fail on correct output. The unit tests in
+`security/sanitize/url.rs` pin the id side of the contract; the fuzz targets pin
+the credential side.

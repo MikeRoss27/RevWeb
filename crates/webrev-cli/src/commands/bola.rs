@@ -4,7 +4,7 @@ use crate::cli::BolaArgs;
 use anyhow::Context;
 use tokio_util::sync::CancellationToken;
 use webrev_core::{ActiveLimits, AuthConfig, EgressPolicy, Mission, OpsecConfig, Scope};
-use webrev_pipeline::{active_targets, bola_candidates, run_bola_scan};
+use webrev_pipeline::{active_targets, bola_candidates, run_bola_scan, BolaCandidate};
 use webrev_report::SessionReport;
 use webrev_storage::{InMemoryStorage, Storage};
 
@@ -49,6 +49,13 @@ pub async fn run(args: BolaArgs) -> anyhow::Result<()> {
                 && b.mission.scope.allows(&candidate.account_b_url)
         })
         .collect();
+    let (candidates, skipped) = without_masked_urls(candidates);
+    if skipped > 0 {
+        eprintln!(
+            "BOLA: skipped {skipped} pair(s) whose captured URL had a credential masked; \
+             capture them again with --unredacted (or WEBREV_REPORT_UNREDACTED=1) to compare them"
+        );
+    }
     eprintln!(
         "BOLA: {} captured object pair(s) eligible for read-only comparison",
         candidates.len()
@@ -139,17 +146,27 @@ async fn capture_account(
     ))
 }
 
+/// Object ids survive masking, but a credential in a captured URL does not: a
+/// pair whose URL now says `[REDACTED]` cannot be replayed as it was seen.
+/// Returns the replayable pairs and how many were dropped.
+fn without_masked_urls(candidates: Vec<BolaCandidate>) -> (Vec<BolaCandidate>, usize) {
+    let total = candidates.len();
+    let replayable: Vec<_> = candidates
+        .into_iter()
+        .filter(|candidate| {
+            !(candidate.account_a_url.contains("REDACTED")
+                || candidate.account_b_url.contains("REDACTED"))
+        })
+        .collect();
+    let skipped = total - replayable.len();
+    (replayable, skipped)
+}
+
 fn read_report(path: &std::path::Path) -> anyhow::Result<SessionReport> {
     let bytes =
         std::fs::read(path).with_context(|| format!("reading report {}", path.display()))?;
     let report: SessionReport = serde_json::from_slice(&bytes)
         .with_context(|| format!("parsing report {}", path.display()))?;
-    anyhow::ensure!(
-        !report.redacted,
-        "report {} was exported with credentials masked, so the object ids BOLA replays are gone; \
-         capture it again with --unredacted (or WEBREV_REPORT_UNREDACTED=1)",
-        path.display()
-    );
     Ok(report)
 }
 
@@ -205,7 +222,7 @@ mod tests {
     }
 
     #[test]
-    fn masked_reports_are_refused_because_their_object_ids_are_gone() {
+    fn masked_reports_are_read_and_keep_their_marker() {
         let directory = tempfile::tempdir().unwrap();
         let mission = Mission::new(
             "test",
@@ -218,11 +235,29 @@ mod tests {
         let raw = directory.path().join("raw.json");
         std::fs::write(&raw, report.export_json(false).unwrap()).unwrap();
 
-        let error = read_report(&masked).unwrap_err().to_string();
-        assert!(
-            error.contains("masked") && error.contains("--unredacted"),
-            "{error}"
-        );
-        assert!(read_report(&raw).is_ok());
+        assert!(read_report(&masked).unwrap().redacted);
+        assert!(!read_report(&raw).unwrap().redacted);
+    }
+
+    #[test]
+    fn pairs_with_a_masked_credential_are_skipped_but_object_ids_are_kept() {
+        let id = "550e8400-e29b-41d4-a716-446655440001";
+        let pair = |a: String, b: String| BolaCandidate {
+            route: "/api/orders/{uuid}".into(),
+            account_a_url: a,
+            account_b_url: b,
+        };
+        let (kept, skipped) = without_masked_urls(vec![
+            pair(
+                format!("https://x.test/api/orders/{id}"),
+                "https://x.test/api/orders/550e8400-e29b-41d4-a716-446655440002".into(),
+            ),
+            pair(
+                format!("https://x.test/api/orders/{id}?token=[REDACTED]"),
+                "https://x.test/api/orders/550e8400-e29b-41d4-a716-446655440002".into(),
+            ),
+        ]);
+        assert_eq!((kept.len(), skipped), (1, 1));
+        assert!(kept[0].account_a_url.ends_with(id));
     }
 }
