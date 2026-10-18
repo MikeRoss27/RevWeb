@@ -430,8 +430,12 @@ async fn upstream_is_never_contacted_for_refused_or_unresolvable_destinations() 
     )
     .await
     .unwrap();
+    // `.invalid` is answered locally (RFC 6761), so this never waits on the
+    // host resolver and stays well inside `exchange`'s read timeout.
+    let started = std::time::Instant::now();
     let unresolved = exchange(proxy.address(), &get("hidden.invalid:80")).await;
     assert!(unresolved.starts_with(b"HTTP/1.1 502"));
+    assert!(started.elapsed() < Duration::from_secs(1));
     for request in [
         get("127.0.0.9:80"),
         get("203.0.113.5:80"),
@@ -445,6 +449,28 @@ async fn upstream_is_never_contacted_for_refused_or_unresolvable_destinations() 
         );
     }
     assert!(silent(&upstream).await);
+}
+
+#[test]
+fn invalid_names_are_recognised_only_as_a_whole_label() {
+    use super::is_invalid_name;
+    for name in [
+        "invalid",
+        "hidden.invalid",
+        "A.B.INVALID",
+        "hidden.invalid.",
+    ] {
+        assert!(is_invalid_name(name), "{name}");
+    }
+    for name in [
+        "notinvalid",
+        "invalid.example",
+        "hidden.invalid.example",
+        "127.0.0.1",
+        "",
+    ] {
+        assert!(!is_invalid_name(name), "{name}");
+    }
 }
 
 #[tokio::test]

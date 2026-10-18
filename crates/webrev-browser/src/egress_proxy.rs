@@ -304,9 +304,28 @@ fn host(url: &Url) -> io::Result<&str> {
     Ok(url.host_str().ok_or_else(invalid)?.trim_matches(['[', ']']))
 }
 
+fn is_invalid_name(name: &str) -> bool {
+    let name = name.trim_end_matches('.');
+    name.eq_ignore_ascii_case("invalid")
+        || name
+            .len()
+            .checked_sub(".invalid".len())
+            .and_then(|start| name.get(start..))
+            .is_some_and(|tail| tail.eq_ignore_ascii_case(".invalid"))
+}
+
 async fn destination(scope: &Scope, url: &Url) -> io::Result<SocketAddr> {
     let name = host(url)?;
     let port = url.port_or_known_default().ok_or_else(invalid)?;
+    // RFC 6761: `.invalid` never resolves. Answer locally instead of asking the
+    // system resolver, whose latency is outside our control (a slow resolver
+    // can outlast the client's patience) and which would leak the name.
+    if is_invalid_name(name) {
+        return Err(io::Error::new(
+            io::ErrorKind::NotFound,
+            "reserved .invalid name",
+        ));
+    }
     let addresses = lookup_host((name, port)).await?;
     addresses
         .into_iter()
