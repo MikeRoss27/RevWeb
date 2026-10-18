@@ -1,0 +1,6 @@
+BEFORE
+ 19:07:42 up 29 min,  1 user,  load average: 1,54, 3,71, 3,23
+Mem:            15Gi       9,3Gi       2,0Gi       1,8Gi       5,9Gi       6,0Gi
+AFTER
+ 19:07:48 up 29 min,  1 user,  load average: 1,49, 3,66, 3,22
+Mem:            15Gi       9,4Gi       1,9Gi       1,8Gi       5,9Gi       5,9Gi
