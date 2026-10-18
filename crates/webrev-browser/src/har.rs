@@ -6,11 +6,27 @@ use std::collections::BTreeMap;
 use webrev_core::{Endpoint, Method, Source};
 
 /// One captured request.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct HarEntry {
     pub method: String,
     pub url: String,
     pub headers: BTreeMap<String, String>,
+}
+
+impl std::fmt::Debug for HarEntry {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let sanitizer = webrev_core::Sanitizer::with_default_patterns();
+        let headers: BTreeMap<&str, String> = self
+            .headers
+            .iter()
+            .map(|(k, v)| (k.as_str(), sanitizer.scrub_header(k, v)))
+            .collect();
+        f.debug_struct("HarEntry")
+            .field("method", &self.method)
+            .field("url", &webrev_core::redact_url(&self.url))
+            .field("headers", &headers)
+            .finish()
+    }
 }
 
 /// A collection of captured requests.
@@ -43,6 +59,25 @@ impl Har {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn debug_output_masks_credentials_but_the_data_is_kept() {
+        let mut headers = BTreeMap::new();
+        headers.insert("Authorization".to_owned(), "Bearer sekret-value".to_owned());
+        headers.insert("Cookie".to_owned(), "sid=cookie-secret".to_owned());
+        headers.insert("Accept".to_owned(), "application/json".to_owned());
+        let entry = HarEntry {
+            method: "GET".to_owned(),
+            url: "https://api.test/v1?token=url-secret".to_owned(),
+            headers,
+        };
+        let rendered = format!("{entry:?}");
+        for leaked in ["sekret-value", "cookie-secret", "url-secret"] {
+            assert!(!rendered.contains(leaked), "leaked {leaked}: {rendered}");
+        }
+        assert!(rendered.contains("application/json"));
+        assert_eq!(entry.headers["Authorization"], "Bearer sekret-value");
+    }
 
     #[test]
     fn preserves_credentials_and_builds_endpoints() {

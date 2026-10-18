@@ -181,3 +181,27 @@ n'apparaissent plus dans les erreurs ni dans `tracing`. Restent hors de portée 
 le `Debug` de `HarEntry` (en-têtes `Authorization`, en mémoire uniquement), les
 extraits de réponses de sondes actives stockés tels quels dans le rapport JSON,
 et les journaux internes de reqwest/hyper/chromiumoxide sous `RUST_LOG=debug`.
+
+### Suivi : `HarEntry`, extraits de sondes et journaux des dépendances (2026-10-18)
+
+- `HarEntry` n'a plus de `Debug` dérivé : `{:?}` masque les valeurs des en-têtes
+  sensibles (`Authorization`, `Cookie`, ...), les motifs de secrets et les
+  paramètres sensibles de l'URL. Les données restent intactes en mémoire.
+- `ProbeResponse::observation` passe l'extrait (avant la troncature à 256
+  caractères) dans `Sanitizer::scrub` et l'URL dans `redact_url` avant stockage
+  dans le rapport JSON. Seuls les motifs de secrets connus sont masqués ; un
+  jeton de forme inconnue dans un corps de réponse subsiste.
+- Audit de `RUST_LOG=debug` / `trace` des dépendances : lecture du code de
+  reqwest 0.12.28 uniquement, **aucune exécution contre une fixture** (la
+  machine manquait de mémoire pour compiler le binaire). Constats :
+  - `debug` : `starting new connection: {dst:?}` (connect.rs) journalise l'URI
+    complète, jetons de requête compris ; `proxy({proxy:?}) intercepts ...`
+    journalise la configuration du proxy.
+  - `trace` : le wrapper de connexion journalise les octets lus/écrits
+    (`read:` / `write:`), donc les requêtes et en-têtes `Authorization` en clair.
+  - hyper, hyper-util et chromiumoxide (qui expose les messages CDP) n'ont pas
+    été lus.
+  Le filtre par défaut est `info,chromiumoxide::handler=error` ; seul un
+  `RUST_LOG` explicite active ces niveaux. Rien n'est corrigé côté code : il
+  faudrait filtrer ces cibles, à décider. À ne pas activer avec de vrais
+  identifiants.

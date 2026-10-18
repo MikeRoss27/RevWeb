@@ -6,7 +6,15 @@ use std::sync::{
     Mutex,
 };
 use tokio_util::sync::CancellationToken;
-use webrev_core::{ActiveCoverage, AuthConfig, OpsecConfig, ResponseObservation, Result, Scope};
+use webrev_core::{
+    redact_url, ActiveCoverage, AuthConfig, OpsecConfig, ResponseObservation, Result, Sanitizer,
+    Scope,
+};
+
+fn sanitizer() -> &'static Sanitizer {
+    static SANITIZER: std::sync::OnceLock<Sanitizer> = std::sync::OnceLock::new();
+    SANITIZER.get_or_init(Sanitizer::with_default_patterns)
+}
 
 pub(super) struct ProbeClient<'a> {
     client: reqwest::Client,
@@ -43,12 +51,13 @@ impl ProbeResponse {
         ResponseObservation {
             role: role.into(),
             method: "GET".into(),
-            url: self.url.clone(),
+            url: redact_url(&self.url),
             status: self.status.as_u16(),
             authenticated: self.authenticated,
             content_type: self.content_type(),
             body_bytes: self.bytes.len(),
-            excerpt: excerpt.chars().take(256).collect(),
+            // Scrub before truncating so a secret cut in half is not left behind.
+            excerpt: sanitizer().scrub(excerpt).chars().take(256).collect(),
         }
     }
 }
@@ -295,6 +304,22 @@ impl<'a> ProbeClient<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn observation_scrubs_secrets_from_excerpt_and_url() {
+        let response = ProbeResponse {
+            url: "https://t.test/a?token=url-secret-value".into(),
+            status: reqwest::StatusCode::OK,
+            headers: reqwest::header::HeaderMap::new(),
+            bytes: Vec::new(),
+            authenticated: false,
+        };
+        let body = r#"{"apiKey":"abcdef0123456789xyz","name":"visible"}"#;
+        let observation = response.observation("probe", body);
+        assert!(!observation.excerpt.contains("abcdef0123456789xyz"));
+        assert!(observation.excerpt.contains("visible"));
+        assert!(!observation.url.contains("url-secret-value"));
+    }
 
     #[tokio::test]
     async fn scope_refusal_is_recorded_without_counting_a_negative_test() {
