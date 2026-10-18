@@ -241,6 +241,8 @@ store. A Cargo workspace keeps the layers honest:
 | <img src="docs/assets/icons/pipe.svg" width="24" alt=""> | [docs/architecture.md](docs/architecture.md) | Workspace layout, crate responsibilities, pipeline data flow |
 | <img src="docs/assets/icons/extract.svg" width="24" alt=""> | [docs/extractors.md](docs/extractors.md) | The extractor catalog, finding kinds, adding your own |
 | <img src="docs/assets/icons/scope.svg" width="24" alt=""> | [docs/security.md](docs/security.md) | Authorization, scope, secret handling, responsible use |
+| <img src="docs/assets/icons/pipe.svg" width="24" alt=""> | [docs/development.md](docs/development.md) | Source organization, size limits, local workflow |
+| <img src="docs/assets/icons/pipe.svg" width="24" alt=""> | [docs/ci.md](docs/ci.md) | CI workflows, the `ci` gate, releases, known gaps |
 
 ## Brand
 

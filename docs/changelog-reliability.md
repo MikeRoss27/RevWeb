@@ -493,3 +493,22 @@ CVSS values are not calculated.
   pour lever le refus. Le crawler journalise (`tracing`) sans compteur de
   couverture. `--observation-only` reste le seul mode sans clic. Critères
   de goal.md non cochés.
+
+## Refactor `domsinks`, masquage des identifiants, documentation (2026-10-18)
+
+- `domsinks.rs` (1206 lignes) est découpé en `domsinks/{sources,sinks,ast,taint}.rs`
+  et `taint/visit.rs`, sans changement de comportement; l'exception de
+  `scripts/check_source_size.py` est retirée. `cargo test --workspace` : 350
+  réussis (job `test (ubuntu-24.04)`), job `detection regression` vert.
+- `HarEntry` : `Debug` manuel qui masque en-têtes sensibles, motifs de secrets
+  et paramètres sensibles de l'URL. Extraits des sondes actives : `Sanitizer::scrub`
+  puis troncature, URL via `redact_url`. Les jetons de forme inconnue dans un
+  corps de réponse ne sont pas masqués.
+- Audit `RUST_LOG=debug` : reqwest 0.12.28 lu seulement; hyper, hyper-util et
+  chromiumoxide non lus, rien exécuté contre une fixture. Détails dans
+  `docs/security.md`.
+- Limites DOM XSS inter-fichiers inchangées : imports namespace, réexports
+  `export … from`, scripts classiques non-module, fermetures, fonction locale à
+  paramètre. 105/122 repose sur ce changelog et le plancher du test; les JSON
+  archivés de `multifile-v1` n'ont pas été régénérés (ils montrent 63/122).
+- La mesure de performance de l'étape 5 n'a pas été refaite sur ce code.

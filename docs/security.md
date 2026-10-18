@@ -165,12 +165,14 @@ Non corrigé ou non vérifié (hors périmètre de cette passe) :
   userinfo ou jetons en requête sur stderr ; à passer par `redact_url`.
 - `webrev-browser` : `HarEntry` dérive `Debug` et contient les en-têtes de
   requête (dont `Authorization`) ; il n'est pas écrit sur disque à ce jour.
+  *(Corrigé le 2026-10-18, voir le suivi ci-dessous.)*
 - Les extraits de preuve actifs (256 caractères) et les URL de seeds sont
   conservés tels quels dans le rapport ; une réponse qui renvoie un cookie ou un
   jeton dans son corps s'y retrouve. Les seeds avec userinfo/jeton figurent
   dans `mission.seeds` du rapport JSON.
 - Le défaut de `RUST_LOG=debug`/`trace` des dépendances (reqwest, hyper,
-  chromiumoxide) n'a pas été audité.
+  chromiumoxide) n'a pas été audité. *(Audit partiel le 2026-10-18 : reqwest
+  seulement, voir le suivi ci-dessous.)*
 
 ### Suivi : journaux et erreurs du pipeline (2026-10-17)
 
