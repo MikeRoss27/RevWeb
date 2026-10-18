@@ -283,10 +283,12 @@ Restes constatés :
   `bearer` ou `cookie`, **seulement si la valeur a cette même forme**.
   `"session_timeout":"30000000000000"` ou `session: connected-and-healthy`
   restent lisibles.
-- Biais assumé vers le sur-masquage : un UUID ou un condensat hexadécimal de
-  32 caractères dans une URL de journal est masqué. Les mots courants, ids
-  numériques, horodatages et identifiants `snake_case` ne le sont pas
-  (tests positifs et négatifs dans `security/sanitize.rs`).
+- *(Révisé le 2026-10-19, voir « Suivi : identifiants d'objets lisibles ».)*
+  Un identifiant d'objet n'est pas un identifiant de connexion et n'est plus
+  masqué par sa seule forme : UUID, ids numériques et ids hexadécimaux de
+  32 chiffres au plus restent lisibles, comme les mots courants, horodatages
+  et identifiants `snake_case` (tests positifs et négatifs dans
+  `security/sanitize/url.rs`).
 - Limites : un secret de moins de 16 caractères, ou d'une seule classe de
   caractères (par exemple 20 chiffres), n'est pas reconnu par la forme. Les
   segments de chemin (`/reset/<jeton>`) ne sont pas analysés. Les noms de clé
@@ -314,7 +316,8 @@ Code : `crates/webrev-core/src/security/sanitize.rs` et
   12 caractères distincts (un jeton collé à du texte ordinaire), ou s'il a la
   forme d'un secret **et** contient au moins 2 chiffres et 2 lettres. Restent
   lisibles : ids numériques, slugs, versions, dates, `getUserProfileData`,
-  `app.3f2a1c.js`. Un UUID en segment est masqué (sur-masquage assumé).
+  `app.3f2a1c.js`. *(Un UUID en segment était masqué à ce stade ; ce n'est plus
+  le cas depuis le 2026-10-19, voir plus bas.)*
 - **Paramètres de requête** : un nom de paramètre qui contient lui-même un
   secret, ou un paramètre nu (`?<jeton>`), masque toute la paire. Les valeurs
   passent aussi par les jetons connus et la fenêtre ci-dessus.
@@ -376,11 +379,13 @@ correctif.
 
 Conséquences à connaître :
 
-- `webrev bola --a-report/--b-report` rejoue des URL d'objets ; un rapport
-  masqué a perdu les identifiants (un UUID dans un chemin est masqué). `bola`
-  le refuse avec un message ; refaire la capture avec `--unredacted`.
-- `webrev report --format urls | ffuf` reçoit des segments `[REDACTED]` à la
-  place des UUID/jetons ; ajouter `--unredacted` pour fuzzer les vraies valeurs.
+- *(Corrigé le 2026-10-19.)* Cette première version masquait les UUID en
+  chemin, ce qui rendait les résultats `bola` inutilisables (on ne voyait plus
+  quel objet avait fuité) et faisait refuser les rapports masqués par
+  `--a-report/--b-report`. Voir « Suivi : identifiants d'objets lisibles ».
+- `webrev report --format urls | ffuf` reçoit `[REDACTED]` à la place des
+  jetons ; les identifiants d'objets restent. Ajouter `--unredacted` pour
+  fuzzer les vraies valeurs des jetons.
 - Deux endpoints qui ne diffèrent que par un segment masqué restent deux
   entrées (pas de déduplication, les compteurs du résumé restent justes).
 - `--unredacted` ne restaure rien : appliqué à un rapport déjà masqué, il
@@ -394,6 +399,62 @@ donc décoché) :
 - Les extraits de preuve hors sondes actives sont masqués à l'export, mais pas
   en mémoire ni dans la vue compacte.
 - TUI (affichage à l'écran) et proxy en amont : non audités.
+
+### Suivi : identifiants d'objets lisibles (2026-10-19)
+
+**Problème.** Le masquage des rapports exportés (ci-dessus) cachait les UUID et
+les ids opaques dans les chemins. Un résultat `bola` affiche l'objet atteint
+(`/api/orders/<uuid>`) : masqué, il ne dit plus quel objet de quel compte a
+fuité, donc il n'est plus exploitable. C'était une régression de la PR #21.
+
+**Principe.** La redaction vise les *identifiants de connexion* (JWT, clés et
+jetons à préfixe connu, `Authorization`, cookies, mots de passe, valeurs sous un
+nom sensible, jetons de reset/invitation), pas les *identifiants d'objets*.
+Code : `security/sanitize/names.rs`, `security/sanitize/url.rs`.
+
+Ce qui n'est plus masqué par sa seule forme : un nombre, un UUID (avec ou sans
+tirets, majuscules comprises), un id hexadécimal de 32 chiffres au plus (Mongo
+`ObjectId`, condensat court), dans un segment de chemin, un fragment ou une
+valeur de paramètre.
+
+Ce qui reste masqué :
+
+- tout jeton de forme connue (JWT, AWS, Google, GitHub, GitLab, Slack,
+  Stripe), même dans un segment ordinaire ;
+- la valeur d'un paramètre dont le **nom** désigne un identifiant de connexion,
+  quelle que soit sa forme, y compris un UUID : `session_id=<uuid>`,
+  `access_token`, `api_key`… La correspondance se fait **par mot** (`access`,
+  `token`), plus par sous-chaîne : `author_id`, `passenger_id`, `design_id` ne
+  sont plus pris pour des secrets ;
+- le segment qui suit un segment annonçant un jeton (`/reset/<id>`,
+  `/invite/`, `/verify/`, `/confirm/`, `/activate/`, `/magic/`, `/token/`,
+  `/unsubscribe/`) s'il fait 8 caractères ou plus et contient un chiffre, même
+  s'il a la forme d'un UUID ;
+- les valeurs de forme secrète qui ne sont pas des identifiants : au moins
+  16 caractères, deux classes de caractères, entropie d'au moins 3,2 bits. Un
+  condensat de plus de 32 chiffres hexadécimaux (SHA-1, SHA-256) reste masqué ;
+- sous un nom de clé sensible, `Sanitizer::scrub` masque un id comme avant
+  (`"session":"<uuid>"`) ; sous un autre nom (`author_id=<uuid>`) il le garde.
+
+**Résultat de `bola`.** Par défaut, il garde l'URL de l'objet atteint, les
+quatre observations (rôles « A own object », « B reads A object »…, méthode,
+URL avec l'identifiant, code de statut, empreinte SHA-256 du corps), le verdict
+et la limite d'interprétation. Seuls les identifiants de connexion en sont
+retirés. `bola --a-report/--b-report` accepte maintenant un rapport masqué : les
+identifiants d'objets y sont intacts. Une paire dont l'URL capturée portait un
+identifiant de connexion (`?token=[REDACTED]`) ne peut pas être rejouée telle
+quelle ; elle est écartée avec un message, et `--unredacted` à la capture la
+rétablit. Le marqueur `"redacted": true` est conservé.
+
+**Compromis, à lire.** Les identifiants d'objets ne sont plus masqués, donc un
+rapport peut contenir des identifiants sensibles (ids de comptes, de commandes,
+de dossiers). **Un rapport exporté, même masqué, reste confidentiel.** Le
+masquage retire les moyens de se connecter, pas la liste des objets touchés.
+Limites de l'heuristique : un jeton de session hexadécimal de 32 chiffres au
+plus sous un nom de paramètre ordinaire (`?s=<hex>`) n'est pas reconnu ; un
+jeton de reset dans un chemin que rien n'annonce (`/r/<hex>`) non plus ; un
+condensat de plus de 32 chiffres, comme un identifiant de commit Git dans
+`/commit/<sha1>`, est masqué par excès.
 
 ### Suivi : test d'egress instable (2026-10-18)
 

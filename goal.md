@@ -91,7 +91,9 @@ un nom quelconque (voir `docs/security.md`).
 **Suivi (2026-10-19, rapports exportés) :** tous les formats d'export masquent
 désormais les identifiants par défaut (`SessionReport::redacted`, option
 `--unredacted` / `WEBREV_REPORT_UNREDACTED=1` pour garder le brut ; `bola`
-refuse un rapport masqué). Le texte clair des secrets détectés reste exporté
+refuse un rapport masqué ; corrigé le jour même : les identifiants d'objets ne
+sont plus masqués et `bola` accepte un rapport masqué, voir `docs/security.md`,
+« Suivi : identifiants d'objets lisibles »). Le texte clair des secrets détectés reste exporté
 volontairement. Le critère reste décoché : secrets courts sous un nom de clé
 quelconque, secrets dans le nom d'hôte, affichage de la TUI et proxy en amont
 restent non traités (voir `docs/security.md`, « Suivi : rapports exportés »).

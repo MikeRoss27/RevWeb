@@ -300,6 +300,54 @@ mod tests {
     }
 
     #[test]
+    fn object_identifiers_stay_readable_next_to_masked_credentials() {
+        let id = "550e8400-e29b-41d4-a716-446655440001";
+        let mission = Mission::new("demo", Scope::new(vec!["t.test".into()], vec![]), vec![]);
+        let url = format!("https://t.test/api/orders/{id}?author_id={id}&token={TOKEN}");
+        let mut idor = finding(
+            &mission,
+            FindingKind::Idor,
+            Some(&url),
+            &format!("cross-account object access signal on /api/orders/{id}"),
+        );
+        idor.evidence = Some(Box::new(ProbeEvidence {
+            check: "cross_account_bola".into(),
+            parameter: None,
+            verdict: EvidenceVerdict::Signal,
+            observations: vec![ResponseObservation {
+                role: "B reads A object".into(),
+                method: "GET".into(),
+                url: url.clone(),
+                status: 200,
+                authenticated: true,
+                content_type: "application/json".into(),
+                body_bytes: 40,
+                excerpt: "sha256=9f86d081884c7d659a2feaa0c55ad0159f86d081884c7d659a2feaa0c55ad015"
+                    .into(),
+            }],
+            limitation: String::new(),
+        }));
+        let endpoint = Endpoint::new(url, Method::Get, Source::Browser);
+        let masked = SessionReport::build(mission, vec![idor], vec![endpoint]).redacted();
+        let body = serde_json::to_string(&masked).unwrap();
+        assert!(!body.contains(TOKEN), "{body}");
+        let idor = &masked.findings[0];
+        let observation = &idor.evidence.as_ref().unwrap().observations[0];
+        for readable in [
+            idor.url.as_deref().unwrap(),
+            observation.url.as_str(),
+            masked.endpoints[0].url.as_str(),
+        ] {
+            assert!(
+                readable.contains(&format!("/api/orders/{id}?author_id={id}&token=[REDACTED]")),
+                "{readable}"
+            );
+        }
+        assert!(idor.value.ends_with(id), "{}", idor.value);
+        assert!(observation.excerpt.starts_with("sha256=9f86d081"));
+    }
+
+    #[test]
     fn plain_text_fields_are_not_altered() {
         let mission = Mission::new("demo", Scope::new(vec!["t.test".into()], vec![]), vec![]);
         let values = [

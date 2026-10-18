@@ -94,7 +94,7 @@ fn unredacted_flag_and_env_keep_the_raw_report() {
 }
 
 #[test]
-fn report_conversion_masks_a_raw_file_and_bola_refuses_a_masked_one() {
+fn report_conversion_masks_a_raw_file_and_bola_accepts_a_masked_one() {
     let fixture = Fixture::new();
     let raw_param = format!("token={SECRET}");
     let dir = tempfile::tempdir().unwrap();
@@ -121,7 +121,8 @@ fn report_conversion_masks_a_raw_file_and_bola_refuses_a_masked_one() {
     assert!(!convert(&[]).contains(&raw_param));
     assert!(convert(&["--unredacted"]).contains(&raw_param));
 
-    std::fs::write(dir.path().join("auth.json"), r#"{"bearer":"account"}"#).unwrap();
+    std::fs::write(dir.path().join("a-auth.json"), r#"{"bearer":"account-a"}"#).unwrap();
+    std::fs::write(dir.path().join("b-auth.json"), r#"{"bearer":"account-b"}"#).unwrap();
     let output = cli(
         dir.path(),
         &[
@@ -131,15 +132,13 @@ fn report_conversion_masks_a_raw_file_and_bola_refuses_a_masked_one() {
             "--b-report",
             "masked.json",
             "--a-auth",
-            "auth.json",
+            "a-auth.json",
             "--b-auth",
-            "auth.json",
+            "b-auth.json",
         ],
     );
-    assert!(!output.status.success());
+    // A masked report is still a valid input: only credentials were hidden.
+    success(&output);
     let stderr = String::from_utf8_lossy(&output.stderr);
-    assert!(
-        stderr.contains("masked") && stderr.contains("--unredacted"),
-        "{stderr}"
-    );
+    assert!(stderr.contains("0 captured object pair"), "{stderr}");
 }
