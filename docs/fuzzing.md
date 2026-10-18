@@ -54,6 +54,8 @@ Local runs of 240 s per target, `-s none`, `-timeout=10`, `-rss_limit_mb=2048`:
 | `domsinks_modules` | 240 s | stopped early | **Crash**, see below |
 | `domsinks_modules` | 180 s, after the fix | 82,458 | Clean |
 | `extract_registry` | 180 s, after the fix | 1,608,991 | Clean |
+| `redaction` | GitHub run 39166754778, 180 s | – | **Leak**, JWT in a path segment, see below |
+| `redaction` | 300 s, after the path fix (2026-10-19) | 2,718,737 | Clean |
 
 The second `extract_registry` run executed twenty times more inputs than the
 first; the fuzzer's path through the corpus differs between runs and I did not
@@ -61,6 +63,17 @@ investigate why.
 
 These are minutes of fuzzing, not a clean bill of health. Coverage of the
 extractors is far from saturated; the scheduled job is there to keep going.
+
+### `redact_url` leaked a JWT in a path segment (GitHub run 39166754778)
+
+The first scheduled-workflow run on GitHub (180 s per target, triggered
+manually on `main`) failed the `redaction` target: the fuzzer pulled the JWT
+canary out of the comparison dictionary and placed it in the input-controlled
+path, `https://user:…@host.test/ht<JWT>…?tok=…`. `redact_url` masked userinfo,
+query and fragment but never looked at path segments. Fixed by analysing path
+segments (see `docs/security.md`, « Suivi : trous de redaction et fuzzing »);
+the input is the seed `corpus/redaction/jwt-in-path-segment` and the unit test
+`masks_a_secret_glued_to_padding`.
 
 ### swc lexer assertion on hostile JavaScript
 

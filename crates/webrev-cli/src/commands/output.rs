@@ -1,7 +1,14 @@
 //! Compact scan view; the exported text report retains every observation.
+//!
+//! This view lands in terminals, CI logs and screen shares, so URLs and
+//! surface values go through [`redact_url`] (userinfo, token-like path
+//! segments and credential parameters). Detected secrets are the point of the
+//! finding and keep their plaintext; exported reports are left unredacted.
 use std::fmt::Write;
 use std::io::IsTerminal;
-use webrev_core::{model::triage::terminal_text, Finding, FindingKind, FindingStatus, Severity};
+use webrev_core::{
+    model::triage::terminal_text, redact_url, Finding, FindingKind, FindingStatus, Severity,
+};
 use webrev_report::SessionReport;
 
 const SURFACE_LIMIT: usize = 8;
@@ -43,7 +50,7 @@ fn render(report: &SessionReport) -> String {
     let _ = writeln!(
         out,
         "\nSCAN COMPLETE  {}",
-        terminal_text(&report.mission.name)
+        terminal_text(&redact_url(&report.mission.name))
     );
     let _ = writeln!(
         out,
@@ -93,7 +100,7 @@ fn render(report: &SessionReport) -> String {
             "  [{}] {:<10} {}",
             finding.severity().tag().trim(),
             finding.kind.slug(),
-            terminal_text(&finding.value)
+            terminal_text(&redact_url(&finding.value))
         );
     }
     if surface.len() > SURFACE_LIMIT {
@@ -164,7 +171,7 @@ fn write_finding(out: &mut String, index: usize, finding: &Finding) {
     );
     let _ = writeln!(out, "      {}", terminal_text(finding.display_value()));
     if let Some(url) = &finding.url {
-        let _ = writeln!(out, "      URL       {}", terminal_text(url));
+        let _ = writeln!(out, "      URL       {}", terminal_text(&redact_url(url)));
     }
     if let Some(evidence) = &finding.evidence {
         let _ = writeln!(out, "      Check     {}", terminal_text(&evidence.check));
@@ -254,5 +261,47 @@ mod tests {
         assert!(text.contains("ATTACK SURFACE (1)"));
         assert!(!text.contains('\u{1b}'));
         assert!(text.find("TO REVIEW").unwrap() < text.find("ATTACK SURFACE").unwrap());
+    }
+
+    #[test]
+    fn surface_urls_are_redacted_but_secret_plaintext_is_kept() {
+        let mission = Mission::new(
+            "https://u:pw@app.test/?token=seedtok",
+            Scope::default(),
+            vec![],
+        );
+        let session_id = mission.id;
+        let mk = |kind, value| {
+            Finding::new(
+                session_id,
+                kind,
+                None,
+                value,
+                Confidence::High,
+                Provenance::new(Source::JsAst, None),
+            )
+        };
+        let report = SessionReport::build(
+            mission,
+            vec![
+                mk(
+                    FindingKind::Endpoint,
+                    "https://app.test/reset/Zk3Jq9XvT2bLm8Rw4NpYs7Ad?access_token=abc&page=2",
+                ),
+                mk(FindingKind::Secret, "fingerprint").with_plaintext(Some("token123".into())),
+            ],
+            vec![],
+        );
+        let text = render(&report);
+        for leaked in [
+            "Zk3Jq9XvT2bLm8Rw4NpYs7Ad",
+            "access_token=abc",
+            "seedtok",
+            "u:pw",
+        ] {
+            assert!(!text.contains(leaked), "{leaked} in:\n{text}");
+        }
+        assert!(text.contains("/reset/[REDACTED]?access_token=[REDACTED]&page=2"));
+        assert!(text.contains("token123"));
     }
 }
