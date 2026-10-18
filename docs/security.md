@@ -53,8 +53,9 @@ HMAC-SHA256 fingerprint (`fp:<16 hex>`) remains the deduplication key, generated
 with a random per-run key that is never persisted.
 
 Dynamic capture preserves original request URLs, headers and WebSocket payloads
-instead of masking credential-looking substrings. Existing capture-size budgets
-still apply. Reports contain the values needed to triage the findings.
+in memory instead of masking credential-looking substrings. Existing
+capture-size budgets still apply. Exported reports mask them by default (see
+"Reporting scope"); `--unredacted` writes the captured values.
 
 ## Operational controls
 
@@ -136,6 +137,16 @@ signals and confirmed expression evaluation. See [proof boundaries](active-resea
 A report includes the original mission metadata, scope, seeds, findings,
 endpoints, summary counters and detected plaintext secrets. `webrev report`
 preserves this metadata when converting or filtering an existing JSON report.
+
+Every export (JSON, JSONL, CSV, URLs, text, OpenAPI, DOT, GraphML; `--report -`
+included; the TUI `r` key; `bola` results) masks credentials by default through
+`SessionReport::redacted`: mission name and seeds, endpoint and finding URLs,
+finding text, probe evidence and captured frames go through `redact_url` and
+`Sanitizer::scrub`, JSON values leaf by leaf. A masked JSON report carries
+`"redacted": true`. Pass `--unredacted` (or `WEBREV_REPORT_UNREDACTED=1`) to
+write the captured values, for example to pipe real object ids into `ffuf` or to
+produce the reports `webrev bola --a-report/--b-report` replays; `bola` refuses a
+masked report. The detected plaintext of secret findings is kept either way.
 
 ## Exposition accidentelle des données sensibles
 
@@ -253,8 +264,8 @@ Restes constatés :
 - Le rapport écrit sur stdout conserve les seeds et les URL d'endpoints
   découverts tels quels (`?tok=…`, `?token=…` dans l'URL d'un `fetch` trouvé dans
   le JavaScript de la cible), comme déjà documenté. *(Le résumé compact est
-  masqué depuis le 2026-10-18 ; les rapports exportés ne le sont pas, voir
-  « Suivi : trous de redaction et fuzzing ».)*
+  masqué depuis le 2026-10-18 ; les rapports exportés le sont depuis le
+  2026-10-19, voir « Suivi : rapports exportés ».)*
 - ~~Un secret de corps de forme inconnue (`"session":"…"`) restait dans l'extrait
   de preuve.~~ *Corrigé pour les noms session/sid/auth/credential/passwd/pwd/jwt/
   bearer/cookie, voir ci-dessous.*
@@ -331,15 +342,58 @@ Ce qui reste, et pourquoi le critère « preuves sensibles protégées » de
 
 - Le résumé compact affiche toujours le **texte clair des secrets détectés**
   (c'est l'objet du finding) ; il n'est pas masqué.
-- Les **rapports exportés** (fichier, ou `--report -` sur stdout, JSON/texte/
-  OpenAPI) gardent seeds, endpoints et texte clair des secrets tels quels :
-  c'est une exportation explicite, pas une fuite accidentelle, mais rien ne les
-  protège une fois écrits.
-- Les extraits de preuve hors sondes actives ne passent pas par `scrub`.
+- ~~Les **rapports exportés** (fichier, ou `--report -` sur stdout, JSON/texte/
+  OpenAPI) gardent seeds, endpoints et texte clair des secrets tels quels.~~
+  *Corrigé le 2026-10-19 : voir « Suivi : rapports exportés » ci-dessous. Seul
+  le texte clair des secrets détectés reste volontairement exporté.*
+- ~~Les extraits de preuve hors sondes actives ne passent pas par `scrub`.~~
+  *Corrigé à l'export le 2026-10-19.*
 - Heuristiques : un secret de moins de 4 caractères sous un nom sensible, ou
   un secret court sous un nom quelconque sans motif connu, n'est pas reconnu.
   Les secrets dans le nom d'hôte ne sont pas analysés.
 - TUI et proxy en amont : non audités.
+
+### Suivi : rapports exportés (2026-10-19)
+
+Tous les formats d'export passent par `SessionReport::redacted`
+(`crates/webrev-report/src/redact.rs`) sauf `--unredacted` /
+`WEBREV_REPORT_UNREDACTED=1` : JSON, JSONL, CSV, URLs, texte, OpenAPI, DOT,
+GraphML, `--report -`, la touche `r` de la TUI et le rapport de `bola`. Sont
+masqués : nom de mission et seeds, URL des endpoints et des findings,
+`provenance.location`, texte des findings (valeur, justification, trames
+WebSocket capturées), extraits et URL des preuves de sondes. Une valeur qui est
+elle-même du JSON est masquée feuille par feuille, donc reste parsable (les
+`ScanCoverage` en sont) ; un JSON sans rien à masquer est conservé octet pour
+octet. Un rapport masqué porte `"redacted": true`. La détection travaille sur
+les findings d'origine : seule la copie exportée change, la suite de détection
+n'est pas affectée. La vue compacte sur stdout garde son comportement.
+
+Gardé volontairement en clair : `Finding.plaintext` d'un finding `Secret` (le
+secret détecté est le livrable, voir la section sur les sessions) et son
+empreinte `fp:…`. Un secret dans le rapport reste donc un choix d'export, pas un
+accident ; si ce choix doit changer, c'est une décision de produit, pas un
+correctif.
+
+Conséquences à connaître :
+
+- `webrev bola --a-report/--b-report` rejoue des URL d'objets ; un rapport
+  masqué a perdu les identifiants (un UUID dans un chemin est masqué). `bola`
+  le refuse avec un message ; refaire la capture avec `--unredacted`.
+- `webrev report --format urls | ffuf` reçoit des segments `[REDACTED]` à la
+  place des UUID/jetons ; ajouter `--unredacted` pour fuzzer les vraies valeurs.
+- Deux endpoints qui ne diffèrent que par un segment masqué restent deux
+  entrées (pas de déduplication, les compteurs du résumé restent justes).
+- `--unredacted` ne restaure rien : appliqué à un rapport déjà masqué, il
+  convertit seulement.
+
+Ce qui reste (le critère « preuves sensibles protégées » de `goal.md` reste
+donc décoché) :
+
+- Secrets courts sous un nom de clé quelconque sans motif connu, et secrets
+  dans le nom d'hôte : non reconnus.
+- Les extraits de preuve hors sondes actives sont masqués à l'export, mais pas
+  en mémoire ni dans la vue compacte.
+- TUI (affichage à l'écran) et proxy en amont : non audités.
 
 ### Suivi : test d'egress instable (2026-10-18)
 

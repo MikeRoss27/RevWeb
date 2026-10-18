@@ -13,6 +13,7 @@ the stable-toolchain CI.
 | `extract_registry` | First byte picks HTML / JavaScript / JSON / WebAssembly, the rest is the body, through every default extractor (`ExtractorRegistry::run`, including the inline-script cascade) | No panic, no hang (10 s), no more than 2 GiB RSS |
 | `domsinks_modules` | Up to 16 modules separated by `//@@` lines, served at `https://fuzz.test/m<i>.js`, through `retain_module_input` and `extract_modules` (namespace imports, re-exports, function summaries) | Same, plus: a static module candidate is never `Confirmed` |
 | `redaction` | Arbitrary text through `redact_url`, `Sanitizer::scrub` and `scrub_header`, then known secrets (JWT, AWS key id, `api_key=`, `session:`, URL userinfo / `tok=` / `password=` / `id_token=`) embedded in that text | No panic, and none of the known secrets survives in the output |
+| `report_redaction` | Arbitrary text planted in a report's mission name, seeds, finding value / justification / probe evidence, endpoints and a JSON document, with known secrets embedded, rendered in all eight export formats (`SessionReport::render`) | No panic, and none of the known secrets survives in any format (the report holds no secret finding, whose plaintext is kept on purpose) |
 
 Seeds are in `fuzz/corpus/<target>/`. Each reproducer found by fuzzing is added
 there as a regression seed.

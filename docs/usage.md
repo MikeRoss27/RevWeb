@@ -49,6 +49,7 @@ sent to the target.
 | `--duration-secs <N>` | `8` | Dynamic dwell time per seed (dynamic/tui only). |
 | `--observation-only` | off | For `dynamic` and `scan --dynamic`: no driven scrolling/clicking; refuse methods other than GET/HEAD/OPTIONS. Page scripts still execute. Unsupported in TUI. |
 | `--report <PATH>` | `webrev-report.json` | Direct report output for CLI scans; export path for the TUI `r` key. |
+| `--unredacted` | off (`WEBREV_REPORT_UNREDACTED=1`) | Keep credentials in the exported report. By default URLs, response excerpts, captured frames and other finding text are masked on export; detected secret plaintext is always kept. See [`security.md`](security.md). |
 
 Scope matching is **host-suffix** based: `--scope example.com` matches
 `example.com` and `api.example.com`. The scope is **fail-closed** — an empty
@@ -90,6 +91,7 @@ the TUI. No reveal flag is required. The fingerprint remains a deduplication key
 | `--scope <SEL>` | `all` | Restrict endpoint output: `all`, `internal` (in-scope target), or `external` (third-party). |
 | `--min-confidence <LVL>` | `low` | Drop findings below `low` / `medium` / `high`. |
 | `--min-severity <LVL>` | `info` | Drop findings below `info` / `low` / `medium` / `high` / `critical`. `jsonl`/`csv` are ranked by severity; `csv` leads with a `severity` column. |
+| `--unredacted` | off (`WEBREV_REPORT_UNREDACTED=1`) | Skip the credential masking applied to every format. A report that was already masked when it was written cannot be restored. |
 
 Informational messages go to stderr and the data to stdout, so every format
 pipes cleanly (a closed pipe such as `| head` exits without error).
@@ -250,6 +252,10 @@ webrev report --format openapi --output api.json
 # Export observed component, endpoint, and parameter relations
 webrev report --format dot --output relations.dot
 webrev report --format graphml --output relations.graphml
+
+# Keep tokens and object ids intact for ffuf or `webrev bola --a-report`
+webrev scan --seed https://app.example.com/ --unredacted
+webrev report --format urls --unredacted | ffuf -u FUZZ -w -
 
 # Compare stack and API routes across separate target reports
 webrev compare --input target-a.json --input target-b.json --output comparison.json

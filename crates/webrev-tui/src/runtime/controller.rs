@@ -23,6 +23,7 @@ pub(super) struct Controller {
     pub(super) storage: Arc<dyn Storage>,
     pub(super) cancel: CancellationToken,
     pub(super) report_path: PathBuf,
+    pub(super) redact_report: bool,
 }
 
 impl Controller {
@@ -138,7 +139,7 @@ impl Controller {
         let findings = self.storage.findings_by_session(self.mission.id).await?;
         let endpoints = self.storage.endpoints_by_session(self.mission.id).await?;
         let report = SessionReport::build((*self.mission).clone(), findings, endpoints);
-        std::fs::write(&self.report_path, report.to_json()?)?;
+        std::fs::write(&self.report_path, report.export_json(self.redact_report)?)?;
         Ok(self.report_path.clone())
     }
 }

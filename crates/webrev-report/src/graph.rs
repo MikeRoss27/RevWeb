@@ -316,6 +316,7 @@ mod tests {
             scope: ScopeFilter::Internal,
             min_confidence: Confidence::Low,
             min_severity: Severity::Info,
+            redact: false,
         }
     }
 

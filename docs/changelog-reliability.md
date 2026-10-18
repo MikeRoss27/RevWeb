@@ -567,3 +567,21 @@ CVSS values are not calculated.
   RSS). Cause non établie (hypothèse : cache de pages ou THP), non reproduite.
 - Les temps absolus sont environ deux fois ceux du 2026-10-17 : comparer des
   rapports.
+
+## 2026-10-19 — rapports exportés masqués par défaut
+
+- Tous les formats d'export (JSON, JSONL, CSV, URLs, texte, OpenAPI, DOT,
+  GraphML, `--report -`, touche `r` de la TUI, rapport `bola`) passent par
+  `SessionReport::redacted` : mission, seeds, URL, texte des findings, preuves
+  de sondes et trames capturées sont masqués ; le JSON est masqué feuille par
+  feuille et reste parsable. `--unredacted` / `WEBREV_REPORT_UNREDACTED=1`
+  garde le brut. Un rapport masqué porte `"redacted": true` et `webrev bola
+  --a-report/--b-report` le refuse (les identifiants d'objets ont disparu).
+- Le texte clair des secrets détectés reste exporté (choix de produit
+  inchangé). La détection n'est pas affectée : seule la copie exportée change.
+- Tests : 9 unitaires (`redact.rs`, dont idempotence, JSON, prose, données
+  ordinaires intactes, les huit formats), 1 `bola`, 3 de bout en bout
+  (`tests/report_redaction.rs`, huit formats contre la fixture loopback).
+  `ephemeral.rs` partage maintenant sa fixture via `tests/common/mod.rs`.
+- Cible de fuzz `report_redaction`.
+- Critère « preuves sensibles protégées » de `goal.md` toujours décoché.

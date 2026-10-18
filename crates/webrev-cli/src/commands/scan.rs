@@ -100,6 +100,7 @@ pub async fn run(args: ScanAllArgs) -> anyhow::Result<()> {
         scope: ScopeFilter::All,
         min_confidence: Confidence::Low,
         min_severity: Severity::Info,
+        redact: !scan.unredacted,
     };
     let rendered = report.render(options)?;
     if scan.report == std::path::Path::new("-") {

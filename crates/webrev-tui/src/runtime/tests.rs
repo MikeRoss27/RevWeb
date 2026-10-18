@@ -126,6 +126,7 @@ async fn tui_active_key_surfaces_real_probe_results_after_static_recon() {
         storage,
         cancel: CancellationToken::new(),
         report_path: PathBuf::new(),
+        redact_report: true,
     };
     let mut app = App::new(mission.name, mission.scope);
     let (tx, mut rx) = mpsc::unbounded_channel();

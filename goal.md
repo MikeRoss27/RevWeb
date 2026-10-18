@@ -88,6 +88,13 @@ compact sur stdout passe par `redact_url`. Le critère reste décoché : le
 résumé affiche le texte clair des secrets détectés, les rapports exportés ne
 sont pas masqués, et les heuristiques ne couvrent pas les secrets courts sous
 un nom quelconque (voir `docs/security.md`).
+**Suivi (2026-10-19, rapports exportés) :** tous les formats d'export masquent
+désormais les identifiants par défaut (`SessionReport::redacted`, option
+`--unredacted` / `WEBREV_REPORT_UNREDACTED=1` pour garder le brut ; `bola`
+refuse un rapport masqué). Le texte clair des secrets détectés reste exporté
+volontairement. Le critère reste décoché : secrets courts sous un nom de clé
+quelconque, secrets dans le nom d'hôte, affichage de la TUI et proxy en amont
+restent non traités (voir `docs/security.md`, « Suivi : rapports exportés »).
 
 ## Étape 5 — Benchmarks et non-régression
 

@@ -21,15 +21,16 @@ async fn write_session_report(
     mission: &Mission,
     storage: &dyn webrev_storage::Storage,
     path: &std::path::Path,
+    redact: bool,
 ) -> anyhow::Result<()> {
     let findings = storage.findings_by_session(mission.id).await?;
     let endpoints = storage.endpoints_by_session(mission.id).await?;
     let report = webrev_report::SessionReport::build(mission.clone(), findings, endpoints);
     if path == std::path::Path::new("-") {
-        report::write_stdout(&report.to_json()?)?;
+        report::write_stdout(&report.export_json(redact)?)?;
     } else {
         output::show(&report)?;
-        std::fs::write(path, report.to_json()?)?;
+        std::fs::write(path, report.export_json(redact)?)?;
         eprintln!("report written to {}", path.display());
     }
     Ok(())
@@ -241,6 +242,7 @@ pub async fn dispatch(cli: Cli) -> anyhow::Result<()> {
             webrev_tui::run(TuiOptions {
                 profile: MissionProfile::new(mission, opsec),
                 report_path: args.report,
+                redact_report: !args.unredacted,
             })
             .await
         }

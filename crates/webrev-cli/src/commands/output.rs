@@ -3,7 +3,8 @@
 //! This view lands in terminals, CI logs and screen shares, so URLs and
 //! surface values go through [`redact_url`] (userinfo, token-like path
 //! segments and credential parameters). Detected secrets are the point of the
-//! finding and keep their plaintext; exported reports are left unredacted.
+//! finding and keep their plaintext. Exported reports are masked separately
+//! (`SessionReport::redacted`) unless `--unredacted` is given.
 use std::fmt::Write;
 use std::io::IsTerminal;
 use webrev_core::{

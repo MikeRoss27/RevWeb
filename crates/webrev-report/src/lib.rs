@@ -14,6 +14,7 @@ pub mod format;
 pub mod graph;
 pub mod json;
 pub mod openapi;
+pub mod redact;
 pub mod summary;
 pub mod text;
 

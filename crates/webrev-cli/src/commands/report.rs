@@ -25,6 +25,7 @@ fn render_options(args: &ReportArgs) -> RenderOptions {
             SeveritySel::High => Severity::High,
             SeveritySel::Critical => Severity::Critical,
         },
+        redact: !args.unredacted,
     }
 }
 

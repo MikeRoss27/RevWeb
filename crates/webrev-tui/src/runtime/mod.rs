@@ -26,6 +26,9 @@ use webrev_storage::{InMemoryStorage, Storage};
 pub struct TuiOptions {
     pub profile: MissionProfile,
     pub report_path: PathBuf,
+    /// Mask credentials in the exported report (the default); detected secret
+    /// plaintext is kept either way.
+    pub redact_report: bool,
 }
 
 /// Launch the TUI: set up the terminal, run the event loop, and restore the
@@ -53,6 +56,7 @@ async fn event_loop(
         storage,
         cancel: CancellationToken::new(),
         report_path: options.report_path,
+        redact_report: options.redact_report,
     };
 
     let mut app = App::new(mission.name.clone(), mission.scope.clone());

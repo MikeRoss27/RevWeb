@@ -411,6 +411,7 @@ mod tests {
             scope,
             min_confidence: Confidence::Low,
             min_severity: Severity::Info,
+            redact: false,
         }
     }
 
