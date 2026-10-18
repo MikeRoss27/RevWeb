@@ -1,0 +1,4 @@
+ 05:43:55 up  9:16,  1 user,  load average: 3,92, 7,40, 10,05
+Mem:            15Gi       9,7Gi       412Mi       511Mi       5,9Gi       5,6Gi
+ 05:46:52 up  9:19,  1 user,  load average: 14,56, 10,88, 10,94
+Mem:            15Gi       9,8Gi       3,8Gi       769Mi       2,7Gi       5,6Gi

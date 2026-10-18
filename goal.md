@@ -181,9 +181,12 @@ workflow GitHub distant a depuis été exécuté et est vert (voir « Mise à jo
 2026-10-18 » ci-dessous). Le contrôle de taille de source
 garde une exception motivée pour `domsinks.rs`.
 
-**État de l'étape 5 : EN COURS — non validée.** Le dernier profil complet
-end-to-end passe les seuils : p95 +18,64% (limite +20%) et RSS +6,69%
-(limite +25%). Les profils antérieurs ci-dessus sont historiques. Le corpus
+**État de l'étape 5 : EN COURS — non validée.** La remesure du 2026-10-18 sur
+le code actuel de `main` (3 runs, voir « Remesure performance » plus bas) donne
+un p95 conforme (+11,74 / +15,16 / +13,81%, limite +20%) mais une RSS qui
+dépasse la limite de +25% dans 2 runs sur 3 (+6,54 / +45,13 / +41,28%). Le
+critère de performance n'est donc pas validé. Les profils antérieurs ci-dessus,
+dont le PASS du 2026-10-17 (p95 +18,64%, RSS +6,69%), sont historiques. Le corpus
 statique ne montre plus de régression regex. La couverture externe DOM XSS
 inter-fichiers atteint 26/122 sur les catégories compatibles; Juice Shop reste
 à 3/4 positifs.
@@ -234,10 +237,27 @@ performance précédents restent des mesures historiques.
 - CI distante : exécutée et verte sur `main`, run CI 39073647553 et run
   Security 39073647540 (jobs : test ubuntu/macOS/Windows, lint, msrv, python
   scripts, browser integration chromium, detection regression, gate `ci`).
-- Non vérifié : `bundles.yml` n'a jamais tourné; la performance ci-dessous
-  précède ces changements (voir ligne performance, non mise à jour ici).
+- Non vérifié : `bundles.yml` n'a jamais tourné.
 
-**Résultat performance intégré final : PASS.** Avec 30 paires et un lanceur C
+**Remesure performance (2026-10-18, code de `main` 6bdc3cc, sources Rust
+identiques à 00f58f0) : p95 PASS, RSS FAIL / non validée.** Trois runs de 30
+paires (`scripts/benchmark_performance.py`, base `61b843d`, 120 pages, profil
+site), archivés sous `benchmarks/performance/2026-10-18/spa-site-remeasure/` :
+
+| Run | p95 base → actuel | Δ p95 | RSS max base → actuel | Δ RSS |
+|---|---|---:|---|---:|
+| 1 | 35,386 → 39,542 ms | +11,74% | 20 660 → 22 012 KiB | +6,54% |
+| 2 | 32,393 → 37,303 ms | +15,16% | 15 928 → 23 116 KiB | +45,13% |
+| 3 | 31,900 → 36,310 ms | +13,81% | 15 824 → 22 356 KiB | +41,28% |
+
+La RSS du code actuel est stable (médiane 20,9-21,2 MiB), celle de la base ne
+l'est pas (médiane 18,9 MiB au run 1, 14,5 MiB aux runs 2 et 3, 20,7 MiB le
+2026-10-17) et la cause n'est pas établie : la comparaison RSS n'est donc pas
+fiable et aucun PASS n'est revendiqué. Machine non isolée (charge 1 min de 3,7
+à 5 avant chaque run, 14-17 juste après; les builds du script précèdent la
+mesure). Le PASS ci-dessous date d'avant ces changements.
+
+**Résultat performance intégré du 2026-10-17 : PASS (historique).** Avec 30 paires et un lanceur C
 qui isole la mémoire du scanner de celle du harness Python, p95
 38,081 → 45,178 ms (**+18,64%**), RSS max 20 748 → 22 136 KiB (**+6,69%**),
 574 → 760 findings et **60/60 scans réussis**. Le run natif précédent
@@ -261,7 +281,7 @@ de généralisation à tous les sites.
 - [x] Équivalents locaux CI passés : formatage, taille source, 12 tests Python, checksums, tests workspace, Clippy strict.
 - [x] Workflow GitHub distant exécuté et vert sur `main` (run CI 39073647553, commit 6cfd10f); équivalents locaux exécutés avec Python 3.12.14 via `uv`.
 - [x] Tests workspace et corpus relancés après les changements actuels; aucun échec observé.
-- [x] Le dernier profil SPA final respecte p95 (+18,64% ≤20%) et RSS (+6,69% ≤25%); 60/60 scans réussis. Le lockfile baseline est réécrit pour ses arêtes locales, sans changement de version/source/checksum des paquets externes.
+- [ ] Profil SPA sur le code actuel de `main` : p95 conforme dans 3 runs sur 3 (+11,74 / +15,16 / +13,81% ≤20%), RSS non conforme dans 2 runs sur 3 (+45,13 / +41,28% > 25%, run 1 : +6,54%); base instable, cause non établie. Le PASS du 2026-10-17 (p95 +18,64%, RSS +6,69%, 60/60 scans réussis) précède ces changements. Pour mémoire, le lockfile baseline est réécrit pour ses arêtes locales, sans changement de version/source/checksum des paquets externes.
 - [ ] Corpus externe représentatif avec positifs et négatifs, labels examinés indépendamment.
 
 **Objectifs de performance :**
