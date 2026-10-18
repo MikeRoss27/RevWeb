@@ -531,3 +531,23 @@ CVSS values are not calculated.
 - Vérifié localement : `cargo test -p webrev-extract` (137 tests unitaires et les
   corpus épinglés de détection, sans changement de résultat). Les chiffres
   105/122 ne sont pas recalculés : les JSON archivés n'ont pas été régénérés.
+
+## 2026-10-18 — remesure performance sur machine calme
+
+- `scripts/benchmark_performance.py` : options `--baseline-bin`, `--current-bin`
+  (binaires construits une fois, réutilisés), `--max-load`, `--seed`; deux runs
+  d'échauffement non mesurés par binaire; médiane et min de RSS, SHA-256 des
+  binaires et charge 1 min par run dans le JSON.
+- Mesure de `main` b3f5e42 contre `61b843d` (120 pages, profil site) : 14
+  invocations de 30 paires, archivées sous
+  `benchmarks/performance/2026-10-18/spa-site-remeasure-quiet/`. Sur les 10
+  invocations propres (300 paires) : p95 +16,8%, temps médian +16,0%, RSS
+  médiane +13,3%, RSS max +11,1%.
+- Un p95 isolé de 30 paires dépasse 20% dans 3 invocations sur 10 (jusqu'à
+  +24,7%) : le critère tel qu'écrit n'est pas atteint de façon reproductible,
+  la case de `goal.md` reste décochée.
+- RSS de la base : binaire identique après rebuild; niveau de 19,1 MiB dans 13
+  invocations sur 14, 14,4 MiB dans une (la première après les builds, +48% de
+  RSS). Cause non établie (hypothèse : cache de pages ou THP), non reproduite.
+- Les temps absolus sont environ deux fois ceux du 2026-10-17 : comparer des
+  rapports.
