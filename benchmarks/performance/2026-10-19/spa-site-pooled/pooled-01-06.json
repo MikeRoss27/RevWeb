@@ -1,0 +1,68 @@
+{
+  "invocations_total": 6,
+  "invocations_clean": 6,
+  "excluded": [],
+  "runs_per_revision": 180,
+  "max_load_limit": 4.0,
+  "seed": 20261019,
+  "iterations": 2000,
+  "p95_percent": {
+    "estimate": 16.012054478121552,
+    "ci95": [
+      12.258009043610297,
+      20.460405121235414
+    ]
+  },
+  "median_time_percent": {
+    "estimate": 18.11918966458419,
+    "ci95": [
+      16.17613162634919,
+      20.30669200993982
+    ]
+  },
+  "rss_median_percent": {
+    "estimate": 11.55857740585775,
+    "ci95": [
+      10.625787484250315,
+      12.291973878238881
+    ]
+  },
+  "rss_max_percent": 4.3697478991596705,
+  "p95_ms": {
+    "baseline": 30.819418000000002,
+    "current": 35.75424
+  },
+  "anomalous_baseline_invocations": [],
+  "per_invocation_p95_percent": [
+    {
+      "name": "results.json",
+      "p95_percent": 22.37901433938585
+    },
+    {
+      "name": "results.json",
+      "p95_percent": 13.855572058395826
+    },
+    {
+      "name": "results.json",
+      "p95_percent": 16.846655627628415
+    },
+    {
+      "name": "results.json",
+      "p95_percent": 13.182463146458412
+    },
+    {
+      "name": "results.json",
+      "p95_percent": 18.11164747156795
+    },
+    {
+      "name": "results.json",
+      "p95_percent": 17.25893572100812
+    }
+  ],
+  "legacy_criterion": {
+    "invocations_over_limit": 1,
+    "of": 6
+  },
+  "verdict": "not_demonstrated",
+  "reason": "the estimate is within the limit but the upper bound of the 95% interval is above it"
+}

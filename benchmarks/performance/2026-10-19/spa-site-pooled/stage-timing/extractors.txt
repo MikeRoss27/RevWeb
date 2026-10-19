@@ -1,0 +1,27 @@
+Per-extractor timing, median of 30 passes over the 251 inputs of the 120-page `site`
+fixture (HTML pages, their inline scripts, and the JS assets). Same scratch harness
+(an example calling each default extractor's `extract`) compiled in both trees, release
+profile, host load ~1.5. Not committed: the harness is scratch code.
+
+                    baseline 61b843d     current (main 6b33d8d)
+js-ast                    1.386 ms           1.771 ms   findings 1621 -> 1721
+html                      0.862 ms           0.982 ms
+js-regex                  0.773 ms           1.148 ms
+secret                    0.801 ms           1.086 ms
+sourcemap                 0.008 ms           0.008 ms
+tech                      1.536 ms           1.655 ms
+graphql                   0.046 ms           0.046 ms
+routes                    0.300 ms           0.328 ms
+params                    0.297 ms           0.894 ms
+config                    1.234 ms           1.273 ms
+manifest                  0.000 ms           0.000 ms
+buckets                   0.024 ms           0.026 ms
+jwt                       0.237 ms           0.248 ms
+dom-sinks                 1.458 ms           0.777 ms   (faster)
+csp                       0.057 ms           0.047 ms
+ghost                     1.129 ms           1.093 ms
+wasm                      0.000 ms           0.000 ms
+TOTAL                    10.151 ms          11.383 ms   (+12.1%)
+
+Largest slowdowns: params +0.60 ms (x3), js-ast +0.39, js-regex +0.38, secret +0.29,
+html +0.12. dom-sinks is 0.68 ms faster. Net extraction delta: +1.23 ms per pass.

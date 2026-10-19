@@ -19,6 +19,7 @@ import shutil
 import socketserver
 import statistics
 import subprocess
+import sys
 import tempfile
 import threading
 import time
@@ -138,6 +139,10 @@ def build(path: pathlib.Path, target: pathlib.Path) -> pathlib.Path:
 
 
 def main() -> int:
+    if len(sys.argv) > 1 and sys.argv[1] == "pool":
+        # `benchmark_performance.py pool RESULTS.json...`: judge several invocations together.
+        import benchmark_pool
+        return benchmark_pool.main(sys.argv[2:])
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--baseline-ref", default="HEAD")
     ap.add_argument("--runs", type=int, default=20)
