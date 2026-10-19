@@ -27,6 +27,7 @@ pub use model::evidence::{
 };
 pub use model::finding::{Confidence, Finding, FindingKind, FindingStatus, Provenance, Severity};
 pub use model::normalize::{normalize_url, normalize_url_with_pattern};
+pub use model::resolve::EndpointResolver;
 pub use model::session::{Mission, Scope, SessionId};
 pub use security::auth::AuthConfig;
 pub use security::opsec::{

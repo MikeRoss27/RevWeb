@@ -8,6 +8,9 @@
 //! - [`ReportFormat::Jsonl`] — one finding per line (stream into `jq`, etc.).
 //! - [`ReportFormat::Urls`]  — bare endpoint URLs, one per line, ready to pipe
 //!   into `ffuf` / `httpx` / `nuclei`.
+//! - [`ReportFormat::UrlsExact`] — concrete URLs as discovered (real ids and
+//!   query strings, relative references resolved), one per line, for replay
+//!   and fuzzing; [`ReportFormat::Requests`] adds the HTTP method.
 //! - [`ReportFormat::Csv`]   — findings as a spreadsheet-friendly table.
 //!
 //! Two filters narrow the output: a minimum [`Confidence`] (applied to
@@ -16,7 +19,10 @@
 use crate::json::SessionReport;
 use std::collections::BTreeSet;
 use std::fmt;
-use webrev_core::{Confidence, EndpointScope, Finding, Result, Severity, WebrevError};
+use webrev_core::{
+    redact_url, Confidence, EndpointResolver, EndpointScope, Finding, FindingKind, Method, Result,
+    Severity, WebrevError,
+};
 
 /// The serialization shape requested on the command line.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -25,6 +31,12 @@ pub enum ReportFormat {
     Json,
     Jsonl,
     Urls,
+    /// Concrete URLs as discovered, one per line. Unlike [`ReportFormat::Urls`],
+    /// which lists the stored route templates (`/users/{id}`, no query string),
+    /// this keeps real path ids and query strings.
+    UrlsExact,
+    /// `METHOD URL` per line, from the same concrete URLs as `UrlsExact`.
+    Requests,
     Csv,
     /// Reconstructed `OpenAPI` 3.1 document (reverse the API from the consumer).
     OpenApi,
@@ -82,6 +94,14 @@ impl Default for RenderOptions {
 impl SessionReport {
     /// Render the report in the requested format, applying the filters.
     pub fn render(&self, opts: RenderOptions) -> Result<String> {
+        // The concrete-URL formats resolve against the raw findings, then mask
+        // each resolved URL, so they bypass the masked clone.
+        if matches!(
+            opts.format,
+            ReportFormat::UrlsExact | ReportFormat::Requests
+        ) {
+            return Ok(self.render_exact(opts));
+        }
         if opts.redact {
             return self.redacted().render_unmasked(opts);
         }
@@ -95,6 +115,7 @@ impl SessionReport {
             ReportFormat::Json => self.render_json(opts),
             ReportFormat::Jsonl => self.render_jsonl(opts),
             ReportFormat::Urls => Ok(self.render_urls(opts)),
+            ReportFormat::UrlsExact | ReportFormat::Requests => Ok(self.render_exact(opts)),
             ReportFormat::Csv => Ok(self.render_csv(opts)),
             ReportFormat::OpenApi => self.render_openapi(opts),
             ReportFormat::Dot => Ok(self.render_dot(opts)),
@@ -175,6 +196,53 @@ impl SessionReport {
         }
     }
 
+    /// Concrete request targets, scope-filtered, de-duplicated and sorted by URL
+    /// then method. The stored endpoint rows are route templates, so the exact
+    /// URLs come from the `Endpoint` findings, resolved against their document
+    /// the same way the store stage resolves them. Template placeholders
+    /// (`{id}`) and fragments are not requestable and are skipped. With
+    /// `opts.redact` each URL is masked before de-duplication.
+    fn render_exact(&self, opts: RenderOptions) -> String {
+        let mut resolver = EndpointResolver::new(&self.mission);
+        let mut rows: BTreeSet<(String, Method)> = BTreeSet::new();
+        for finding in self
+            .findings
+            .iter()
+            .filter(|f| f.kind == FindingKind::Endpoint)
+        {
+            let Some(raw) = finding.url.as_deref() else {
+                continue;
+            };
+            if raw.contains(['{', '}']) {
+                continue;
+            }
+            let Some(mut url) = resolver.resolve(finding) else {
+                continue;
+            };
+            url.set_fragment(None);
+            let url = url.to_string();
+            if !opts.scope.matches(self.mission.scope.classify(&url)) {
+                continue;
+            }
+            let method = finding
+                .value
+                .split_whitespace()
+                .next()
+                .map_or(Method::Unknown, Method::parse);
+            let url = if opts.redact { redact_url(&url) } else { url };
+            rows.insert((url, method));
+        }
+        let lines: Vec<String> = if opts.format == ReportFormat::Requests {
+            rows.into_iter()
+                .map(|(url, method)| format!("{method} {url}"))
+                .collect()
+        } else {
+            let urls: BTreeSet<String> = rows.into_iter().map(|(url, _)| url).collect();
+            urls.into_iter().collect()
+        };
+        lines.join("\n")
+    }
+
     fn render_csv(&self, opts: RenderOptions) -> String {
         let mut out = String::from("severity,kind,confidence,url,value,source,evidence,coverage\n");
         for f in self.ranked_findings(opts) {
@@ -217,6 +285,8 @@ impl fmt::Display for ReportFormat {
             ReportFormat::Json => "json",
             ReportFormat::Jsonl => "jsonl",
             ReportFormat::Urls => "urls",
+            ReportFormat::UrlsExact => "urls-exact",
+            ReportFormat::Requests => "requests",
             ReportFormat::Csv => "csv",
             ReportFormat::OpenApi => "openapi",
             ReportFormat::Dot => "dot",
@@ -363,5 +433,114 @@ mod tests {
         assert!(json.contains("\"total\": 1"));
         assert!(json.contains("\"internal\": 1"));
         assert!(!json.contains("noisyParam"));
+    }
+
+    fn exact_report() -> SessionReport {
+        let mission = Mission::new(
+            "t",
+            Scope::new(vec!["x.test".into()], vec![]),
+            vec!["https://x.test/app/".into()],
+        );
+        let sid = mission.id;
+        let endpoint = |url: &str, value: &str, source: Source, location: Option<&str>| {
+            Finding::new(
+                sid,
+                FindingKind::Endpoint,
+                Some(url.into()),
+                value,
+                Confidence::High,
+                Provenance::new(source, location.map(str::to_owned)),
+            )
+        };
+        let findings = vec![
+            endpoint(
+                "https://x.test/api/users/12?tab=a&token=Zk3JqW9xLmN2pR5tVb8Y",
+                "GET https://x.test/api/users/12?tab=a&token=Zk3JqW9xLmN2pR5tVb8Y",
+                Source::Browser,
+                None,
+            ),
+            endpoint(
+                "https://x.test/api/users/12?tab=a&token=Zk3JqW9xLmN2pR5tVb8Y",
+                "POST https://x.test/api/users/12?tab=a&token=Zk3JqW9xLmN2pR5tVb8Y",
+                Source::JsAst,
+                None,
+            ),
+            endpoint(
+                "orders/7?x=1#top",
+                "GET orders/7?x=1#top",
+                Source::JsAst,
+                Some("https://x.test/assets/app.js"),
+            ),
+            endpoint(
+                "https://x.test/api/users/{id}",
+                "GET https://x.test/api/users/{id}",
+                Source::JsRegex,
+                None,
+            ),
+            endpoint(
+                "https://cdn.other/lib.js?v=3",
+                "GET https://cdn.other/lib.js?v=3",
+                Source::Html,
+                None,
+            ),
+        ];
+        SessionReport::build(mission, findings, Vec::new())
+    }
+
+    fn exact(format: ReportFormat, scope: ScopeFilter, redact: bool) -> String {
+        let mut o = opts(format, scope, Confidence::Low);
+        o.redact = redact;
+        exact_report().render(o).unwrap()
+    }
+
+    #[test]
+    fn urls_exact_keeps_ids_and_query_and_resolves_relative_references() {
+        let out = exact(ReportFormat::UrlsExact, ScopeFilter::All, false);
+        assert_eq!(
+            out,
+            "https://cdn.other/lib.js?v=3\n\
+             https://x.test/api/users/12?tab=a&token=Zk3JqW9xLmN2pR5tVb8Y\n\
+             https://x.test/app/orders/7?x=1"
+        );
+        // The template row and the fragment never reach the list.
+        assert!(!out.contains('{'));
+        assert!(!out.contains("#top"));
+    }
+
+    #[test]
+    fn urls_exact_filters_by_scope_and_is_stable() {
+        let internal = exact(ReportFormat::UrlsExact, ScopeFilter::Internal, false);
+        assert_eq!(internal.lines().count(), 2);
+        assert!(!internal.contains("cdn.other"));
+        let external = exact(ReportFormat::UrlsExact, ScopeFilter::External, false);
+        assert_eq!(external, "https://cdn.other/lib.js?v=3");
+        assert_eq!(
+            exact(ReportFormat::UrlsExact, ScopeFilter::All, false),
+            exact(ReportFormat::UrlsExact, ScopeFilter::All, false)
+        );
+    }
+
+    #[test]
+    fn requests_lists_each_method_once_per_url() {
+        let out = exact(ReportFormat::Requests, ScopeFilter::Internal, false);
+        assert_eq!(
+            out,
+            "GET https://x.test/api/users/12?tab=a&token=Zk3JqW9xLmN2pR5tVb8Y\n\
+             POST https://x.test/api/users/12?tab=a&token=Zk3JqW9xLmN2pR5tVb8Y\n\
+             GET https://x.test/app/orders/7?x=1"
+        );
+    }
+
+    #[test]
+    fn exact_formats_mask_credentials_but_keep_object_ids_with_redact() {
+        let urls = exact(ReportFormat::UrlsExact, ScopeFilter::Internal, true);
+        assert!(!urls.contains("Zk3JqW9xLmN2pR5tVb8Y"), "{urls}");
+        assert!(
+            urls.contains("/api/users/12?tab=a&token=[REDACTED]"),
+            "{urls}"
+        );
+        assert!(urls.contains("/app/orders/7?x=1"), "{urls}");
+        let requests = exact(ReportFormat::Requests, ScopeFilter::Internal, true);
+        assert!(!requests.contains("Zk3JqW9xLmN2pR5tVb8Y"), "{requests}");
     }
 }
