@@ -204,8 +204,8 @@ out on stdout, and the banner and logs stay on stderr.
 subfinder -d example.com | httpx -silent | webrev scan --scope example.com --format jsonl --report -
 
 # In-scope endpoint URLs out, straight into a fuzzer or scanner
-webrev report --format urls --scope internal | ffuf -u FUZZ -w -
-webrev report --format urls --scope internal | nuclei
+webrev report --format urls-exact --scope internal | ffuf -u FUZZ -w -
+webrev report --format urls-exact --scope internal | nuclei
 
 # High-severity findings as a spreadsheet
 webrev report --format csv --min-severity high --output findings.csv

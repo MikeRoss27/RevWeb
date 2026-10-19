@@ -5,5 +5,6 @@ pub mod endpoint;
 pub mod evidence;
 pub mod finding;
 pub mod normalize;
+pub mod resolve;
 pub mod session;
 pub mod triage;

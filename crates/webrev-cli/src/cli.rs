@@ -50,8 +50,9 @@ EXAMPLES:
   # Interactive TUI (auto-runs a static scan; press ? for keys)
   webrev tui --seed https://app.example.com/
 
-  # Convert the JSON report to bare URLs for ffuf/nuclei
-  webrev report --format urls | ffuf -u FUZZ -w -
+  # Convert the JSON report to the concrete URLs (real ids and query strings)
+  # for ffuf/nuclei; `--format urls` lists route templates instead
+  webrev report --format urls-exact | ffuf -u FUZZ -w -
 
   # Cross-account GET object checks with two test account profiles
   webrev bola --seed https://app.example.com/ --a-auth account-a.json --b-auth account-b.json";
@@ -208,6 +209,10 @@ pub enum Format {
     Jsonl,
     /// Bare endpoint URLs, one per line — pipe into ffuf/httpx/nuclei.
     Urls,
+    /// Concrete URLs as discovered (real ids and query strings), one per line.
+    UrlsExact,
+    /// `METHOD URL` per line, from the concrete URLs.
+    Requests,
     /// Findings as a CSV table.
     Csv,
     /// Reconstructed OpenAPI 3.1 spec of the discovered surface.
@@ -227,6 +232,8 @@ impl From<Format> for webrev_report::ReportFormat {
             Format::Json => Self::Json,
             Format::Jsonl => Self::Jsonl,
             Format::Urls => Self::Urls,
+            Format::UrlsExact => Self::UrlsExact,
+            Format::Requests => Self::Requests,
             Format::Csv => Self::Csv,
             Format::OpenApi => Self::OpenApi,
             Format::Dot => Self::Dot,

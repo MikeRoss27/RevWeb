@@ -87,7 +87,7 @@ the TUI. No reveal flag is required. The fingerprint remains a deduplication key
 | --- | --- | --- |
 | `--input <PATH>` | `webrev-report.json` | Existing full JSON report to convert or filter. |
 | `--output <PATH>` | stdout | Write the report to a file instead of printing it. |
-| `--format <FMT>` | `json` | `json` (full document), `jsonl` (one finding per line), `urls` (bare endpoint URLs, one per line), `csv` (findings table), `text` (grouped human-readable triage), `openapi` (reconstructed OpenAPI 3.1 spec), `dot` (Graphviz graph), or `graphml` (GraphML graph). |
+| `--format <FMT>` | `json` | `json` (full document), `jsonl` (one finding per line), `urls` (stored route templates such as `/users/{id}`, one per line, no query string), `urls-exact` (the concrete URLs as discovered, real ids and query strings, one per line), `requests` (`METHOD URL` per line, same concrete URLs), `csv` (findings table), `text` (grouped human-readable triage), `openapi` (reconstructed OpenAPI 3.1 spec), `dot` (Graphviz graph), or `graphml` (GraphML graph). |
 | `--scope <SEL>` | `all` | Restrict endpoint output: `all`, `internal` (in-scope target), or `external` (third-party). |
 | `--min-confidence <LVL>` | `low` | Drop findings below `low` / `medium` / `high`. |
 | `--min-severity <LVL>` | `info` | Drop findings below `info` / `low` / `medium` / `high` / `critical`. `jsonl`/`csv` are ranked by severity; `csv` leads with a `severity` column. |
@@ -110,7 +110,7 @@ Adds to the shared scan options:
 | --- | --- | --- |
 | `--dynamic` | off | Also run a dynamic (headless Chromium) pass after the static scan, in the same session. |
 | `--active` | off | Also run a light active-scan pass (see below) over every endpoint the static/dynamic passes discovered, plus the seeds themselves. Sends abnormal traffic — authorized targets only. |
-| `--format <FMT>` | `json` | Format of the end-of-scan report: `json`, `jsonl`, `urls`, `csv`, `text`, `openapi`, `dot`, or `graphml`. |
+| `--format <FMT>` | `json` | Format of the end-of-scan report: `json`, `jsonl`, `urls`, `urls-exact`, `requests`, `csv`, `text`, `openapi`, `dot`, or `graphml`. |
 | `--no-report` | off | Print the scan summary, then discard the in-memory session without writing a report. |
 
 ```bash
@@ -241,7 +241,7 @@ webrev report                       # reads webrev-report.json and prints JSON
 webrev report --output report.json  # writes it to a file
 
 # Feed just the in-scope endpoint URLs into another tool
-webrev report --format urls --scope internal | ffuf -u FUZZ -w -
+webrev report --format urls-exact --scope internal | ffuf -u FUZZ -w -
 
 # Only the high-confidence findings, as a spreadsheet
 webrev report --format csv --min-confidence high --output findings.csv
@@ -253,9 +253,12 @@ webrev report --format openapi --output api.json
 webrev report --format dot --output relations.dot
 webrev report --format graphml --output relations.graphml
 
-# Reports are raw by default, so ffuf gets the real tokens and object ids
+# Reports are raw by default. `urls` lists route templates (`/users/{id}`, no
+# query string); `urls-exact` lists the concrete URLs as discovered, so a
+# fuzzer or replay tool gets the real object ids and parameters
 webrev scan --seed https://app.example.com/
-webrev report --format urls | ffuf -u FUZZ -w -
+webrev report --format urls-exact | ffuf -u FUZZ -w -
+webrev report --format requests     # METHOD URL per line (UNKNOWN when the verb is not known)
 
 # Share a report: mask credentials (a raw one holds live ones)
 webrev report --input webrev-report.json --redact --output shareable.json
@@ -334,7 +337,7 @@ for standalone commands; `--format` selects it for `scan`). No file is created:
 
 ```sh
 webrev scan --seed https://app.example.com/ --active --format jsonl --report - | jq .
-webrev scan --seed https://app.example.com/ --format urls --report - | httpx
+webrev scan --seed https://app.example.com/ --format urls-exact --report - | httpx
 webrev static --seed https://app.example.com/ --report - > findings.json
 webrev scan --seed https://app.example.com/ --format text --report findings.txt
 ```

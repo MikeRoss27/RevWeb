@@ -155,7 +155,7 @@ the TUI `r` key; `bola` results; `webrev report`) through
 finding text, probe evidence and captured frames go through `redact_url` and
 `Sanitizer::scrub`, JSON values leaf by leaf. A masked JSON report carries
 `"redacted": true`. The detected plaintext of secret findings is kept either
-way. Raw is what `webrev report --format urls | ffuf` and
+way. Raw is what `webrev report --format urls-exact | ffuf` (the `urls` format lists route templates, not real values) and
 `webrev bola --a-report/--b-report` need; both also accept a masked report,
 minus the pairs whose captured URL held a credential.
 
@@ -405,7 +405,7 @@ Conséquences à connaître :
   chemin, ce qui rendait les résultats `bola` inutilisables (on ne voyait plus
   quel objet avait fuité) et faisait refuser les rapports masqués par
   `--a-report/--b-report`. Voir « Suivi : identifiants d'objets lisibles ».
-- Avec `--redact`, `webrev report --format urls | ffuf` reçoit `[REDACTED]` à
+- Avec `--redact`, `webrev report --format urls-exact | ffuf` reçoit `[REDACTED]` à
   la place des jetons ; les identifiants d'objets restent. Sans `--redact` (le
   défaut), `ffuf` reçoit les vraies valeurs.
 - Deux endpoints qui ne diffèrent que par un segment masqué restent deux

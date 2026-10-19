@@ -1,5 +1,19 @@
 # Changelog — reliability work
 
+## 2026-10-19
+
+- Added `--format urls-exact` and `--format requests` to `report` and `scan`.
+  The stored endpoint rows are route templates (`/users/{id}`, no query
+  string), so `urls` cannot feed a fuzzer or a replay. The new formats rebuild
+  the concrete URLs from the `Endpoint` findings, resolved against their
+  document as the store stage does, with real path ids and query strings.
+  Template placeholders and fragments are skipped, output is de-duplicated and
+  sorted, and `--scope` applies. `requests` prints `METHOD URL`, with
+  `UNKNOWN` when the extractor could not tell the verb. `--redact` masks each
+  URL with `redact_url`, which keeps object ids and hides credentials. `urls`
+  and the other formats are unchanged. `EndpointResolver` moved from
+  `webrev-pipeline` to `webrev-core` so the report crate can use it.
+
 ## 2026-10-15
 
 - Added `FindingStatus`, detector identifiers, evidence score, explanation,
@@ -579,7 +593,7 @@ par défaut » ci-dessous décrivent l'état avant ce changement.
   `WEBREV_REPORT_UNREDACTED` (supprimés, rejetés par clap) sur `scan`,
   `static`, `dynamic`, `active`, `tui`, `report` et `bola`. L'export est brut
   par défaut dans tous les formats, y compris `--report -`, la touche `r` de la
-  TUI, `report --format urls | ffuf` et le résultat de `bola`.
+  TUI, `report --format urls-exact | ffuf` (écrit `urls` à l'époque, qui liste en réalité des modèles de route) et le résultat de `bola`.
   `RenderOptions::default().redact` vaut `false`.
 - `ProbeResponse::observation` stocke l'URL et l'extrait bruts (troncature à
   256 caractères conservée) ; `--redact` les masque à l'export.

@@ -16,6 +16,7 @@ hmac.workspace = true
 sha2.workspace = true
 hex.workspace = true
 ipnet.workspace = true
+url = "2.5"
 rand.workspace = true
 
 [dev-dependencies]

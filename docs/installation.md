@@ -95,7 +95,7 @@ Reports can be sent directly to another tool without creating a file:
 
 ```sh
 webrev scan --seed https://your-authorized-target.example/ --format jsonl --report -
-webrev scan --seed https://your-authorized-target.example/ --format urls --report - | httpx
+webrev scan --seed https://your-authorized-target.example/ --format urls-exact --report - | httpx
 ```
 
 For missing browser errors, install Chrome/Chromium and set `CHROME`. For a
