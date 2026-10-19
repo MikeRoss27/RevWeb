@@ -1,0 +1,433 @@
+{
+ "version": "external-corpus-v1",
+ "note": "Pinned inputs for scripts/external_corpus.py. No third-party code is committed; every file is fetched by commit SHA or npm version and verified by SHA-256 recorded in manifest.json.",
+ "ghsa": [
+  {
+   "ghsa": "GHSA-w937-fg2h-xhq2",
+   "repo": "locize/locize",
+   "fix": "d006b75fadb8e8ab77b023e462850fc6e9170735",
+   "parent": "f4883eaebd8a7ea165c75762595b8d9bce249f8f",
+   "files": [
+    "src/api/handleEditKey.js",
+    "src/api/handleRequestPopupChanges.js",
+    "src/api/postMessage.js"
+   ],
+   "source_class": "browser",
+   "license": "MIT",
+   "summary": "locize Client SDK: Cross-origin DOM XSS & Handler Hijack Through Missing e.origin Validation in InContext Editor ",
+   "published": "2026-04-22",
+   "severity": "high"
+  },
+  {
+   "ghsa": "GHSA-j5mf-6rh3-rhgg",
+   "repo": "CleverTap/clevertap-web-sdk",
+   "fix": "84695b726a751614ddc3a4f71382c239c5833e03",
+   "parent": "5e4504572136c9b918f3fe084303bd5f73d3f008",
+   "files": [
+    "src/modules/notification.js",
+    "src/modules/visualBuilder/pageBuilder.js",
+    "src/util/campaignRender/nativeDisplay.js"
+   ],
+   "source_class": "browser",
+   "license": "MIT",
+   "summary": "CleverTap Web SDK  is vulnerable to DOM-based XSS via handleCustomHtmlPreviewPostMessageEvent function",
+   "published": "2026-02-27",
+   "severity": "high"
+  },
+  {
+   "ghsa": "GHSA-hhqj-cfjx-vj25",
+   "repo": "hakimel/reveal.js",
+   "fix": "32cdd3b1872ba8e2267c9e87ae216cb55f40f4d2",
+   "parent": "e33c3c72f93d4c70ded3a90f5918f60082c96451",
+   "files": [
+    "plugin/notes/speaker-view.html"
+   ],
+   "source_class": "browser",
+   "license": "MIT",
+   "summary": "Cross site scripting in reveal.js",
+   "published": "2022-03-02",
+   "severity": "medium"
+  },
+  {
+   "ghsa": "GHSA-xvg9-69gf-fjrf",
+   "repo": "squidfunk/mkdocs-material",
+   "fix": "52fb6be8aafe326419f34dc94d3211e7bbfbfb25",
+   "parent": "901e6335cc80b0f12e46a1e34bd85e983dd78a6e",
+   "files": [
+    "material/templates/base.html"
+   ],
+   "source_class": "browser",
+   "license": "MIT",
+   "summary": "Material for MkDocs: DOM XSS in search suggestions via query parameter",
+   "published": "2026-09-03",
+   "severity": "medium"
+  },
+  {
+   "ghsa": "GHSA-9q4r-x2hj-jmvr",
+   "repo": "9001/copyparty",
+   "fix": "895880aeb0be0813ddf732487596633f8f9fc3a6",
+   "parent": "6bb27e60910063109b930f7addd32bfbb5f16bc0",
+   "files": [
+    "copyparty/web/browser.js"
+   ],
+   "source_class": "other",
+   "license": "MIT",
+   "summary": "copyparty has DOM-Based XSS vulnerability when displaying multimedia metadata",
+   "published": "2025-07-28",
+   "severity": "medium"
+  },
+  {
+   "ghsa": "GHSA-m2jw-cj8v-937r",
+   "repo": "9001/copyparty",
+   "fix": "438ea6ccb06f39d7cbb4b6ee7ad44606e21a63dd",
+   "parent": "598a29a7339f0824bc042f35c31697e239475095",
+   "files": [
+    "copyparty/web/up2k.js"
+   ],
+   "source_class": "other",
+   "license": "MIT",
+   "summary": "copyparty renders unsanitized filenames as HTML when user uploads empty files",
+   "published": "2025-02-26",
+   "severity": "low"
+  },
+  {
+   "ghsa": "GHSA-vgjm-2cpf-4g7c",
+   "repo": "gogs/gogs",
+   "fix": "9001a68cdda7bd9c078ffd6d1c4622905ac11e5c",
+   "parent": "295bfba72993c372e7b338438947d8e1a6bed8fd",
+   "files": [
+    "public/js/gogs.js"
+   ],
+   "source_class": "other",
+   "license": "MIT",
+   "summary": "Gogs: DOM-based XSS via milestone selection",
+   "published": "2026-03-05",
+   "severity": "high"
+  },
+  {
+   "ghsa": "GHSA-g3hc-697w-wm82",
+   "repo": "livewire/livewire",
+   "fix": "11ebe646f7e81dde2d714815da8b3019d058561e",
+   "parent": "cea297bed71416264236228ede2b71abd7a13009",
+   "files": [
+    "js/component.js",
+    "js/features/supportDispatches.js",
+    "js/features/supportFileDownloads.js",
+    "js/features/supportHotReloading.js",
+    "js/features/supportJsEvaluation.js",
+    "js/features/supportLaravelEcho.js"
+   ],
+   "source_class": "other",
+   "license": "MIT",
+   "summary": "Livewire DOM-based cross-site scripting during client-side state handling",
+   "published": "2026-09-02",
+   "severity": "medium"
+  },
+  {
+   "ghsa": "GHSA-24x4-j6x9-rfw5",
+   "repo": "craftcms/cms",
+   "fix": "6bbb66038a268552180ca5c8eed9f46ea25a4417",
+   "parent": "3219a2ed290062d1075fc461e4a54b1ffbec58f7",
+   "files": [
+    "src/web/assets/craftsupport/src/CraftSupportWidget.js"
+   ],
+   "source_class": "other",
+   "license": "NOASSERTION",
+   "summary": "Craft CMS: DOM XSS via GitHub issue title in CraftSupport widget",
+   "published": "2026-07-06",
+   "severity": "high"
+  },
+  {
+   "ghsa": "GHSA-xr7p-8q82-878q",
+   "repo": "kitabisa/teler",
+   "fix": "20f59eda2420ac64e29f199a61230a0abc875e8e",
+   "parent": "f44787f50c1c1400c81f161a941899442dd2af81",
+   "files": [
+    "internal/event/www/script.js"
+   ],
+   "source_class": "other",
+   "license": "Apache-2.0",
+   "summary": "teler dashboard vulnerable to DOM-based cross-site scripting (XSS)",
+   "published": "2022-12-06",
+   "severity": "low"
+  },
+  {
+   "ghsa": "GHSA-rh4r-f7f7-r99m",
+   "repo": "AlexxIT/go2rtc",
+   "fix": "3b3d5b033aac3a019af64f83dec84f70ed2c8aba",
+   "parent": "ccec41a10f2636676befea50aa4cee2aa9d1d75a",
+   "files": [
+    "www/index.html",
+    "www/links.html"
+   ],
+   "source_class": "other",
+   "license": "MIT",
+   "summary": "gotortc Cross-site Scripting vulnerability",
+   "published": "2024-08-05",
+   "severity": "medium"
+  },
+  {
+   "ghsa": "GHSA-867c-p784-5q6g",
+   "repo": "PrivateBin/PrivateBin",
+   "fix": "c4f8482b3072be7ae012cace1b3f5658dcc3b42e",
+   "parent": "ca70c7555d2e79a152c9550d865ffc1090076a8b",
+   "files": [
+    "js/privatebin.js"
+   ],
+   "source_class": "other",
+   "license": "NOASSERTION",
+   "summary": "PrivateBin is missing HTML sanitization of attached filename in file size hint",
+   "published": "2025-10-28",
+   "severity": "medium"
+  },
+  {
+   "ghsa": "GHSA-8j72-p2wm-6738",
+   "repo": "PrivateBin/PrivateBin",
+   "fix": "8d0ac336d23cd8c98e71d5f21cdadcae9c8a26e6",
+   "parent": "ddaee6486d975de242f65b784525a0d67810b163",
+   "files": [
+    "js/privatebin.js"
+   ],
+   "source_class": "other",
+   "license": "NOASSERTION",
+   "summary": "Persistent XSS vulnerability in filename of attached file in PrivateBin",
+   "published": "2020-01-14",
+   "severity": "medium"
+  },
+  {
+   "ghsa": "GHSA-gc5h-6jx9-q2qh",
+   "repo": "ezsystems/ezplatform-admin-ui",
+   "fix": "7a9f991b200fa5a03d49cd07f50577c8bc90a30b",
+   "parent": "7d1971ca5e368abfa69f73c0a86d5761f0af515c",
+   "files": [
+    "src/bundle/Resources/public/js/scripts/fieldType/ezbinaryfile.js",
+    "src/bundle/Resources/public/js/scripts/fieldType/ezimage.js",
+    "src/bundle/Resources/public/js/scripts/fieldType/ezmedia.js"
+   ],
+   "source_class": "other",
+   "license": "NOASSERTION",
+   "summary": "eZ Platform Admin UI vulnerable to DOM-based Cross-site Scripting in file upload widget",
+   "published": "2024-07-31",
+   "severity": "medium"
+  },
+  {
+   "ghsa": "GHSA-78qv-3mpx-9cqq",
+   "repo": "zauberzeug/nicegui",
+   "fix": "1861f59cc374ca0dc9d970b157ef3774720f8dbf",
+   "parent": "cc50d24ec1722d2b3a3fd840aa6a9fea22bb8a6a",
+   "files": [
+    "nicegui/static/nicegui.js"
+   ],
+   "source_class": "other",
+   "license": "MIT",
+   "summary": "NiceGUI vulnerable to XSS via Code Injection during client-side element function execution",
+   "published": "2026-02-24",
+   "severity": "medium"
+  }
+ ],
+ "sak3y": {
+  "repo": "sak3y/ML-XSS-Detector",
+  "commit": "abee71e367f7316beb95e7f4c9136907b95ebca8",
+  "path": "data/dataset_labelled.csv",
+  "csv_sha256": "0ab5f552f3c1010679e390a62f5c18908991e9859dd22a9d9a6581f277028978",
+  "license": "none declared"
+ },
+ "pwnfunction": {
+  "repo": "PwnFunction/xss.pwnfunction.com",
+  "commit": "9ced98e8a461627065a1e7cd803b48de42b33d7e",
+  "license": "MIT",
+  "warmups": [
+   "da-wey",
+   "jefff",
+   "ligma",
+   "ma-spaghet",
+   "mafia",
+   "ok-boomer",
+   "ricardo",
+   "thats-hawt"
+  ],
+  "challenges": [
+   "area-51",
+   "bourne",
+   "ded",
+   "keanu",
+   "me-and-the-bois",
+   "ww3"
+  ]
+ },
+ "domdig": {
+  "repo": "fcavallarin/domdig",
+  "commit": "8400a72c134e644fd74f632aa5c0dac526327163",
+  "license": "GPL-3.0",
+  "expected_sink_family": {
+   "simple.html": "html",
+   "tplstring.html": "code",
+   "attributes.html": "url",
+   "href.html": "url",
+   "hidden.html": "html",
+   "fetch.html": "html",
+   "xhr.html": "html",
+   "deep.html": "html",
+   "postmessage-frame.html": "html"
+  },
+  "label_overrides": {
+   "postmessage-frame.html": "ambiguous"
+  },
+  "pages": [
+   "attributes.html",
+   "deep.html",
+   "fetch.html",
+   "hidden.html",
+   "href.html",
+   "postmessage-frame.html",
+   "simple.html",
+   "tplstring.html",
+   "xhr.html"
+  ],
+  "support": [
+   "common.js"
+  ]
+ },
+ "npm": [
+  {
+   "name": "jquery",
+   "version": "3.7.1",
+   "file": "dist/jquery.js"
+  },
+  {
+   "name": "lodash",
+   "version": "4.17.21",
+   "file": "lodash.js"
+  },
+  {
+   "name": "underscore",
+   "version": "1.13.7",
+   "file": "underscore-umd.js"
+  },
+  {
+   "name": "moment",
+   "version": "2.30.1",
+   "file": "moment.js"
+  },
+  {
+   "name": "backbone",
+   "version": "1.6.0",
+   "file": "backbone.js"
+  },
+  {
+   "name": "handlebars",
+   "version": "4.7.8",
+   "file": "dist/handlebars.js"
+  },
+  {
+   "name": "mustache",
+   "version": "4.2.0",
+   "file": "mustache.js"
+  },
+  {
+   "name": "marked",
+   "version": "4.3.0",
+   "file": "lib/marked.umd.js"
+  },
+  {
+   "name": "dompurify",
+   "version": "3.1.6",
+   "file": "dist/purify.js"
+  },
+  {
+   "name": "bootstrap",
+   "version": "5.3.3",
+   "file": "dist/js/bootstrap.bundle.js"
+  },
+  {
+   "name": "axios",
+   "version": "1.7.7",
+   "file": "dist/axios.js"
+  },
+  {
+   "name": "vue",
+   "version": "3.4.38",
+   "file": "dist/vue.global.js"
+  },
+  {
+   "name": "react",
+   "version": "18.3.1",
+   "file": "umd/react.development.js"
+  },
+  {
+   "name": "react-dom",
+   "version": "18.3.1",
+   "file": "umd/react-dom.development.js"
+  },
+  {
+   "name": "alpinejs",
+   "version": "3.14.1",
+   "file": "dist/cdn.js"
+  },
+  {
+   "name": "htmx.org",
+   "version": "2.0.2",
+   "file": "dist/htmx.js"
+  },
+  {
+   "name": "d3",
+   "version": "7.9.0",
+   "file": "dist/d3.js"
+  },
+  {
+   "name": "chart.js",
+   "version": "4.4.4",
+   "file": "dist/chart.umd.js"
+  },
+  {
+   "name": "clipboard",
+   "version": "2.0.11",
+   "file": "dist/clipboard.js"
+  },
+  {
+   "name": "select2",
+   "version": "4.0.13",
+   "file": "dist/js/select2.full.js"
+  },
+  {
+   "name": "leaflet",
+   "version": "1.9.4",
+   "file": "dist/leaflet-src.js"
+  },
+  {
+   "name": "validator",
+   "version": "13.12.0",
+   "file": "validator.js"
+  },
+  {
+   "name": "js-cookie",
+   "version": "3.0.5",
+   "file": "dist/js.cookie.js"
+  },
+  {
+   "name": "sweetalert2",
+   "version": "11.14.0",
+   "file": "dist/sweetalert2.all.js"
+  },
+  {
+   "name": "datatables.net",
+   "version": "2.1.5",
+   "file": "js/dataTables.js"
+  },
+  {
+   "name": "page",
+   "version": "1.11.6",
+   "file": "page.js"
+  },
+  {
+   "name": "history",
+   "version": "5.3.0",
+   "file": "umd/history.development.js"
+  },
+  {
+   "name": "vue-router",
+   "version": "4.4.3",
+   "file": "dist/vue-router.global.js"
+  }
+ ]
+}
