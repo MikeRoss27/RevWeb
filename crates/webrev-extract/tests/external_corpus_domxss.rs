@@ -72,7 +72,8 @@ fn external_corpus_dom_xss_diagnostic() {
             let relative = file["path"].as_str().expect("file path");
             let path = Path::new(relative);
             assert!(
-                path.components().all(|part| matches!(part, Component::Normal(_))),
+                path.components()
+                    .all(|part| matches!(part, Component::Normal(_))),
                 "unsafe corpus path {relative}"
             );
             let Some(kind) = kind_for(path) else {
