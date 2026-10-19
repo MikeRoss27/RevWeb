@@ -693,3 +693,47 @@ par défaut » ci-dessous décrivent l'état avant ce changement.
   11,38 ms par passe (`params` ×3, `js-ast`, `js-regex`, `secret` plus lents,
   `dom-sinks` plus rapide), soit environ 1,2 ms des ~4,7 ms d'écart.
   `benchmarks/performance/2026-10-19/spa-site-pooled/`.
+
+## 2026-10-19 — corpus externe v1 pour le détecteur DOM XSS
+
+- `benchmarks/external-corpus/v1/` : 331 cas sur cinq sources labellisées par
+  un tiers indépendant de ce dépôt (15 CVE GitHub Security Advisory DOM XSS
+  avec leur commit de correction, le dataset `sak3y/ML-XSS-Detector`, les
+  challenges `pwnfunction`, les pages de test du scanner `domdig`, 28
+  fichiers npm non labellisés). Aucun code tiers commité : `sources.json`
+  épingle chaque entrée par SHA de commit ou version npm, `manifest.json`
+  enregistre le SHA-256 de chaque fichier, `scripts/external_corpus.py fetch`
+  vérifie au téléchargement.
+- Premier run sur le détecteur au commit `6b33d8d` : précision 100 % partout
+  où mesurable, mais rappel 0 % sur les 15 CVE GHSA, 0 % sur les 14
+  challenges pwnfunction, 20 % sur sak3y, 25 % sur domdig — en net contraste
+  avec le run SWIPE (87,5 % de rappel, corpus maintenu par ce dépôt).
+  Protocole figé avant le run dans
+  `benchmarks/external-corpus/v1/README.md`.
+- Test `#[ignore]` (`crates/webrev-extract/tests/external_corpus_domxss.rs`) :
+  ne fait jamais échouer la CI sur un désaccord de détection, le corpus mesure
+  le détecteur et non l'inverse.
+- Compromis : l'unité d'évaluation est un fichier, pas un flux
+  inter-fichiers ; `sak3y` n'a qu'un seul labelleur sans mesure d'accord ;
+  les métriques ne sont jamais regroupées entre sources.
+
+## 2026-10-19 — deux règles de taint manquantes trouvées par ce corpus
+
+- Lecture des cas ratés : `new URL(tainted)` / `new URLSearchParams(tainted)`
+  n'étaient jamais classés comme source (`crates/webrev-extract/src/
+  extractors/metadata/domsinks/taint.rs`), donc l'idiome dominant
+  `new URL(location).searchParams.get(...)` était invisible ; `classify()`
+  ne traitait que `+` parmi les opérateurs binaires, donc `param || "défaut"`
+  / `param ?? "défaut"` cassait la taint.
+- Rerun du corpus externe v1 : pwnfunction 0 % → 57 % de rappel (8/14), sak3y
+  20 % → 52 % (65/124), GHSA 0 % → 6,7 % (1/15, le reste est majoritairement
+  des flux `postMessage` inter-fichiers, hors de la portée intra-fichier),
+  domdig inchangé (25 %, aucun de ses cas n'utilise ces idiomes).
+- Compromis : un faux positif apparu sur `sak3y/snippet_179` (précision sur
+  cette source 100 % → 98,5 %) — un encodage d'entités HTML manuel
+  (`&`→`&amp;`, `<`→`&lt;`, `>`→`&gt;`) avant `innerHTML`, un vrai
+  assainissement que le détecteur ne reconnaît pas (seul
+  `DOMPurify.sanitize` casse la taint aujourd'hui). Reste à faire.
+- Tests : deux tests positifs et un test de concaténation/fallback ajoutés
+  dans `domsinks_tests.rs`. Suite complète du workspace, `clippy`
+  `--all-targets -- -D warnings` et `fmt --check` passent.
