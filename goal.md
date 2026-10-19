@@ -108,6 +108,30 @@ extrait de sonde), et l'affichage de la TUI à l'écran et le proxy en amont ne
 sont pas audités. Le critère reste décoché : secrets courts sous un nom de clé
 quelconque, secrets dans le nom d'hôte, affichage de la TUI et proxy en amont
 restent non traités (voir `docs/security.md`, « Suivi : rapports exportés »).
+**Suivi (2026-10-20, quatre trous sur cinq fermés) :** secrets courts sous un
+nom de clé quelconque — `SecretExtractor::scan_body`, passe 1c
+(`crates/webrev-extract/src/extractors/secrets/mod.rs`) : une valeur
+assignée (`:`/`=` simple, pas `==`/`===`) à une clé sans ambiguïté
+(`password`, `sid`, `bearer`, …) est signalée même trop courte pour
+l'entropie, sauf littéral booléen/`null` ou placeholder. Secrets dans le nom
+d'hôte — `scan_hostname` fait tourner les mêmes motifs connus sur
+`Url::host_str()`, plus un repli entropie limité à des labels de 20 à 63
+caractères (évite les hash de build/CDN courts). Affichage de la TUI à
+l'écran — `skip_out_of_scope_message`/`dynamic_error_message`
+(`crates/webrev-tui/src/runtime/controller.rs`) passent désormais par
+`redact_url`, comme l'équivalent CLI. Proxy en amont — audit effectué sur
+deux chemins distincts : `egress_proxy::parse_upstream`
+(`crates/webrev-browser/`, proxy du navigateur dynamique) rejetait déjà une
+URL avec identifiants embarqués mais sans aucun test (deux tests ajoutés) ;
+le flag `--proxy` du scan statique (chemin reqwest séparé, CLI) a été
+exercé pour la première fois avec un vrai identifiant sous `RUST_LOG=trace`
+(`crates/webrev-cli/tests/proxy_redaction.rs`) — ni stdout/stderr ni le
+rapport écrit ne contiennent le mot de passe en clair ou l'en-tête
+`Proxy-Authorization` encodé en base64. Reste décoché, hors périmètre de ce
+correctif : un secret coupé par la troncature à 256 caractères d'un extrait
+de sonde (`webrev-pipeline/src/active/bola_diff.rs::body_excerpt`) — un
+problème distinct (troncature d'une preuve active, pas détection de
+secret) qui demande sa propre analyse.
 
 ## Étape 5 — Benchmarks et non-régression
 

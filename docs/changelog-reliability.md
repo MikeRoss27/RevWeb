@@ -737,3 +737,45 @@ par défaut » ci-dessous décrivent l'état avant ce changement.
 - Tests : deux tests positifs et un test de concaténation/fallback ajoutés
   dans `domsinks_tests.rs`. Suite complète du workspace, `clippy`
   `--all-targets -- -D warnings` et `fmt --check` passent.
+
+## 2026-10-20 — quatre des cinq trous de redaction de l'étape 4 fermés
+
+- Constat : `goal.md` listait cinq trous non couverts par les heuristiques
+  de `--redact` : secrets courts sous un nom de clé quelconque, secrets dans
+  le nom d'hôte, secret coupé par la troncature à 256 caractères d'un
+  extrait de sonde, affichage de la TUI à l'écran non audité, proxy en amont
+  non audité.
+- Changement : `SecretExtractor` (`crates/webrev-extract/src/extractors/
+  secrets/mod.rs`) gagne une passe 1c (`short_named`, séparateur
+  `:`/`=` simple uniquement — une comparaison `==`/`===` reste gérée par le
+  seuil 16 caractères de la passe 1b) pour les valeurs courtes sous un nom
+  de clé sans ambiguïté, et une passe 3 (`scan_hostname`) qui fait tourner
+  les motifs connus plus un repli entropie (labels 20..=63 caractères) sur
+  `Url::host_str()`. `webrev-tui/src/runtime/controller.rs` fait désormais
+  passer ses lignes de statut (`skip_out_of_scope_message`,
+  `dynamic_error_message`) par `redact_url`, comme le CLI. Audit du proxy en
+  amont sur deux chemins distincts : `egress_proxy::parse_upstream` (proxy
+  du navigateur dynamique) rejetait déjà une URL avec identifiants
+  embarqués, mais ce comportement n'avait aucun test ; le flag `--proxy` du
+  scan statique (chemin reqwest séparé) a été exercé pour la première fois
+  avec un vrai identifiant sous `RUST_LOG=trace`
+  (`crates/webrev-cli/tests/proxy_redaction.rs`) — ni stdout/stderr ni le
+  rapport écrit ne contiennent le mot de passe en clair ou l'en-tête
+  `Proxy-Authorization` encodé en base64.
+- Tests : `short_secrets_under_a_credential_name_are_flagged`,
+  `short_secret_literals_and_comparisons_are_still_ignored`,
+  `secrets_embedded_in_a_hostname_are_detected`,
+  `ordinary_hostnames_are_not_flagged` (secrets),
+  `skip_message_redacts_userinfo_and_token`,
+  `dynamic_error_message_redacts_the_seed` (TUI),
+  `upstream_proxy_url_rejects_embedded_credentials`,
+  `upstream_proxy_url_accepts_a_plain_http_host` (proxy du navigateur),
+  `proxy_credentials_never_reach_stdout_stderr_or_the_report_under_trace_logging`
+  (proxy du scan statique). Suite complète du workspace et
+  `clippy --all-targets -- -D warnings` passent.
+- Compromis : le cinquième trou (secret coupé par la troncature à 256
+  caractères d'un extrait de sonde active, `webrev-pipeline/src/active/
+  bola_diff.rs::body_excerpt`) n'est pas traité ici — c'est un problème de
+  troncature de preuve active, distinct de la détection de secret, qui
+  mérite sa propre analyse plutôt qu'un correctif improvisé en marge de
+  celui-ci. Le critère de `goal.md` reste décoché pour ce seul point.
