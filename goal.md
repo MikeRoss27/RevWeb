@@ -148,18 +148,42 @@ test du scanner `domdig`, et 28 fichiers npm non labellisés). Aucun code tiers
 n'est commité : `sources.json` épingle chaque entrée par SHA de commit ou
 version npm, `manifest.json` enregistre le SHA-256 de chaque fichier,
 `scripts/external_corpus.py fetch` télécharge dans un cache ignoré par git et
-échoue si un octet diffère. Run sur le détecteur au commit `6b33d8d` :
+échoue si un octet diffère. Premier run sur le détecteur au commit `6b33d8d` :
 précision 100 % partout où elle est mesurable (0 faux positif), mais rappel
 **0 % sur les 15 CVE GHSA et 0 % sur les 14 challenges pwnfunction**, 20 %
-sur sak3y (124 positifs), 25 % sur domdig. Ce résultat contredit la lecture
+sur sak3y (124 positifs), 25 % sur domdig. Ce résultat contredisait la lecture
 optimiste du run SWIPE ci-dessus (rappel 87,5 %, corpus maintenu par ce
-dépôt) : le détecteur généralise mal dès qu'il voit du code DOM XSS qu'il n'a
-pas été ajusté sur. Limites du protocole (à ne pas lisser) : l'unité
+dépôt) : le détecteur généralisait mal dès qu'il voyait du code DOM XSS qu'il
+n'avait pas été ajusté sur. Limites du protocole (à ne pas lisser) : l'unité
 d'évaluation est un fichier, pas un flux inter-fichiers (les CVE avec flux
 coupé entre fichiers comptent comme ratées par construction) ; `sak3y` n'a
 qu'un seul labelleur, sans mesure d'accord ; les métriques ne sont jamais
 regroupées entre sources. Détails et protocole figé avant le run dans
 `benchmarks/external-corpus/v1/README.md`.
+
+**Correction (2026-10-19, règles de taint manquantes) :** l'investigation des
+cas ratés a trouvé deux règles de flux absentes du traqueur de taint
+(`crates/webrev-extract/src/extractors/metadata/domsinks/taint.rs`), pas des
+cas limites obscurs : `new URL(tainted)` / `new URLSearchParams(tainted)`
+n'étaient jamais classés comme source (donc `new URL(location).searchParams
+.get(...)`, l'idiome dominant des cas pwnfunction/sak3y, échappait entièrement
+à l'analyse), et `classify()` ne traitait que `+` parmi les opérateurs
+binaires, pas `||`/`??`/`&&` (donc l'idiome `param || "défaut"`, omniprésent
+dans le corpus, cassait la taint). Les deux ont été ajoutées avec des tests
+positifs/négatifs dédiés. Rerun : pwnfunction 0 % → 57 % de rappel (8/14),
+sak3y 20 % → 52 % (65/124), GHSA 0 % → 6,7 % (1/15, la plupart des cas
+restants sont multi-fichiers via `postMessage`, hors de la portée intra-
+fichier documentée plus haut), domdig inchangé (25 %, aucun de ses cas
+n'utilise ces idiomes). Un faux positif est apparu sur `sak3y/snippet_179`
+(précision 100 % → 98,5 % sur cette source) : un encodage d'entités HTML
+manuel (`.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')`)
+avant `innerHTML`, que le détecteur ne reconnaît pas comme un assainissement
+— seul `DOMPurify.sanitize` casse la taint aujourd'hui. Reconnaître
+l'encodage d'entités manuel comme un assainisseur reste à faire. Les 4
+autres cas pwnfunction encore ratés passent tous par `DOMPurify.sanitize`
+(bypass volontaire du CTF) sauf un (`bourne`), qui est une confusion de clé
+d'objet, pas une injection DOM. Détails dans
+`benchmarks/external-corpus/v1/README.md` et les résultats rejoués.
 
 La suite synthétique existante a été exécutée : cinq checks, chacun TP=2,
 FP=0, FN=0, TN=2. Elle reste une suite de régression, pas une estimation de
