@@ -26,6 +26,7 @@ pub(super) fn attach(
         verdict,
         observations,
         limitation: limitation.into(),
+        diff: Vec::new(),
     }));
     finding
 }

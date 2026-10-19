@@ -52,6 +52,8 @@ impl ProbeResponse {
             // on export (`--redact`), which scrubs the whole excerpt before any
             // further truncation.
             excerpt: excerpt.chars().take(256).collect(),
+            body: String::new(),
+            body_truncated: false,
         }
     }
 }

@@ -636,3 +636,23 @@ par défaut » ci-dessous décrivent l'état avant ce changement.
   jeton ; objets protégés sans signal).
 - Compromis : un rapport peut contenir des identifiants sensibles ; il reste
   confidentiel même masqué. Voir `docs/security.md`.
+
+## 2026-10-19 — preuve de `bola` : corps de réponse et comparaison A/B
+
+- Constat : une observation de `bola` ne gardait qu'une empreinte `sha256=` du
+  corps, donc le rapport ne montrait pas ce que le compte A avait lu de l'objet
+  de B.
+- `ResponseObservation` gagne `body` (4 KiO au plus, UTF-8 sûr) et
+  `body_truncated` ; `ProbeEvidence` gagne `diff` (sens de la fuite, champs
+  JSON qui diffèrent entre les deux objets). Ils sont omis du JSON quand ils
+  sont vides et ont une valeur par défaut au chargement : les anciens rapports
+  et les autres sondes sont inchangés.
+- Brut par défaut ; `--redact` masque les identifiants de connexion dans `body`
+  et `diff` en gardant les identifiants d'objets. La logique de détection et le
+  verdict `Idor` ne changent pas.
+- Tests : `active/bola_diff.rs` (8 : troncature, UTF-8 coupé, UTF-8 invalide,
+  comparaison, tableaux imbriqués, plafond de lignes), intégration `bola`
+  (corps des deux lectures croisées, diff), `redact.rs` (corps et diff masqués
+  sans perdre l'objet), de bout en bout `tests/bola_readable.rs` (corps lisible
+  en brut, clé de l'objet masquée sous `--redact`, cas protégé sans signal).
+- Cible de fuzz `report_redaction` : `body` et `diff` portent aussi le canari.

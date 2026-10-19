@@ -35,6 +35,19 @@ pub struct ResponseObservation {
     pub content_type: String,
     pub body_bytes: usize,
     pub excerpt: String,
+    /// Bounded raw response body, kept by checks whose proof is the content
+    /// itself (cross-account object reads). Empty for every other check, and
+    /// absent from older reports. `--redact` scrubs it on export.
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub body: String,
+    /// True when `body` is a prefix of a longer response (`body_bytes`).
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub body_truncated: bool,
+}
+
+#[allow(clippy::trivially_copy_pass_by_ref)] // serde's `skip_serializing_if` signature
+fn is_false(value: &bool) -> bool {
+    !*value
 }
 
 fn default_probe_method() -> String {
@@ -48,6 +61,11 @@ pub struct ProbeEvidence {
     pub verdict: EvidenceVerdict,
     pub observations: Vec<ResponseObservation>,
     pub limitation: String,
+    /// Human-readable comparison of the observed responses (for a
+    /// cross-account read: which fields differ between the two owners'
+    /// objects). Empty when a check has nothing to compare.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub diff: Vec<String>,
 }
 
 impl ProbeEvidence {
@@ -74,7 +92,16 @@ impl ProbeEvidence {
             if !response.excerpt.is_empty() {
                 lines.push(format!("match: {}", response.excerpt));
             }
+            if !response.body.is_empty() {
+                let cut = if response.body_truncated {
+                    " (truncated)"
+                } else {
+                    ""
+                };
+                lines.push(format!("body{cut}: {}", response.body));
+            }
         }
+        lines.extend(self.diff.iter().map(|line| format!("diff: {line}")));
         lines
     }
 }

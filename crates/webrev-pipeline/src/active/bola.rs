@@ -2,6 +2,7 @@
 
 use super::{
     access::has_query_credentials,
+    bola_diff::{body_excerpt, comparison},
     client::idor_finding,
     evidence::attach,
     transport::{ProbeClient, ProbeResponse},
@@ -256,14 +257,18 @@ async fn check_pair(
     } else {
         &candidate.account_b_url
     };
-    Some(attach(
+    let mut finding = attach(
         idor_finding(session, affected, format!("cross-account object access signal on {}", candidate.route)),
         "cross_account_bola",
         None,
         EvidenceVerdict::Signal,
         observations,
         "Both own-object controls returned distinct JSON bodies; a cross-account response matched an owner's body. Confirm both objects are private and owned by the supplied test accounts. Public objects or shared caches can produce this signal.",
-    ))
+    );
+    if let Some(evidence) = finding.evidence.as_mut() {
+        evidence.diff = comparison(&own_a.bytes, &own_b.bytes, b_reads_a, a_reads_b);
+    }
+    Some(finding)
 }
 
 fn valid_own_response(response: &ProbeResponse) -> bool {
@@ -285,6 +290,9 @@ fn observation(role: &str, response: &ProbeResponse) -> ResponseObservation {
     let digest = Sha256::digest(&response.bytes);
     let mut observation = response.observation(role, "");
     observation.excerpt = format!("sha256={}", hex::encode(digest));
+    // The digest identifies the response; the bounded body is the proof a
+    // reader needs to see what the other account could read.
+    (observation.body, observation.body_truncated) = body_excerpt(&response.bytes);
     observation
 }
 

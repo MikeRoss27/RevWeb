@@ -92,8 +92,11 @@ fuzz_target!(|data: &[u8]| {
             content_type: "text/plain".into(),
             body_bytes: embedded.len(),
             excerpt: embedded.clone(),
+            body: embedded.clone(),
+            body_truncated: false,
         }],
         limitation: embedded.clone(),
+        diff: vec![embedded.clone()],
     }));
     let frame = finding(
         &mission,

@@ -17,6 +17,10 @@ const ID_A: &str = "550e8400-e29b-41d4-a716-446655440001";
 const ID_B: &str = "550e8400-e29b-41d4-a716-446655440002";
 const BEARER_A: &str = "Zk3Jq9XvT2bLm8Rw4NpYs7Ad";
 const BEARER_B: &str = "Qw8Er5TyUi2OpAs6DfGh3Jk9";
+/// Credentials stored inside the two objects themselves: the proof body keeps
+/// them raw, `--redact` must not.
+const KEY_A: &str = "Xk9fQ2mT7vLp4RwZ8nBc";
+const KEY_B: &str = "Hd3Ws6YuN1eCq5JtV9aG";
 
 /// Two private objects behind bearer tokens. When `vulnerable`, the server
 /// ignores the token and serves any object to anyone.
@@ -59,7 +63,9 @@ impl Api {
                             if vulnerable || caller_a {
                                 (
                                     "200 OK",
-                                    format!(r#"{{"id":"{ID_A}","owner":"a","note":"alpha"}}"#),
+                                    format!(
+                                        r#"{{"id":"{ID_A}","owner":"a","note":"alpha","api_key":"{KEY_A}"}}"#
+                                    ),
                                 )
                             } else {
                                 ("403 Forbidden", r#"{"error":"forbidden"}"#.to_owned())
@@ -68,7 +74,9 @@ impl Api {
                             if vulnerable || caller_b {
                                 (
                                     "200 OK",
-                                    format!(r#"{{"id":"{ID_B}","owner":"b","note":"bravo"}}"#),
+                                    format!(
+                                        r#"{{"id":"{ID_B}","owner":"b","note":"bravo","api_key":"{KEY_B}"}}"#
+                                    ),
                                 )
                             } else {
                                 ("403 Forbidden", r#"{"error":"forbidden"}"#.to_owned())
@@ -217,13 +225,56 @@ fn assert_idor_is_readable(report: &SessionReport, stdout: &str) {
             "{role}: {}",
             observation.url
         );
-        // BOLA keeps a fingerprint of each body, not the body: the same
-        // fingerprint on both accounts is what proves the object was shared.
+        // The fingerprint identifies the response; the same fingerprint on
+        // both accounts is what proves the object was shared.
         assert!(
             observation.excerpt.starts_with("sha256="),
             "{role}: {}",
             observation.excerpt
         );
+        // The proof is the content itself: which object the other account read.
+        assert!(
+            observation.body.contains(r#""owner""#) && observation.body.contains(r#""note""#),
+            "{role}: {}",
+            observation.body
+        );
+        assert!(!observation.body_truncated, "{role}");
+    }
+    let leaked: Vec<_> = evidence
+        .observations
+        .iter()
+        .filter(|o| o.status == 200 && o.role.contains("reads"))
+        .collect();
+    assert!(!leaked.is_empty(), "{seen:?}");
+    for observation in leaked {
+        let object = if observation.role.starts_with("B reads A") {
+            (ID_A, "alpha")
+        } else {
+            (ID_B, "bravo")
+        };
+        assert!(
+            observation.body.contains(object.0) && observation.body.contains(object.1),
+            "{}: {}",
+            observation.role,
+            observation.body
+        );
+    }
+    // The comparison states the direction and the fields that tell the two
+    // owners' objects apart.
+    let diff = evidence.diff.join("\n");
+    assert!(
+        diff.contains("B reads A's object") || diff.contains("A reads B's object"),
+        "{diff}"
+    );
+    assert!(diff.contains(r#"note: "alpha" ≠ "bravo""#), "{diff}");
+    assert!(diff.contains(r#"owner: "a" ≠ "b""#), "{diff}");
+}
+
+/// Raw keeps the credentials stored inside the leaked objects; `--redact`
+/// hides them from the body and the comparison but keeps the object readable.
+fn assert_object_credentials(stdout: &str, redacted: bool) {
+    for key in [KEY_A, KEY_B] {
+        assert_eq!(stdout.contains(key), !redacted, "{key} in {stdout}");
     }
 }
 
@@ -242,6 +293,7 @@ fn an_idor_result_is_raw_and_readable_by_default() {
     assert!(stderr.contains("1 captured object pair"), "{stderr}");
     assert!(!report.redacted, "the result is raw by default");
     assert_idor_is_readable(&report, &stdout);
+    assert_object_credentials(&stdout, false);
     assert_no_account_credential(&stdout);
 }
 
@@ -251,6 +303,7 @@ fn an_idor_result_stays_readable_under_redact() {
     assert!(stderr.contains("1 captured object pair"), "{stderr}");
     assert!(report.redacted, "--redact marks the result");
     assert_idor_is_readable(&report, &stdout);
+    assert_object_credentials(&stdout, true);
     assert_no_account_credential(&stdout);
 }
 
