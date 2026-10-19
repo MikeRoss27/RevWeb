@@ -488,6 +488,26 @@ Of the four pwnfunction cases still missed, three route through
 `DOMPurify.sanitize` by design (the challenge is a sanitizer-bypass puzzle)
 and one (`bourne`) is an object-key confusion bug, not a DOM XSS flow.
 
+**Follow-up (2026-10-19): entity-encoding `.replace()` chains now recognized.**
+`classify_call()` breaks taint on a `.replace(pattern, entity)` chain
+(single-character literal or single-character `/…/g` regex pattern, entity
+literal matching the canonical HTML entity) once the chain covers *both*
+`<` → `&lt;` and `>` → `&gt;` — the two characters that actually enable tag
+injection; a chain escaping only `&`/`"`/`'` is tracked but does not clear
+taint, and a single unrelated `.replace()` call still propagates it exactly
+as before. The regex fallback's `sanitizer_wraps_sink` check was extended
+with the same textual pattern so it doesn't contradict the AST pass's
+verdict with a stray "unverified source" lead. Rerun of the external corpus
+v1: `sak3y` precision 98.5% → 100% (the `snippet_179` false positive is
+gone); recall is unchanged (52%, 65/124) since that case was already a true
+negative for taint, not a different miss. No change on `ghsa`, `pwnfunction`,
+`domdig` or `npm`, and no regression in the static/synthetic suites.
+Deliberately narrow: only literal, one-character pattern/entity pairs are
+recognized; a multi-character class (`/[&<>]/g`), a replacer function, or
+hand-rolled encoding via a helper other than a direct `.replace()` chain on
+the tainted value are not recognized and remain a documented possible false
+positive, not something this fix claims to cover.
+
 ### Native paired performance measurement (2026-10-17)
 
 The final integrated candidate in
