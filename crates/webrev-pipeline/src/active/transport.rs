@@ -6,15 +6,7 @@ use std::sync::{
     Mutex,
 };
 use tokio_util::sync::CancellationToken;
-use webrev_core::{
-    redact_url, ActiveCoverage, AuthConfig, OpsecConfig, ResponseObservation, Result, Sanitizer,
-    Scope,
-};
-
-fn sanitizer() -> &'static Sanitizer {
-    static SANITIZER: std::sync::OnceLock<Sanitizer> = std::sync::OnceLock::new();
-    SANITIZER.get_or_init(Sanitizer::with_default_patterns)
-}
+use webrev_core::{ActiveCoverage, AuthConfig, OpsecConfig, ResponseObservation, Result, Scope};
 
 pub(super) struct ProbeClient<'a> {
     client: reqwest::Client,
@@ -51,13 +43,15 @@ impl ProbeResponse {
         ResponseObservation {
             role: role.into(),
             method: "GET".into(),
-            url: redact_url(&self.url),
+            url: self.url.clone(),
             status: self.status.as_u16(),
             authenticated: self.authenticated,
             content_type: self.content_type(),
             body_bytes: self.bytes.len(),
-            // Scrub before truncating so a secret cut in half is not left behind.
-            excerpt: sanitizer().scrub(excerpt).chars().take(256).collect(),
+            // Stored raw: the excerpt is the proof of the probe. Masking happens
+            // on export (`--redact`), which scrubs the whole excerpt before any
+            // further truncation.
+            excerpt: excerpt.chars().take(256).collect(),
         }
     }
 }
@@ -306,7 +300,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn observation_scrubs_secrets_from_excerpt_and_url() {
+    fn observation_keeps_url_and_excerpt_raw_but_truncated() {
         let response = ProbeResponse {
             url: "https://t.test/a?token=url-secret-value".into(),
             status: reqwest::StatusCode::OK,
@@ -316,9 +310,12 @@ mod tests {
         };
         let body = r#"{"apiKey":"abcdef0123456789xyz","name":"visible"}"#;
         let observation = response.observation("probe", body);
-        assert!(!observation.excerpt.contains("abcdef0123456789xyz"));
+        assert!(observation.excerpt.contains("abcdef0123456789xyz"));
         assert!(observation.excerpt.contains("visible"));
-        assert!(!observation.url.contains("url-secret-value"));
+        assert!(observation.url.contains("url-secret-value"));
+
+        let long = "x".repeat(1000);
+        assert_eq!(response.observation("probe", &long).excerpt.len(), 256);
     }
 
     #[tokio::test]

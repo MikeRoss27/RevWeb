@@ -568,15 +568,45 @@ CVSS values are not calculated.
 - Les temps absolus sont environ deux fois ceux du 2026-10-17 : comparer des
   rapports.
 
-## 2026-10-19 — rapports exportés masqués par défaut
+## 2026-10-19 — rapports exportés bruts par défaut, `--redact` pour masquer
+
+Décision de produit (chasseur de bugs) : le masquage par défaut des PR #21 et
+#22 cachait la preuve des findings (jeton exposé, `session_id` d'une URL,
+`/reset/<jeton>`, en-tête capturé, extrait de sonde). Les sections « masqués
+par défaut » ci-dessous décrivent l'état avant ce changement.
+
+- `--redact` / `WEBREV_REPORT_REDACT=1` remplacent `--unredacted` /
+  `WEBREV_REPORT_UNREDACTED` (supprimés, rejetés par clap) sur `scan`,
+  `static`, `dynamic`, `active`, `tui`, `report` et `bola`. L'export est brut
+  par défaut dans tous les formats, y compris `--report -`, la touche `r` de la
+  TUI, `report --format urls | ffuf` et le résultat de `bola`.
+  `RenderOptions::default().redact` vaut `false`.
+- `ProbeResponse::observation` stocke l'URL et l'extrait bruts (troncature à
+  256 caractères conservée) ; `--redact` les masque à l'export.
+- Écrire un rapport brut dans un fichier affiche une ligne d'avertissement
+  (stderr ; message de statut dans la TUI).
+- Toujours masqués, tous modes : journaux, erreurs, `Debug`, ligne
+  `dynamic: <seed>`, résumé compact de fin de scan.
+- Tests : `tests/report_redaction.rs` (brut par défaut dans les huit formats,
+  `--redact` masque les huit formats, flag et variable d'environnement,
+  `--unredacted` rejeté, conversion et `bola` avec les deux captures, une seule
+  ligne d'avertissement, terminal/journaux/erreurs masqués dans les deux modes),
+  `tests/bola_readable.rs` (IDOR lisible en brut et sous `--redact`, aucun
+  jeton de compte écrit), `transport.rs` (extrait brut et tronqué),
+  `redact.rs` (défaut brut). La cible de fuzz `report_redaction` fixe
+  `redact: true`.
+- Voir `docs/security.md`, « Suivi : rapports bruts par défaut ».
+
+## 2026-10-19 — rapports exportés masqués par défaut (remplacé, voir ci-dessus)
 
 - Tous les formats d'export (JSON, JSONL, CSV, URLs, texte, OpenAPI, DOT,
   GraphML, `--report -`, touche `r` de la TUI, rapport `bola`) passent par
   `SessionReport::redacted` : mission, seeds, URL, texte des findings, preuves
   de sondes et trames capturées sont masqués ; le JSON est masqué feuille par
-  feuille et reste parsable. `--unredacted` / `WEBREV_REPORT_UNREDACTED=1`
-  garde le brut. Un rapport masqué porte `"redacted": true` et `webrev bola
-  --a-report/--b-report` le refuse (les identifiants d'objets ont disparu).
+  feuille et reste parsable. (`--unredacted` / `WEBREV_REPORT_UNREDACTED=1`
+  gardaient le brut ; remplacés par `--redact`.) Un rapport masqué porte
+  `"redacted": true` et `webrev bola --a-report/--b-report` le refuse (les
+  identifiants d'objets ont disparu).
   *(Corrigé le jour même, voir la section suivante.)*
 - Le texte clair des secrets détectés reste exporté (choix de produit
   inchangé). La détection n'est pas affectée : seule la copie exportée change.

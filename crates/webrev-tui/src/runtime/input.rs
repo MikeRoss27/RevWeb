@@ -87,7 +87,13 @@ pub(super) async fn handle_action(
         }
         Action::ExportReport => {
             let status = match controller.export_report().await {
-                Ok(path) => format!("report written to {}", path.display()),
+                Ok(path) if controller.redact_report => {
+                    format!("report written to {} (credentials masked)", path.display())
+                }
+                Ok(path) => format!(
+                    "report written to {}: raw, holds captured credentials (--redact to mask)",
+                    path.display()
+                ),
                 Err(e) => format!("report failed: {e}"),
             };
             app.apply(UiEvent::Status(status));

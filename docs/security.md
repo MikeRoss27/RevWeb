@@ -54,8 +54,9 @@ with a random per-run key that is never persisted.
 
 Dynamic capture preserves original request URLs, headers and WebSocket payloads
 in memory instead of masking credential-looking substrings. Existing
-capture-size budgets still apply. Exported reports mask them by default (see
-"Reporting scope"); `--unredacted` writes the captured values.
+capture-size budgets still apply. Exported reports keep them: they are raw by
+default, and `--redact` masks credentials when a report has to be shared (see
+"Reporting scope").
 
 ## Operational controls
 
@@ -138,15 +139,31 @@ A report includes the original mission metadata, scope, seeds, findings,
 endpoints, summary counters and detected plaintext secrets. `webrev report`
 preserves this metadata when converting or filtering an existing JSON report.
 
-Every export (JSON, JSONL, CSV, URLs, text, OpenAPI, DOT, GraphML; `--report -`
-included; the TUI `r` key; `bola` results) masks credentials by default through
+**An exported report is raw by default.** It is the deliverable of a bug-bounty
+run, and the proof of a finding lives in the captured values: the token in the
+leaked URL, the `session_id` that travels in a query string, the `/reset/<token>`
+path, the `Authorization` header of a captured request, the response excerpt of
+a probe. Masking them by default would leave a report that proves nothing.
+A raw report therefore holds live credentials: **treat it as confidential, and
+do not hand it to a client, a ticket or a chat without `--redact`.** Every scan
+that writes a raw report to a file ends with a one-line warning to that effect.
+
+`--redact` (or `WEBREV_REPORT_REDACT=1`) masks credentials in every export
+(JSON, JSONL, CSV, URLs, text, OpenAPI, DOT, GraphML; `--report -` included;
+the TUI `r` key; `bola` results; `webrev report`) through
 `SessionReport::redacted`: mission name and seeds, endpoint and finding URLs,
 finding text, probe evidence and captured frames go through `redact_url` and
 `Sanitizer::scrub`, JSON values leaf by leaf. A masked JSON report carries
-`"redacted": true`. Pass `--unredacted` (or `WEBREV_REPORT_UNREDACTED=1`) to
-write the captured values, for example to pipe real object ids into `ffuf` or to
-produce the reports `webrev bola --a-report/--b-report` replays; `bola` refuses a
-masked report. The detected plaintext of secret findings is kept either way.
+`"redacted": true`. The detected plaintext of secret findings is kept either
+way. Raw is what `webrev report --format urls | ffuf` and
+`webrev bola --a-report/--b-report` need; both also accept a masked report,
+minus the pairs whose captured URL held a credential.
+
+What stays masked whatever the mode, because it is accidental exposure and not
+a deliverable: logs (`RUST_LOG`, with `chromiumoxide::conn` and `tungstenite`
+capped at `error` unless `WEBREV_LOG_UNSAFE=1`), error messages, `Debug`
+renderings (`HarEntry`, `AuthConfig`, `OpsecConfig`), the `dynamic: <seed>`
+line and the compact summary printed at the end of a scan.
 
 ## Exposition accidentelle des données sensibles
 
@@ -165,7 +182,9 @@ Corrigé :
 - `webrev_core::redact_url` masque userinfo et valeurs de paramètres
   `token/key/secret/pass/sig/session/...` (requête et fragment). Elle est
   utilisée pour les lignes `dynamic:` / `skip out-of-scope:` et l'erreur de
-  seed BOLA invalide. Elle ne s'applique jamais aux findings ni aux rapports.
+  seed BOLA invalide. Elle ne s'applique ni aux findings ni aux rapports
+  exportés par défaut ; avec `--redact`, l'export la réutilise (voir « Suivi :
+  rapports bruts par défaut »).
 
 Non corrigé ou non vérifié (hors périmètre de cette passe) :
 
@@ -200,10 +219,11 @@ et les journaux internes de reqwest/hyper/chromiumoxide sous `RUST_LOG=debug`.
 - `HarEntry` n'a plus de `Debug` dérivé : `{:?}` masque les valeurs des en-têtes
   sensibles (`Authorization`, `Cookie`, ...), les motifs de secrets et les
   paramètres sensibles de l'URL. Les données restent intactes en mémoire.
-- `ProbeResponse::observation` passe l'extrait (avant la troncature à 256
+- *(Révisé le 2026-10-19 : voir « Suivi : rapports bruts par défaut ».)*
+  `ProbeResponse::observation` passait l'extrait (avant la troncature à 256
   caractères) dans `Sanitizer::scrub` et l'URL dans `redact_url` avant stockage
-  dans le rapport JSON. Seuls les motifs de secrets connus sont masqués ; un
-  jeton de forme inconnue dans un corps de réponse subsiste.
+  dans le rapport JSON. Elle stocke maintenant l'extrait et l'URL bruts, et le
+  masquage se fait à l'export avec `--redact`.
 - Audit de `RUST_LOG=debug` / `trace` des dépendances : lecture du code de
   reqwest 0.12.28 uniquement, sans exécution. **Remplacé par l'audit exécuté du
   2026-10-18 ci-dessous**, qui corrige certains de ces constats. Constats de la
@@ -358,9 +378,11 @@ Ce qui reste, et pourquoi le critère « preuves sensibles protégées » de
 
 ### Suivi : rapports exportés (2026-10-19)
 
-Tous les formats d'export passent par `SessionReport::redacted`
-(`crates/webrev-report/src/redact.rs`) sauf `--unredacted` /
-`WEBREV_REPORT_UNREDACTED=1` : JSON, JSONL, CSV, URLs, texte, OpenAPI, DOT,
+*(Le défaut a été inversé le 2026-10-19, voir « Suivi : rapports bruts par
+défaut » : l'export est brut, et c'est `--redact` / `WEBREV_REPORT_REDACT=1` qui
+active ce qui suit.)* Tous les formats d'export passent par
+`SessionReport::redacted` (`crates/webrev-report/src/redact.rs`) avec
+`--redact` : JSON, JSONL, CSV, URLs, texte, OpenAPI, DOT,
 GraphML, `--report -`, la touche `r` de la TUI et le rapport de `bola`. Sont
 masqués : nom de mission et seeds, URL des endpoints et des findings,
 `provenance.location`, texte des findings (valeur, justification, trames
@@ -383,12 +405,12 @@ Conséquences à connaître :
   chemin, ce qui rendait les résultats `bola` inutilisables (on ne voyait plus
   quel objet avait fuité) et faisait refuser les rapports masqués par
   `--a-report/--b-report`. Voir « Suivi : identifiants d'objets lisibles ».
-- `webrev report --format urls | ffuf` reçoit `[REDACTED]` à la place des
-  jetons ; les identifiants d'objets restent. Ajouter `--unredacted` pour
-  fuzzer les vraies valeurs des jetons.
+- Avec `--redact`, `webrev report --format urls | ffuf` reçoit `[REDACTED]` à
+  la place des jetons ; les identifiants d'objets restent. Sans `--redact` (le
+  défaut), `ffuf` reçoit les vraies valeurs.
 - Deux endpoints qui ne diffèrent que par un segment masqué restent deux
   entrées (pas de déduplication, les compteurs du résumé restent justes).
-- `--unredacted` ne restaure rien : appliqué à un rapport déjà masqué, il
+- Convertir sans `--redact` un rapport déjà masqué ne restaure rien : il
   convertit seulement.
 
 Ce qui reste (le critère « preuves sensibles protégées » de `goal.md` reste
@@ -443,8 +465,8 @@ et la limite d'interprétation. Seuls les identifiants de connexion en sont
 retirés. `bola --a-report/--b-report` accepte maintenant un rapport masqué : les
 identifiants d'objets y sont intacts. Une paire dont l'URL capturée portait un
 identifiant de connexion (`?token=[REDACTED]`) ne peut pas être rejouée telle
-quelle ; elle est écartée avec un message, et `--unredacted` à la capture la
-rétablit. Le marqueur `"redacted": true` est conservé.
+quelle ; elle est écartée avec un message, et une capture sans `--redact` (le défaut)
+la rétablit. Le marqueur `"redacted": true` est conservé.
 
 **Compromis, à lire.** Les identifiants d'objets ne sont plus masqués, donc un
 rapport peut contenir des identifiants sensibles (ids de comptes, de commandes,
@@ -455,6 +477,53 @@ plus sous un nom de paramètre ordinaire (`?s=<hex>`) n'est pas reconnu ; un
 jeton de reset dans un chemin que rien n'annonce (`/r/<hex>`) non plus ; un
 condensat de plus de 32 chiffres, comme un identifiant de commit Git dans
 `/commit/<sha1>`, est masqué par excès.
+
+### Suivi : rapports bruts par défaut (2026-10-19)
+
+**Décision de produit.** Le masquage par défaut des rapports (PR #21 et #22)
+cachait ce qu'un chasseur de bugs doit montrer pour signaler : le jeton exposé,
+le `session_id` dans l'URL, le `/reset/<jeton>`, l'en-tête `Authorization`
+capturé, l'extrait d'une réponse de sonde. Un rapport qui ne contient plus la
+preuve ne prouve rien. L'export est donc **brut par défaut** ; `--redact`
+(`WEBREV_REPORT_REDACT=1`) produit la version à partager.
+
+Ce qui change :
+
+- `--unredacted` / `WEBREV_REPORT_UNREDACTED` sont **supprimés** (l'option
+  n'existait que depuis la PR #21 ; clap la rejette comme toute option retirée,
+  ce qui évite qu'un script la croie encore utile). Remplacés par `--redact` /
+  `WEBREV_REPORT_REDACT`, sur `scan`, `static`, `dynamic`, `active`, `tui`,
+  `report` et `bola`. Défaut de bibliothèque : `RenderOptions::default().redact`
+  vaut `false`.
+- Les extraits et URL de preuve des sondes actives sont stockés **bruts** dans
+  le rapport (troncature à 256 caractères conservée) ; `ProbeResponse::observation`
+  ne masque plus au stockage. Le masquage se fait à l'export, avec `--redact`,
+  sur l'extrait tronqué : un secret coupé en deux par la troncature ne garde
+  que son début, que le masquage par forme ne reconnaît pas toujours. Pour un
+  rapport destiné à être partagé, c'est un reste à connaître.
+- Chaque scan qui écrit un rapport brut dans un fichier (`scan`, `static`,
+  `dynamic`, `active`, `report --output`, `bola --output`) affiche une ligne
+  d'avertissement sur stderr ; la TUI l'ajoute à son message de statut. Écrire
+  sur stdout (`--report -`) n'ajoute rien : c'est un tube.
+- `webrev bola --a-report/--b-report` accepte les deux sortes de rapports ; il
+  écarte les paires dont l'URL capturée porte `[REDACTED]`, avec un message.
+
+Ce qui **reste masqué dans tous les modes** (accident, pas livrable) : journaux
+(`RUST_LOG`, plafonnement de `chromiumoxide::conn` et `tungstenite`,
+`WEBREV_LOG_UNSAFE=1` pour lever), messages d'erreur, `Debug` (`HarEntry`,
+`AuthConfig`, `OpsecConfig`), la ligne `dynamic: <seed>` et le résumé compact
+affiché en fin de scan. `crates/webrev-cli/tests/report_redaction.rs` le vérifie
+en lançant le binaire avec `RUST_LOG=debug` dans les deux modes (la ligne
+`dynamic:` elle-même demande Chromium et n'est couverte que par les tests
+unitaires de `redact_url`).
+
+Modèle de menace, honnêtement : un rapport brut contient les identifiants
+capturés pendant le scan, ceux de la cible et parfois les vôtres. Il se lit
+comme un fichier de secrets : droits restreints, hors des dépôts de code, pas de
+ticket, pas de pièce jointe sans `--redact`. `--redact` retire des moyens de se
+connecter, pas la liste des objets touchés, et son heuristique a des trous (voir
+les suivis précédents). Le texte en clair des secrets détectés reste exporté
+dans les deux modes, car c'est l'objet du finding.
 
 ### Suivi : test d'egress instable (2026-10-18)
 

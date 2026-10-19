@@ -16,6 +16,16 @@ use serde_json::Value;
 use webrev_core::{AuthConfig, EgressPolicy, Mission, MissionProfile, OpsecConfig, Scope};
 use webrev_tui::TuiOptions;
 
+/// One line on stderr when a raw report lands on disk: it holds whatever the
+/// scan captured, credentials included, so it is confidential until masked.
+fn warn_if_raw(redact: bool) {
+    if !redact {
+        eprintln!(
+            "warning: the report is raw and holds captured credentials; keep it private or re-export with --redact before sharing"
+        );
+    }
+}
+
 /// Export a standalone scan while its session is still in memory.
 async fn write_session_report(
     mission: &Mission,
@@ -32,6 +42,7 @@ async fn write_session_report(
         output::show(&report)?;
         std::fs::write(path, report.export_json(redact)?)?;
         eprintln!("report written to {}", path.display());
+        warn_if_raw(redact);
     }
     Ok(())
 }
@@ -242,7 +253,7 @@ pub async fn dispatch(cli: Cli) -> anyhow::Result<()> {
             webrev_tui::run(TuiOptions {
                 profile: MissionProfile::new(mission, opsec),
                 report_path: args.report,
-                redact_report: !args.unredacted,
+                redact_report: args.redact,
             })
             .await
         }

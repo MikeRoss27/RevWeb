@@ -25,7 +25,7 @@ fn render_options(args: &ReportArgs) -> RenderOptions {
             SeveritySel::High => Severity::High,
             SeveritySel::Critical => Severity::Critical,
         },
-        redact: !args.unredacted,
+        redact: args.redact,
     }
 }
 
@@ -42,6 +42,7 @@ pub fn run(args: ReportArgs) -> anyhow::Result<()> {
             std::fs::write(&path, &rendered)?;
             // Informational: keep stdout clean for piping, so this goes to stderr.
             eprintln!("report written to {}", path.display());
+            super::warn_if_raw(args.redact);
         }
         // Write straight to stdout so a closed downstream pipe (e.g. `| head`)
         // ends the program cleanly instead of panicking in `println!`.

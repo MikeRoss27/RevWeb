@@ -190,10 +190,11 @@ pub struct ScanArgs {
     /// Report output path (or the TUI's 'r' key). Use '-' for stdout in CLI scans.
     #[arg(long, default_value = "webrev-report.json")]
     pub report: PathBuf,
-    /// Keep credentials in exported reports (URLs, evidence, captured frames).
-    /// By default they are masked; detected secret plaintext is always kept.
-    #[arg(long, env = "WEBREV_REPORT_UNREDACTED", action = clap::ArgAction::SetTrue, value_parser = clap::builder::BoolishValueParser::new())]
-    pub unredacted: bool,
+    /// Mask credentials in the exported report (URLs, evidence, captured
+    /// frames, finding text) so it can be shared. By default the report is raw
+    /// and keeps every captured value: treat it as confidential.
+    #[arg(long, env = "WEBREV_REPORT_REDACT", action = clap::ArgAction::SetTrue, value_parser = clap::builder::BoolishValueParser::new())]
+    pub redact: bool,
 }
 
 /// Output serialization for `report`.
@@ -284,9 +285,10 @@ pub struct ReportArgs {
     /// Drop findings below this severity (jsonl/csv are ranked by severity).
     #[arg(long = "min-severity", value_enum, default_value_t = SeveritySel::Info)]
     pub min_severity: SeveritySel,
-    /// Keep credentials in the converted output (masked by default).
-    #[arg(long, env = "WEBREV_REPORT_UNREDACTED", action = clap::ArgAction::SetTrue, value_parser = clap::builder::BoolishValueParser::new())]
-    pub unredacted: bool,
+    /// Mask credentials in the converted output (raw by default). Cannot
+    /// restore values from a report that was already masked.
+    #[arg(long, env = "WEBREV_REPORT_REDACT", action = clap::ArgAction::SetTrue, value_parser = clap::builder::BoolishValueParser::new())]
+    pub redact: bool,
 }
 
 /// Compare two or more completed JSON scan reports.
@@ -333,7 +335,8 @@ pub struct BolaArgs {
     /// Browser dwell time per seed and account, in seconds.
     #[arg(long, default_value_t = 8)]
     pub duration_secs: u64,
-    /// Keep credentials in the result report (masked by default).
-    #[arg(long, env = "WEBREV_REPORT_UNREDACTED", action = clap::ArgAction::SetTrue, value_parser = clap::builder::BoolishValueParser::new())]
-    pub unredacted: bool,
+    /// Mask credentials in the result report (raw by default, so the object
+    /// ids and evidence of a finding stay usable).
+    #[arg(long, env = "WEBREV_REPORT_REDACT", action = clap::ArgAction::SetTrue, value_parser = clap::builder::BoolishValueParser::new())]
+    pub redact: bool,
 }

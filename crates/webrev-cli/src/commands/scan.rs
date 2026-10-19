@@ -100,7 +100,7 @@ pub async fn run(args: ScanAllArgs) -> anyhow::Result<()> {
         scope: ScopeFilter::All,
         min_confidence: Confidence::Low,
         min_severity: Severity::Info,
-        redact: !scan.unredacted,
+        redact: scan.redact,
     };
     let rendered = report.render(options)?;
     if scan.report == std::path::Path::new("-") {
@@ -109,6 +109,7 @@ pub async fn run(args: ScanAllArgs) -> anyhow::Result<()> {
     }
     std::fs::write(&scan.report, &rendered)?;
     eprintln!("report written to {}", scan.report.display());
+    super::warn_if_raw(scan.redact);
     if format == Format::Json {
         eprintln!(
             "done. convert this report with: webrev report --input \"{}\" --format <FORMAT>",

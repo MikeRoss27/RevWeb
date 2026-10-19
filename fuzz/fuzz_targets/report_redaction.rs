@@ -109,8 +109,10 @@ fuzz_target!(|data: &[u8]| {
     let report = SessionReport::build(mission, vec![vulnerability, frame, coverage], endpoints);
 
     for format in FORMATS {
+        // Exports are raw by default; the property under test is `--redact`.
         let opts = RenderOptions {
             format,
+            redact: true,
             ..RenderOptions::default()
         };
         let Ok(output) = report.render(opts) else {
