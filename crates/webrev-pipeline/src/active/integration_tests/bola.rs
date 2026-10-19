@@ -83,6 +83,27 @@ async fn detects_readable_private_objects_with_four_controls() {
         .observations
         .iter()
         .all(|o| o.excerpt.starts_with("sha256=")));
+    // The proof is the content: the other account's read shows the object.
+    let evidence = signal.evidence.as_ref().unwrap();
+    let read = |role: &str| {
+        evidence
+            .observations
+            .iter()
+            .find(|o| o.role == role)
+            .unwrap_or_else(|| panic!("no {role} observation"))
+    };
+    assert_eq!(
+        read("B reads A object").body,
+        r#"{"id":101,"owner":"account-a","private":"alpha"}"#
+    );
+    assert_eq!(
+        read("A reads B object").body,
+        r#"{"id":202,"owner":"account-b","private":"bravo"}"#
+    );
+    assert!(evidence.observations.iter().all(|o| !o.body_truncated));
+    assert!(evidence
+        .diff
+        .contains(&r#"private: "alpha" ≠ "bravo""#.to_owned()));
     assert_eq!(coverage(&findings).requests, 4);
 }
 

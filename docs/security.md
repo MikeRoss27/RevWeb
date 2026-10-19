@@ -462,7 +462,8 @@ Ce qui reste masqué :
 quatre observations (rôles « A own object », « B reads A object »…, méthode,
 URL avec l'identifiant, code de statut, empreinte SHA-256 du corps), le verdict
 et la limite d'interprétation. Seuls les identifiants de connexion en sont
-retirés. `bola --a-report/--b-report` accepte maintenant un rapport masqué : les
+retirés. (Corps de réponse et comparaison A/B : voir « Preuve de `bola` » plus
+bas.) `bola --a-report/--b-report` accepte maintenant un rapport masqué : les
 identifiants d'objets y sont intacts. Une paire dont l'URL capturée portait un
 identifiant de connexion (`?token=[REDACTED]`) ne peut pas être rejouée telle
 quelle ; elle est écartée avec un message, et une capture sans `--redact` (le défaut)
@@ -538,3 +539,34 @@ machine. Correctif : `destination` répond localement aux noms `.invalid`
 DNS. Le test vérifie maintenant que la réponse arrive en moins d'une seconde,
 et `is_invalid_name` a son propre test. Effet de bord voulu : le nom n'est plus
 envoyé au résolveur.
+
+## Preuve de `bola` : corps de réponse et comparaison A/B (2026-10-19)
+
+Une observation de `bola` ne stockait qu'une empreinte `sha256=` du corps. Elle
+prouvait que les deux comptes avaient reçu la même réponse, pas ce que la
+réponse contenait, alors que le contenu de l'objet de l'autre compte est la
+preuve d'un IDOR.
+
+- Chaque observation garde maintenant `body` : les 4 premiers KiO de la réponse
+  (`body_truncated` indique une troncature, `body_bytes` la taille totale). La
+  coupe est UTF-8 sûre : un caractère multi-octet coupé par la limite est
+  retiré, pas déformé. L'empreinte est conservée.
+- `diff` (dans l'évidence) indique le sens de la fuite et, pour deux corps JSON,
+  les champs qui distinguent l'objet de A de celui de B (valeurs différentes,
+  champs présents d'un seul côté, nombre de champs identiques), 20 lignes au
+  plus, valeurs coupées à 80 caractères.
+- Brut par défaut, comme les autres preuves. `--redact` passe `body` et `diff`
+  par la même redaction que les extraits (`Sanitizer::scrub`) : un identifiant
+  d'objet reste lisible, une clé ou un jeton stocké dans l'objet est masqué.
+- La détection ne change pas : le verdict repose toujours sur l'égalité exacte
+  des octets de la réponse croisée et de celle du propriétaire.
+- Les anciens rapports sans ces champs se chargent (`#[serde(default)]`), donc
+  `bola --a-report/--b-report` fonctionne avec eux.
+
+Compromis : un résultat `bola` brut contient désormais des données de l'autre
+compte de test (e-mail, adresse, clés présentes dans l'objet). Il est
+confidentiel ; `--redact` le rend partageable au prix des valeurs sensibles.
+Limites : la comparaison porte sur le corps entier des deux réponses « own »,
+mais seuls 4 KiO de chaque corps sont stockés, donc `body` peut être plus court
+que ce qui a été comparé ; elle ne s'applique qu'aux corps JSON valides (les
+autres n'ont que la ligne de sens) ; 2000 champs au plus sont comparés.

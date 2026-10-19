@@ -1,6 +1,7 @@
 //! Scoped active assessment with shared request limits and explicit proof tiers.
 mod access;
 mod bola;
+mod bola_diff;
 mod client;
 mod crlf;
 mod destructive;

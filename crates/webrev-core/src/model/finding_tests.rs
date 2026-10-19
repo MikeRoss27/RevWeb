@@ -232,6 +232,7 @@
             verdict: EvidenceVerdict::Signal,
             observations: Vec::new(),
             limitation: "Observation only; exploitation not established".into(),
+            diff: Vec::new(),
         };
         let first = proof("response_difference");
         let second = proof("url_reflection");

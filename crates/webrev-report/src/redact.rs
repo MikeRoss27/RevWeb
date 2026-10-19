@@ -129,7 +129,42 @@ impl Masker {
         for observation in &mut evidence.observations {
             observation.url = self.url(&observation.url);
             observation.excerpt = self.text(&observation.excerpt);
+            observation.body = self.text(&observation.body);
         }
+        for line in &mut evidence.diff {
+            *line = self.diff_line(line);
+        }
+    }
+
+    /// `path: <a> ≠ <b>` holds two values of the same field. Scrubbed as one
+    /// string, a masked first value can shield the second, so each side is
+    /// scrubbed alone under its field name; a line that is not in that shape
+    /// goes through plain `text`.
+    fn diff_line(&self, line: &str) -> String {
+        let Some((path, values)) = line.split_once(": ") else {
+            return self.text(line);
+        };
+        let Some((a, b)) = values.split_once(" ≠ ") else {
+            return self.text(line);
+        };
+        format!(
+            "{path}: {} ≠ {}",
+            self.diff_value(path, a),
+            self.diff_value(path, b)
+        )
+    }
+
+    /// Scrub one value as the member of a JSON object named like the field, so
+    /// a sensitive name masks it exactly as it does in a body. Fails closed:
+    /// if the wrapper does not survive scrubbing, the value is hidden.
+    fn diff_value(&self, path: &str, value: &str) -> String {
+        let leaf = path.rsplit('.').next().unwrap_or(path);
+        let leaf = leaf.split('[').next().unwrap_or(leaf);
+        let wrapped = self.text(&format!("{{\"{leaf}\":{value}}}"));
+        wrapped
+            .strip_prefix(&format!("{{\"{leaf}\":"))
+            .and_then(|rest| rest.strip_suffix('}'))
+            .map_or_else(|| "[REDACTED]".to_owned(), str::to_owned)
     }
 
     fn finding(&self, finding: &mut Finding) {
@@ -248,8 +283,11 @@ mod tests {
                 content_type: "text/html".into(),
                 body_bytes: 40,
                 excerpt: format!("{{\"api_key\":\"{TOKEN}\",\"name\":\"ok\"}}"),
+                body: String::new(),
+                body_truncated: false,
             }],
             limitation: String::new(),
+            diff: Vec::new(),
         }));
         let endpoints = vec![
             Endpoint::new(
@@ -326,8 +364,11 @@ mod tests {
                 body_bytes: 40,
                 excerpt: "sha256=9f86d081884c7d659a2feaa0c55ad0159f86d081884c7d659a2feaa0c55ad015"
                     .into(),
+                body: format!("{{\"id\":\"{id}\",\"email\":\"a@t.test\",\"api_key\":\"{TOKEN}\"}}"),
+                body_truncated: false,
             }],
             limitation: String::new(),
+            diff: vec![format!("api_key: {TOKEN} ≠ other"), format!("id: {id} ≠ x")],
         }));
         let endpoint = Endpoint::new(url, Method::Get, Source::Browser);
         let masked = SessionReport::build(mission, vec![idor], vec![endpoint]).redacted();
@@ -347,6 +388,43 @@ mod tests {
         }
         assert!(idor.value.ends_with(id), "{}", idor.value);
         assert!(observation.excerpt.starts_with("sha256=9f86d081"));
+        // The proof body and the A/B diff keep the object, hide the credential.
+        let evidence = idor.evidence.as_ref().unwrap();
+        assert!(observation.body.contains(id), "{}", observation.body);
+        assert!(observation.body.contains("a@t.test"));
+        assert!(evidence.diff.iter().all(|line| !line.contains(TOKEN)));
+        assert!(evidence.diff[1].contains(id), "{:?}", evidence.diff);
+    }
+
+    #[test]
+    fn a_diff_line_masks_both_sides_of_a_credential_field() {
+        let mission = Mission::new("demo", Scope::new(vec!["t.test".into()], vec![]), vec![]);
+        let mut idor = finding(&mission, FindingKind::Idor, Some("https://t.test/o/1"), "x");
+        idor.evidence = Some(Box::new(ProbeEvidence {
+            check: "cross_account_bola".into(),
+            parameter: None,
+            verdict: EvidenceVerdict::Signal,
+            observations: Vec::new(),
+            limitation: String::new(),
+            diff: vec![
+                format!(r#"api_key: "{TOKEN}" ≠ "Hd3Ws6YuN1eCq5JtV9aG""#),
+                format!(r#"profile.password[0]: "{PLAINTEXT}" ≠ "other-secret-1""#),
+                r#"note: "alpha" ≠ "bravo""#.to_owned(),
+                "B reads A's object: body byte-identical to A's own response (60 bytes)".to_owned(),
+            ],
+        }));
+        let masked = SessionReport::build(mission, vec![idor], Vec::new()).redacted();
+        let diff = &masked.findings[0].evidence.as_ref().unwrap().diff;
+        let all = diff.join("\n");
+        for leaked in [TOKEN, "Hd3Ws6YuN1eCq5JtV9aG", PLAINTEXT, "other-secret-1"] {
+            assert!(!all.contains(leaked), "{leaked} survived in {all}");
+        }
+        assert_eq!(diff[0], "api_key: \"[REDACTED]\" ≠ \"[REDACTED]\"");
+        assert_eq!(diff[2], r#"note: "alpha" ≠ "bravo""#);
+        assert_eq!(
+            diff[3],
+            "B reads A's object: body byte-identical to A's own response (60 bytes)"
+        );
     }
 
     #[test]

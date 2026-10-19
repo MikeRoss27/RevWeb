@@ -290,6 +290,21 @@ The output is a JSON report with a coverage record and any cross-account
 signals. A matching response still needs an ownership and privacy check before
 it is treated as a vulnerability.
 
+Each signal carries the proof, not only a verdict. The four observations
+(`A own object`, `B own object`, `B reads A object`, `A reads B object`) each
+record the method, URL, HTTP status, content type, a `sha256=` fingerprint of
+the response and `body`: the first 4 KiB of the response (`body_truncated` is
+true when it was longer; `body_bytes` is the full size). The evidence also has a
+`diff` list that says which direction leaked (`B reads A's object: body
+byte-identical to A's own response`) and which JSON fields tell the two owners'
+objects apart (`email: "a@t.test" ≠ "b@t.test"`), up to 20 fields. Reports
+written before this field existed still load for `--a-report`/`--b-report`.
+
+The body is raw by default, because it is what you attach to a bug report.
+`--redact` scrubs the body and the comparison for sharing, keeping the object
+readable. A raw `bola` result contains the other account's data: treat it as
+confidential.
+
 ## Environment variables
 
 `WEBREV_NAME`, `WEBREV_PROXY`, and `WEBREV_BEARER` provide defaults
