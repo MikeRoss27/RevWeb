@@ -1,0 +1,67 @@
+{
+  "invocations_total": 6,
+  "invocations_clean": 6,
+  "excluded": [],
+  "runs_per_revision": 180,
+  "max_load_limit": 4.0,
+  "seed": 20261019,
+  "iterations": 2000,
+  "p95_percent": {
+    "estimate": 15.00824154839604,
+    "ci95": [
+      10.065341937236095,
+      18.845889882146505
+    ]
+  },
+  "median_time_percent": {
+    "estimate": 16.914102826156217,
+    "ci95": [
+      14.964071309741422,
+      18.78026478974524
+    ]
+  },
+  "rss_median_percent": {
+    "estimate": 11.384230809290695,
+    "ci95": [
+      10.87092080648513,
+      12.022542266750147
+    ]
+  },
+  "rss_max_percent": 5.333080280888214,
+  "p95_ms": {
+    "baseline": 31.367892,
+    "current": 36.075661000000004
+  },
+  "anomalous_baseline_invocations": [],
+  "per_invocation_p95_percent": [
+    {
+      "name": "results.json",
+      "p95_percent": 15.957262923501524
+    },
+    {
+      "name": "results.json",
+      "p95_percent": 16.73815317893923
+    },
+    {
+      "name": "results.json",
+      "p95_percent": 15.991435793011943
+    },
+    {
+      "name": "results.json",
+      "p95_percent": 7.296547074584958
+    },
+    {
+      "name": "results.json",
+      "p95_percent": 12.678027343165986
+    },
+    {
+      "name": "results.json",
+      "p95_percent": 20.31304011299302
+    }
+  ],
+  "legacy_criterion": {
+    "invocations_over_limit": 1,
+    "of": 6
+  },
+  "verdict": "pass"
+}

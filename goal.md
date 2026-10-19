@@ -217,7 +217,18 @@ workflow GitHub distant a depuis été exécuté et est vert (voir « Mise à jo
 2026-10-18 » ci-dessous). Le contrôle de taille de source
 n'a plus d'exception : `domsinks.rs` a été découpé en modules (PR #10).
 
-**État de l'étape 5 : EN COURS — non validée.** La remesure sur machine calme du
+**État de l'étape 5 : EN COURS — non validée.** *Mise à jour 2026-10-19 :* première
+mesure selon le critère poolé (voir « Définition de la mesure », étape 5) sur `main`
+`6b33d8d`, 6 invocations propres de 30 paires (180 par révision) : p95 **+16,0 %**,
+IC à 95 % **+12,3 % à +20,5 %** → borne haute au-dessus de 20 % : **non démontré**.
+RSS max +4,4 %, médiane +11,6 % (conforme). Une réplication de 6 invocations, lancée
+*après* ce premier résultat, donne +15,0 % (IC +10,1 % à +18,8 %) et les 12 ensemble
++15,2 % (IC +12,2 % à +18,5 %), donc conformes ; comme la réplication a été décidée
+après avoir vu le premier lot, la case n'est pas cochée sur cette base (arrêt
+optionnel) : à vous de dire si le pool de 12 fait foi ou s'il faut un troisième lot
+déclaré à l'avance. Détail, par extracteur et fichiers :
+`benchmarks/performance/2026-10-19/spa-site-pooled/`. Mesure du 2026-10-18 :
+la remesure sur machine calme du
 2026-10-18 (`main` b3f5e42, binaires fixes, 10 invocations propres de 30 paires,
 voir « Remesure performance sur machine calme » plus bas) donne, poolé sur 300
 paires, un p95 de +16,8% (limite +20%) et une RSS de +13,3% en médiane / +11,1%
@@ -356,7 +367,7 @@ de généralisation à tous les sites.
 - [x] Équivalents locaux CI passés : formatage, taille source, 12 tests Python, checksums, tests workspace, Clippy strict.
 - [x] Workflow GitHub distant exécuté et vert sur `main` (run CI 39073647553, commit 6cfd10f); équivalents locaux exécutés avec Python 3.12.14 via `uv`.
 - [x] Tests workspace et corpus relancés après les changements actuels; aucun échec observé.
-- [ ] Profil SPA sur le code actuel de `main` (b3f5e42, machine calme, binaires fixes, 300 paires) : p95 poolé +16,8% (≤20%) mais >20% dans 3 invocations sur 10 de 30 paires; RSS +9,8 à +15,5% (≤25%) dans 10 invocations sur 10, avec une invocation à base anormalement basse (+48%) non reproduite, cause non établie. Non reproductible au sens du critère écrit, donc non coché. Le PASS du 2026-10-17 (p95 +18,64%, RSS +6,69%, 60/60 scans réussis) précède ces changements. Pour mémoire, le lockfile baseline est réécrit pour ses arêtes locales, sans changement de version/source/checksum des paquets externes.
+- [ ] Profil SPA, critère poolé (révisé le 2026-10-19) sur `main` 6b33d8d : lot prévu de 6 invocations (180 paires/révision) p95 +16,0 % mais IC 95 % haut +20,5 % → non démontré ; réplication de 6 (décidée après coup) +15,0 % (haut +18,8 %), 12 ensemble +15,2 % (haut +18,5 %), RSS max +4,4 %. Case non cochée tant que le pool de référence n'est pas tranché (voir « État de l'étape 5 »). Mesure précédente, critère d'origine (b3f5e42, machine calme, binaires fixes, 300 paires) : p95 poolé +16,8% (≤20%) mais >20% dans 3 invocations sur 10 de 30 paires; RSS +9,8 à +15,5% (≤25%) dans 10 invocations sur 10, avec une invocation à base anormalement basse (+48%) non reproduite, cause non établie. Non reproductible au sens du critère écrit, donc non coché. Le PASS du 2026-10-17 (p95 +18,64%, RSS +6,69%, 60/60 scans réussis) précède ces changements. Pour mémoire, le lockfile baseline est réécrit pour ses arêtes locales, sans changement de version/source/checksum des paquets externes.
 - [ ] Corpus externe représentatif avec positifs et négatifs, labels examinés indépendamment.
 
 **Objectifs de performance :**

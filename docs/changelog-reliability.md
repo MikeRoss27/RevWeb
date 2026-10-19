@@ -670,3 +670,26 @@ par défaut » ci-dessous décrivent l'état avant ce changement.
   sans perdre l'objet), de bout en bout `tests/bola_readable.rs` (corps lisible
   en brut, clé de l'objet masquée sous `--redact`, cas protégé sans signal).
 - Cible de fuzz `report_redaction` : `body` et `diff` portent aussi le canari.
+
+## 2026-10-19 — critère de performance poolé, avec intervalle de confiance
+
+- Un p95 de 30 exécutions est la 29e valeur sur 30 : sur les mêmes binaires il
+  varie de +9,9 % à +24,7 % d'une invocation à l'autre. Les seuils (p95 ≤ +20 %,
+  RSS max ≤ +25 %) ne changent pas ; leur estimation passe sur un pool d'au moins
+  3 invocations propres et 90 exécutions par révision, avec un intervalle de
+  confiance bootstrap à deux niveaux, et la borne haute doit être sous 20 %
+  (plus strict que le critère d'origine). Définition écrite dans `goal.md`
+  avant la mesure.
+- `scripts/benchmark_pool.py` (aussi `benchmark_performance.py pool RESULTS.json…`) :
+  pool, bootstrap à graine fixe, exclusion des invocations chargées ou en échec
+  (listées), signalement des bases anormales, verdict `pass` / `fail` /
+  `not_demonstrated` / `insufficient`. 12 tests Python dans
+  `scripts/test_benchmark_pool.py`. Sur l'archive du 2026-10-18 il redonne
+  exactement +16,8 % (p95 poolé) et +11,1 % (RSS max).
+- Mesure sur `main` 6b33d8d : lot prévu de 6 invocations, p95 +16,0 % (IC +12,3 %
+  à +20,5 %) → non démontré ; réplication de 6 lancée ensuite +15,0 % (haut
+  +18,8 %) ; 12 ensemble +15,2 % (haut +18,5 %) ; RSS max +4,4 %. Case non
+  cochée (voir `goal.md`). Attribution partielle : l'extraction passe de 10,15 à
+  11,38 ms par passe (`params` ×3, `js-ast`, `js-regex`, `secret` plus lents,
+  `dom-sinks` plus rapide), soit environ 1,2 ms des ~4,7 ms d'écart.
+  `benchmarks/performance/2026-10-19/spa-site-pooled/`.
