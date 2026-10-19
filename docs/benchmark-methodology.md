@@ -452,6 +452,42 @@ The runner now asserts results per case, verifies the full 32-file inventory and
 exercises the previously omitted companion `hero.js`; CI runs it and checks its
 hashes. No upstream source or label was changed.
 
+### External corpus v1 and the two taint-rule fixes it found (2026-10-19)
+
+`benchmarks/external-corpus/v1/` is a second, larger external validation
+corpus: 331 cases across five sources whose labels come from a party
+independent of this repository — 15 GitHub Security Advisory DOM XSS CVEs
+(paired with their fix commit), the `sak3y/ML-XSS-Detector` dataset, the
+`pwnfunction` XSS Game challenges, the `domdig` scanner's own test pages, and
+28 unlabelled npm distribution files for a background rate. See
+`benchmarks/external-corpus/v1/README.md` for the full protocol, pinning and
+label provenance of every source.
+
+The first run (detector at `6b33d8d`) had precision 100% wherever measurable
+but recall 0% on the GHSA CVEs, 0% on pwnfunction, 20% on sak3y, 25% on
+domdig — a sharp contrast with the SWIPE result above. Reading the missed
+cases found two taint-flow rules missing from
+`crates/webrev-extract/src/extractors/metadata/domsinks/taint.rs`, not
+obscure edge cases: `new URL(tainted)` / `new URLSearchParams(tainted)` were
+never classified as a taint source at all, so the dominant pwnfunction/sak3y
+idiom `new URL(location).searchParams.get(...)` was invisible to the
+analysis; and `classify()` only handled `+` among binary operators, so the
+equally common `param || "default"` / `param ?? "default"` fallback idiom
+broke the taint chain. Both were added, each with a dedicated positive and
+negative unit test (`domsinks_tests.rs`).
+
+Rerun: pwnfunction 0% → 57% recall (8/14), sak3y 20% → 52% (65/124), GHSA
+0% → 6.7% (1/15 — most remaining GHSA cases are multi-file flows through
+`postMessage`, outside this detector's intra-file scope), domdig unchanged
+(25% — none of its cases use either idiom). Precision on sak3y dropped to
+98.5%: `sak3y/snippet_179` manually HTML-entity-encodes (`&`, `<`, `>`)
+before `innerHTML`, which is a real sanitizer the detector does not
+recognize (today only `DOMPurify.sanitize` breaks taint). Recognizing manual
+entity-encoding as a sanitizer is tracked as follow-up work, not fixed here.
+Of the four pwnfunction cases still missed, three route through
+`DOMPurify.sanitize` by design (the challenge is a sanitizer-bypass puzzle)
+and one (`bourne`) is an object-key confusion bug, not a DOM XSS flow.
+
 ### Native paired performance measurement (2026-10-17)
 
 The final integrated candidate in

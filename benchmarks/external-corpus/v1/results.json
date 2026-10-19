@@ -9,18 +9,21 @@
         {
           "bytes": 2218,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-w937-fg2h-xhq2/pre/src/api/handleEditKey.js"
         },
         {
           "bytes": 1656,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-w937-fg2h-xhq2/pre/src/api/handleRequestPopupChanges.js"
         },
         {
           "bytes": 4087,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-w937-fg2h-xhq2/pre/src/api/postMessage.js"
         }
@@ -37,18 +40,21 @@
         {
           "bytes": 5105,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-w937-fg2h-xhq2/post/src/api/handleEditKey.js"
         },
         {
           "bytes": 2652,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-w937-fg2h-xhq2/post/src/api/handleRequestPopupChanges.js"
         },
         {
           "bytes": 4709,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-w937-fg2h-xhq2/post/src/api/postMessage.js"
         }
@@ -65,18 +71,21 @@
         {
           "bytes": 24589,
           "elapsed_ms": 1,
+          "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-j5mf-6rh3-rhgg/pre/src/modules/notification.js"
         },
         {
           "bytes": 14985,
           "elapsed_ms": 1,
+          "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-j5mf-6rh3-rhgg/pre/src/modules/visualBuilder/pageBuilder.js"
         },
         {
           "bytes": 5193,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-j5mf-6rh3-rhgg/pre/src/util/campaignRender/nativeDisplay.js"
         }
@@ -93,18 +102,21 @@
         {
           "bytes": 24747,
           "elapsed_ms": 1,
+          "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-j5mf-6rh3-rhgg/post/src/modules/notification.js"
         },
         {
           "bytes": 14889,
           "elapsed_ms": 1,
+          "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-j5mf-6rh3-rhgg/post/src/modules/visualBuilder/pageBuilder.js"
         },
         {
           "bytes": 5193,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-j5mf-6rh3-rhgg/post/src/util/campaignRender/nativeDisplay.js"
         }
@@ -120,7 +132,8 @@
       "files": [
         {
           "bytes": 22812,
-          "elapsed_ms": 1,
+          "elapsed_ms": 2,
+          "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-hhqj-cfjx-vj25/pre/plugin/notes/speaker-view.html"
         }
@@ -137,6 +150,7 @@
         {
           "bytes": 22885,
           "elapsed_ms": 1,
+          "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-hhqj-cfjx-vj25/post/plugin/notes/speaker-view.html"
         }
@@ -153,6 +167,7 @@
         {
           "bytes": 11130,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-xvg9-69gf-fjrf/pre/material/templates/base.html"
         }
@@ -169,6 +184,7 @@
         {
           "bytes": 11130,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-xvg9-69gf-fjrf/post/material/templates/base.html"
         }
@@ -184,7 +200,8 @@
       "files": [
         {
           "bytes": 315936,
-          "elapsed_ms": 33,
+          "elapsed_ms": 32,
+          "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-9q4r-x2hj-jmvr/pre/copyparty/web/browser.js"
         }
@@ -200,7 +217,8 @@
       "files": [
         {
           "bytes": 315966,
-          "elapsed_ms": 34,
+          "elapsed_ms": 33,
+          "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-9q4r-x2hj-jmvr/post/copyparty/web/browser.js"
         }
@@ -216,7 +234,8 @@
       "files": [
         {
           "bytes": 102518,
-          "elapsed_ms": 11,
+          "elapsed_ms": 10,
+          "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-m2jw-cj8v-937r/pre/copyparty/web/up2k.js"
         }
@@ -233,6 +252,7 @@
         {
           "bytes": 102528,
           "elapsed_ms": 10,
+          "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-m2jw-cj8v-937r/post/copyparty/web/up2k.js"
         }
@@ -249,6 +269,7 @@
         {
           "bytes": 47845,
           "elapsed_ms": 3,
+          "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-vgjm-2cpf-4g7c/pre/public/js/gogs.js"
         }
@@ -264,7 +285,8 @@
       "files": [
         {
           "bytes": 47885,
-          "elapsed_ms": 3,
+          "elapsed_ms": 4,
+          "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-vgjm-2cpf-4g7c/post/public/js/gogs.js"
         }
@@ -281,36 +303,42 @@
         {
           "bytes": 6254,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-g3hc-697w-wm82/pre/js/component.js"
         },
         {
           "bytes": 922,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-g3hc-697w-wm82/pre/js/features/supportDispatches.js"
         },
         {
           "bytes": 1431,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-g3hc-697w-wm82/pre/js/features/supportFileDownloads.js"
         },
         {
           "bytes": 1070,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-g3hc-697w-wm82/pre/js/features/supportHotReloading.js"
         },
         {
           "bytes": 774,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-g3hc-697w-wm82/pre/js/features/supportJsEvaluation.js"
         },
         {
           "bytes": 2479,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-g3hc-697w-wm82/pre/js/features/supportLaravelEcho.js"
         }
@@ -327,36 +355,42 @@
         {
           "bytes": 6486,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-g3hc-697w-wm82/post/js/component.js"
         },
         {
           "bytes": 1121,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-g3hc-697w-wm82/post/js/features/supportDispatches.js"
         },
         {
           "bytes": 1536,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-g3hc-697w-wm82/post/js/features/supportFileDownloads.js"
         },
         {
           "bytes": 1173,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-g3hc-697w-wm82/post/js/features/supportHotReloading.js"
         },
         {
           "bytes": 938,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-g3hc-697w-wm82/post/js/features/supportJsEvaluation.js"
         },
         {
           "bytes": 2594,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-g3hc-697w-wm82/post/js/features/supportLaravelEcho.js"
         }
@@ -373,6 +407,7 @@
         {
           "bytes": 18999,
           "elapsed_ms": 1,
+          "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-24x4-j6x9-rfw5/pre/src/web/assets/craftsupport/src/CraftSupportWidget.js"
         }
@@ -389,6 +424,7 @@
         {
           "bytes": 19052,
           "elapsed_ms": 1,
+          "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-24x4-j6x9-rfw5/post/src/web/assets/craftsupport/src/CraftSupportWidget.js"
         }
@@ -405,6 +441,7 @@
         {
           "bytes": 6435,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-xr7p-8q82-878q/pre/internal/event/www/script.js"
         }
@@ -421,6 +458,7 @@
         {
           "bytes": 6694,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-xr7p-8q82-878q/post/internal/event/www/script.js"
         }
@@ -429,47 +467,71 @@
       "id": "ghsa/GHSA-xr7p-8q82-878q/post"
     },
     {
-      "confidences": [],
-      "detected": false,
+      "confidences": [
+        "Medium",
+        "Medium"
+      ],
+      "detected": true,
       "error": null,
       "evaluable": true,
       "files": [
         {
           "bytes": 4649,
           "elapsed_ms": 0,
-          "flows": 0,
+          "findings": [
+            "DOM XSS: location.href -> new URL -> location.href"
+          ],
+          "flows": 1,
           "path": "ghsa/GHSA-rh4r-f7f7-r99m/pre/www/index.html"
         },
         {
           "bytes": 8517,
           "elapsed_ms": 0,
-          "flows": 0,
+          "findings": [
+            "DOM XSS: location.search -> new URLSearchParams -> get -> (expr).innerHTML"
+          ],
+          "flows": 1,
           "path": "ghsa/GHSA-rh4r-f7f7-r99m/pre/www/links.html"
         }
       ],
-      "findings": [],
+      "findings": [
+        "DOM XSS: location.href -> new URL -> location.href",
+        "DOM XSS: location.search -> new URLSearchParams -> get -> (expr).innerHTML"
+      ],
       "id": "ghsa/GHSA-rh4r-f7f7-r99m/pre"
     },
     {
-      "confidences": [],
-      "detected": false,
+      "confidences": [
+        "Medium",
+        "Medium"
+      ],
+      "detected": true,
       "error": null,
       "evaluable": true,
       "files": [
         {
           "bytes": 4716,
           "elapsed_ms": 0,
-          "flows": 0,
+          "findings": [
+            "DOM XSS: location.href -> new URL -> location.href"
+          ],
+          "flows": 1,
           "path": "ghsa/GHSA-rh4r-f7f7-r99m/post/www/index.html"
         },
         {
           "bytes": 8551,
-          "elapsed_ms": 0,
-          "flows": 0,
+          "elapsed_ms": 1,
+          "findings": [
+            "DOM XSS: location.search -> new URLSearchParams -> get -> replace -> (expr).innerHTML"
+          ],
+          "flows": 1,
           "path": "ghsa/GHSA-rh4r-f7f7-r99m/post/www/links.html"
         }
       ],
-      "findings": [],
+      "findings": [
+        "DOM XSS: location.href -> new URL -> location.href",
+        "DOM XSS: location.search -> new URLSearchParams -> get -> replace -> (expr).innerHTML"
+      ],
       "id": "ghsa/GHSA-rh4r-f7f7-r99m/post"
     },
     {
@@ -480,7 +542,8 @@
       "files": [
         {
           "bytes": 193370,
-          "elapsed_ms": 12,
+          "elapsed_ms": 13,
+          "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-867c-p784-5q6g/pre/js/privatebin.js"
         }
@@ -497,6 +560,7 @@
         {
           "bytes": 193736,
           "elapsed_ms": 12,
+          "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-867c-p784-5q6g/post/js/privatebin.js"
         }
@@ -513,6 +577,7 @@
         {
           "bytes": 167601,
           "elapsed_ms": 10,
+          "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-8j72-p2wm-6738/pre/js/privatebin.js"
         }
@@ -529,6 +594,7 @@
         {
           "bytes": 167765,
           "elapsed_ms": 10,
+          "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-8j72-p2wm-6738/post/js/privatebin.js"
         }
@@ -545,18 +611,21 @@
         {
           "bytes": 2521,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-gc5h-6jx9-q2qh/pre/src/bundle/Resources/public/js/scripts/fieldType/ezbinaryfile.js"
         },
         {
           "bytes": 5936,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-gc5h-6jx9-q2qh/pre/src/bundle/Resources/public/js/scripts/fieldType/ezimage.js"
         },
         {
           "bytes": 6441,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-gc5h-6jx9-q2qh/pre/src/bundle/Resources/public/js/scripts/fieldType/ezmedia.js"
         }
@@ -573,18 +642,21 @@
         {
           "bytes": 2621,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-gc5h-6jx9-q2qh/post/src/bundle/Resources/public/js/scripts/fieldType/ezbinaryfile.js"
         },
         {
           "bytes": 6035,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-gc5h-6jx9-q2qh/post/src/bundle/Resources/public/js/scripts/fieldType/ezimage.js"
         },
         {
           "bytes": 6540,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-gc5h-6jx9-q2qh/post/src/bundle/Resources/public/js/scripts/fieldType/ezmedia.js"
         }
@@ -600,7 +672,8 @@
       "files": [
         {
           "bytes": 19346,
-          "elapsed_ms": 1,
+          "elapsed_ms": 2,
+          "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-78qv-3mpx-9cqq/pre/nicegui/static/nicegui.js"
         }
@@ -616,7 +689,8 @@
       "files": [
         {
           "bytes": 19476,
-          "elapsed_ms": 1,
+          "elapsed_ms": 2,
+          "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-78qv-3mpx-9cqq/post/nicegui/static/nicegui.js"
         }
@@ -633,6 +707,7 @@
         {
           "bytes": 103,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_001.js"
         }
@@ -641,19 +716,26 @@
       "id": "sak3y/snippet_001"
     },
     {
-      "confidences": [],
-      "detected": false,
+      "confidences": [
+        "Medium"
+      ],
+      "detected": true,
       "error": null,
       "evaluable": true,
       "files": [
         {
           "bytes": 103,
           "elapsed_ms": 0,
-          "flows": 0,
+          "findings": [
+            "DOM XSS: location.search -> new URLSearchParams -> get -> document.body.innerHTML"
+          ],
+          "flows": 1,
           "path": "sak3y/snippet_002.js"
         }
       ],
-      "findings": [],
+      "findings": [
+        "DOM XSS: location.search -> new URLSearchParams -> get -> document.body.innerHTML"
+      ],
       "id": "sak3y/snippet_002"
     },
     {
@@ -665,6 +747,7 @@
         {
           "bytes": 121,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_003.js"
         }
@@ -673,19 +756,26 @@
       "id": "sak3y/snippet_003"
     },
     {
-      "confidences": [],
-      "detected": false,
+      "confidences": [
+        "Medium"
+      ],
+      "detected": true,
       "error": null,
       "evaluable": true,
       "files": [
         {
           "bytes": 121,
           "elapsed_ms": 0,
-          "flows": 0,
+          "findings": [
+            "DOM XSS: location.search -> new URLSearchParams -> get -> (expr).innerHTML"
+          ],
+          "flows": 1,
           "path": "sak3y/snippet_004.js"
         }
       ],
-      "findings": [],
+      "findings": [
+        "DOM XSS: location.search -> new URLSearchParams -> get -> (expr).innerHTML"
+      ],
       "id": "sak3y/snippet_004"
     },
     {
@@ -697,6 +787,7 @@
         {
           "bytes": 118,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_005.js"
         }
@@ -705,19 +796,26 @@
       "id": "sak3y/snippet_005"
     },
     {
-      "confidences": [],
-      "detected": false,
+      "confidences": [
+        "Medium"
+      ],
+      "detected": true,
       "error": null,
       "evaluable": true,
       "files": [
         {
           "bytes": 116,
           "elapsed_ms": 0,
-          "flows": 0,
+          "findings": [
+            "DOM XSS: location.search -> new URLSearchParams -> get -> (expr).innerHTML"
+          ],
+          "flows": 1,
           "path": "sak3y/snippet_006.js"
         }
       ],
-      "findings": [],
+      "findings": [
+        "DOM XSS: location.search -> new URLSearchParams -> get -> (expr).innerHTML"
+      ],
       "id": "sak3y/snippet_006"
     },
     {
@@ -729,6 +827,7 @@
         {
           "bytes": 121,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_011.js"
         }
@@ -737,19 +836,26 @@
       "id": "sak3y/snippet_011"
     },
     {
-      "confidences": [],
-      "detected": false,
+      "confidences": [
+        "Medium"
+      ],
+      "detected": true,
       "error": null,
       "evaluable": true,
       "files": [
         {
           "bytes": 121,
           "elapsed_ms": 0,
-          "flows": 0,
+          "findings": [
+            "DOM XSS: location.search -> new URLSearchParams -> get -> (expr).innerHTML"
+          ],
+          "flows": 1,
           "path": "sak3y/snippet_012.js"
         }
       ],
-      "findings": [],
+      "findings": [
+        "DOM XSS: location.search -> new URLSearchParams -> get -> (expr).innerHTML"
+      ],
       "id": "sak3y/snippet_012"
     },
     {
@@ -761,6 +867,7 @@
         {
           "bytes": 121,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_015.js"
         }
@@ -769,19 +876,26 @@
       "id": "sak3y/snippet_015"
     },
     {
-      "confidences": [],
-      "detected": false,
+      "confidences": [
+        "Medium"
+      ],
+      "detected": true,
       "error": null,
       "evaluable": true,
       "files": [
         {
           "bytes": 121,
           "elapsed_ms": 0,
-          "flows": 0,
+          "findings": [
+            "DOM XSS: location.search -> new URLSearchParams -> get -> (expr).innerHTML"
+          ],
+          "flows": 1,
           "path": "sak3y/snippet_016.js"
         }
       ],
-      "findings": [],
+      "findings": [
+        "DOM XSS: location.search -> new URLSearchParams -> get -> (expr).innerHTML"
+      ],
       "id": "sak3y/snippet_016"
     },
     {
@@ -793,6 +907,7 @@
         {
           "bytes": 129,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_017.js"
         }
@@ -809,6 +924,7 @@
         {
           "bytes": 116,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_018.js"
         }
@@ -817,19 +933,26 @@
       "id": "sak3y/snippet_018"
     },
     {
-      "confidences": [],
-      "detected": false,
+      "confidences": [
+        "Medium"
+      ],
+      "detected": true,
       "error": null,
       "evaluable": true,
       "files": [
         {
           "bytes": 116,
           "elapsed_ms": 0,
-          "flows": 0,
+          "findings": [
+            "DOM XSS: location.search -> new URLSearchParams -> get -> (expr).innerHTML"
+          ],
+          "flows": 1,
           "path": "sak3y/snippet_019.js"
         }
       ],
-      "findings": [],
+      "findings": [
+        "DOM XSS: location.search -> new URLSearchParams -> get -> (expr).innerHTML"
+      ],
       "id": "sak3y/snippet_019"
     },
     {
@@ -841,6 +964,7 @@
         {
           "bytes": 127,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_020.js"
         }
@@ -849,19 +973,26 @@
       "id": "sak3y/snippet_020"
     },
     {
-      "confidences": [],
-      "detected": false,
+      "confidences": [
+        "Medium"
+      ],
+      "detected": true,
       "error": null,
       "evaluable": true,
       "files": [
         {
           "bytes": 125,
           "elapsed_ms": 0,
-          "flows": 0,
+          "findings": [
+            "DOM XSS: location.search -> new URLSearchParams -> get -> (expr).innerHTML"
+          ],
+          "flows": 1,
           "path": "sak3y/snippet_021.js"
         }
       ],
-      "findings": [],
+      "findings": [
+        "DOM XSS: location.search -> new URLSearchParams -> get -> (expr).innerHTML"
+      ],
       "id": "sak3y/snippet_021"
     },
     {
@@ -873,6 +1004,7 @@
         {
           "bytes": 99,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_022.js"
         }
@@ -881,19 +1013,26 @@
       "id": "sak3y/snippet_022"
     },
     {
-      "confidences": [],
-      "detected": false,
+      "confidences": [
+        "Medium"
+      ],
+      "detected": true,
       "error": null,
       "evaluable": true,
       "files": [
         {
           "bytes": 99,
           "elapsed_ms": 0,
-          "flows": 0,
+          "findings": [
+            "DOM XSS: location.hash -> slice -> (expr).innerHTML"
+          ],
+          "flows": 1,
           "path": "sak3y/snippet_023.js"
         }
       ],
-      "findings": [],
+      "findings": [
+        "DOM XSS: location.hash -> slice -> (expr).innerHTML"
+      ],
       "id": "sak3y/snippet_023"
     },
     {
@@ -905,6 +1044,7 @@
         {
           "bytes": 112,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_026.js"
         }
@@ -921,6 +1061,7 @@
         {
           "bytes": 113,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_027.js"
         }
@@ -937,6 +1078,7 @@
         {
           "bytes": 115,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_034.js"
         }
@@ -953,6 +1095,7 @@
         {
           "bytes": 110,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_035.js"
         }
@@ -969,6 +1112,7 @@
         {
           "bytes": 110,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_036.js"
         }
@@ -985,6 +1129,7 @@
         {
           "bytes": 112,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_037.js"
         }
@@ -1001,6 +1146,7 @@
         {
           "bytes": 110,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_038.js"
         }
@@ -1017,6 +1163,7 @@
         {
           "bytes": 109,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_039.js"
         }
@@ -1033,6 +1180,7 @@
         {
           "bytes": 109,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_040.js"
         }
@@ -1049,6 +1197,7 @@
         {
           "bytes": 113,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_043.js"
         }
@@ -1065,6 +1214,7 @@
         {
           "bytes": 112,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_044.js"
         }
@@ -1081,6 +1231,7 @@
         {
           "bytes": 138,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_052.js"
         }
@@ -1089,19 +1240,26 @@
       "id": "sak3y/snippet_052"
     },
     {
-      "confidences": [],
-      "detected": false,
+      "confidences": [
+        "Medium"
+      ],
+      "detected": true,
       "error": null,
       "evaluable": true,
       "files": [
         {
           "bytes": 138,
           "elapsed_ms": 0,
-          "flows": 0,
+          "findings": [
+            "DOM XSS: location.search -> new URLSearchParams -> get -> (expr).innerHTML"
+          ],
+          "flows": 1,
           "path": "sak3y/snippet_053.js"
         }
       ],
-      "findings": [],
+      "findings": [
+        "DOM XSS: location.search -> new URLSearchParams -> get -> (expr).innerHTML"
+      ],
       "id": "sak3y/snippet_053"
     },
     {
@@ -1113,6 +1271,7 @@
         {
           "bytes": 110,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_054.js"
         }
@@ -1131,6 +1290,9 @@
         {
           "bytes": 110,
           "elapsed_ms": 0,
+          "findings": [
+            "DOM XSS: location.hash -> slice -> (expr).innerHTML"
+          ],
           "flows": 1,
           "path": "sak3y/snippet_055.js"
         }
@@ -1149,6 +1311,7 @@
         {
           "bytes": 128,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_056.js"
         }
@@ -1165,6 +1328,7 @@
         {
           "bytes": 128,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_057.js"
         }
@@ -1181,6 +1345,7 @@
         {
           "bytes": 115,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_060.js"
         }
@@ -1189,19 +1354,26 @@
       "id": "sak3y/snippet_060"
     },
     {
-      "confidences": [],
-      "detected": false,
+      "confidences": [
+        "Medium"
+      ],
+      "detected": true,
       "error": null,
       "evaluable": true,
       "files": [
         {
           "bytes": 116,
           "elapsed_ms": 0,
-          "flows": 0,
+          "findings": [
+            "DOM XSS: location.search -> new URLSearchParams -> get -> document.body.innerHTML"
+          ],
+          "flows": 1,
           "path": "sak3y/snippet_061.js"
         }
       ],
-      "findings": [],
+      "findings": [
+        "DOM XSS: location.search -> new URLSearchParams -> get -> document.body.innerHTML"
+      ],
       "id": "sak3y/snippet_061"
     },
     {
@@ -1213,6 +1385,7 @@
         {
           "bytes": 111,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_068.js"
         }
@@ -1229,6 +1402,7 @@
         {
           "bytes": 129,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_069.js"
         }
@@ -1237,19 +1411,26 @@
       "id": "sak3y/snippet_069"
     },
     {
-      "confidences": [],
-      "detected": false,
+      "confidences": [
+        "Medium"
+      ],
+      "detected": true,
       "error": null,
       "evaluable": true,
       "files": [
         {
           "bytes": 129,
           "elapsed_ms": 0,
-          "flows": 0,
+          "findings": [
+            "DOM XSS: location.search -> new URLSearchParams -> get -> (expr).innerHTML"
+          ],
+          "flows": 1,
           "path": "sak3y/snippet_070.js"
         }
       ],
-      "findings": [],
+      "findings": [
+        "DOM XSS: location.search -> new URLSearchParams -> get -> (expr).innerHTML"
+      ],
       "id": "sak3y/snippet_070"
     },
     {
@@ -1261,6 +1442,7 @@
         {
           "bytes": 96,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_071.js"
         }
@@ -1279,6 +1461,9 @@
         {
           "bytes": 96,
           "elapsed_ms": 0,
+          "findings": [
+            "DOM XSS: location.hash -> slice -> (expr).innerHTML"
+          ],
           "flows": 1,
           "path": "sak3y/snippet_072.js"
         }
@@ -1297,6 +1482,7 @@
         {
           "bytes": 114,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_073.js"
         }
@@ -1313,6 +1499,7 @@
         {
           "bytes": 114,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_074.js"
         }
@@ -1329,6 +1516,7 @@
         {
           "bytes": 88,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_075.js"
         }
@@ -1345,6 +1533,7 @@
         {
           "bytes": 86,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_076.js"
         }
@@ -1361,6 +1550,7 @@
         {
           "bytes": 110,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_085.js"
         }
@@ -1377,6 +1567,7 @@
         {
           "bytes": 101,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_086.js"
         }
@@ -1385,19 +1576,26 @@
       "id": "sak3y/snippet_086"
     },
     {
-      "confidences": [],
-      "detected": false,
+      "confidences": [
+        "Medium"
+      ],
+      "detected": true,
       "error": null,
       "evaluable": true,
       "files": [
         {
           "bytes": 101,
           "elapsed_ms": 0,
-          "flows": 0,
+          "findings": [
+            "DOM XSS: location.hash -> slice -> (expr).innerHTML"
+          ],
+          "flows": 1,
           "path": "sak3y/snippet_087.js"
         }
       ],
-      "findings": [],
+      "findings": [
+        "DOM XSS: location.hash -> slice -> (expr).innerHTML"
+      ],
       "id": "sak3y/snippet_087"
     },
     {
@@ -1409,6 +1607,7 @@
         {
           "bytes": 128,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_088.js"
         }
@@ -1417,19 +1616,26 @@
       "id": "sak3y/snippet_088"
     },
     {
-      "confidences": [],
-      "detected": false,
+      "confidences": [
+        "Medium"
+      ],
+      "detected": true,
       "error": null,
       "evaluable": true,
       "files": [
         {
           "bytes": 128,
           "elapsed_ms": 0,
-          "flows": 0,
+          "findings": [
+            "DOM XSS: location.hash -> replace -> decodeURIComponent -> (expr).innerHTML"
+          ],
+          "flows": 1,
           "path": "sak3y/snippet_089.js"
         }
       ],
-      "findings": [],
+      "findings": [
+        "DOM XSS: location.hash -> replace -> decodeURIComponent -> (expr).innerHTML"
+      ],
       "id": "sak3y/snippet_089"
     },
     {
@@ -1441,6 +1647,7 @@
         {
           "bytes": 86,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_090.js"
         }
@@ -1449,19 +1656,26 @@
       "id": "sak3y/snippet_090"
     },
     {
-      "confidences": [],
-      "detected": false,
+      "confidences": [
+        "Medium"
+      ],
+      "detected": true,
       "error": null,
       "evaluable": true,
       "files": [
         {
           "bytes": 86,
           "elapsed_ms": 0,
-          "flows": 0,
+          "findings": [
+            "DOM XSS: location.hash -> substring -> document.body.innerHTML"
+          ],
+          "flows": 1,
           "path": "sak3y/snippet_091.js"
         }
       ],
-      "findings": [],
+      "findings": [
+        "DOM XSS: location.hash -> substring -> document.body.innerHTML"
+      ],
       "id": "sak3y/snippet_091"
     },
     {
@@ -1473,6 +1687,7 @@
         {
           "bytes": 120,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_100.js"
         }
@@ -1481,19 +1696,26 @@
       "id": "sak3y/snippet_100"
     },
     {
-      "confidences": [],
-      "detected": false,
+      "confidences": [
+        "Medium"
+      ],
+      "detected": true,
       "error": null,
       "evaluable": true,
       "files": [
         {
           "bytes": 120,
           "elapsed_ms": 0,
-          "flows": 0,
+          "findings": [
+            "DOM XSS: location.hash -> slice -> decodeURIComponent -> (expr).innerHTML"
+          ],
+          "flows": 1,
           "path": "sak3y/snippet_101.js"
         }
       ],
-      "findings": [],
+      "findings": [
+        "DOM XSS: location.hash -> slice -> decodeURIComponent -> (expr).innerHTML"
+      ],
       "id": "sak3y/snippet_101"
     },
     {
@@ -1505,6 +1727,7 @@
         {
           "bytes": 114,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_102.js"
         }
@@ -1521,6 +1744,7 @@
         {
           "bytes": 122,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_103.js"
         }
@@ -1529,19 +1753,26 @@
       "id": "sak3y/snippet_103"
     },
     {
-      "confidences": [],
-      "detected": false,
+      "confidences": [
+        "Medium"
+      ],
+      "detected": true,
       "error": null,
       "evaluable": true,
       "files": [
         {
           "bytes": 122,
           "elapsed_ms": 0,
-          "flows": 0,
+          "findings": [
+            "DOM XSS: location.search -> new URLSearchParams -> get -> (expr).innerHTML"
+          ],
+          "flows": 1,
           "path": "sak3y/snippet_104.js"
         }
       ],
-      "findings": [],
+      "findings": [
+        "DOM XSS: location.search -> new URLSearchParams -> get -> (expr).innerHTML"
+      ],
       "id": "sak3y/snippet_104"
     },
     {
@@ -1553,6 +1784,7 @@
         {
           "bytes": 98,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_105.js"
         }
@@ -1571,6 +1803,9 @@
         {
           "bytes": 98,
           "elapsed_ms": 0,
+          "findings": [
+            "DOM XSS: location.hash -> slice -> (expr).innerHTML"
+          ],
           "flows": 1,
           "path": "sak3y/snippet_106.js"
         }
@@ -1589,6 +1824,7 @@
         {
           "bytes": 111,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_107.js"
         }
@@ -1605,6 +1841,7 @@
         {
           "bytes": 111,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_108.js"
         }
@@ -1621,6 +1858,7 @@
         {
           "bytes": 81,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_109.js"
         }
@@ -1637,6 +1875,7 @@
         {
           "bytes": 79,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_110.js"
         }
@@ -1653,6 +1892,7 @@
         {
           "bytes": 112,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_119.js"
         }
@@ -1669,6 +1909,7 @@
         {
           "bytes": 121,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_120.js"
         }
@@ -1677,19 +1918,26 @@
       "id": "sak3y/snippet_120"
     },
     {
-      "confidences": [],
-      "detected": false,
+      "confidences": [
+        "Medium"
+      ],
+      "detected": true,
       "error": null,
       "evaluable": true,
       "files": [
         {
           "bytes": 121,
           "elapsed_ms": 0,
-          "flows": 0,
+          "findings": [
+            "DOM XSS: location.search -> new URLSearchParams -> get -> (expr).innerHTML"
+          ],
+          "flows": 1,
           "path": "sak3y/snippet_121.js"
         }
       ],
-      "findings": [],
+      "findings": [
+        "DOM XSS: location.search -> new URLSearchParams -> get -> (expr).innerHTML"
+      ],
       "id": "sak3y/snippet_121"
     },
     {
@@ -1701,6 +1949,7 @@
         {
           "bytes": 129,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_122.js"
         }
@@ -1709,19 +1958,26 @@
       "id": "sak3y/snippet_122"
     },
     {
-      "confidences": [],
-      "detected": false,
+      "confidences": [
+        "Medium"
+      ],
+      "detected": true,
       "error": null,
       "evaluable": true,
       "files": [
         {
           "bytes": 127,
           "elapsed_ms": 0,
-          "flows": 0,
+          "findings": [
+            "DOM XSS: location.search -> new URLSearchParams -> get -> (expr).innerHTML"
+          ],
+          "flows": 1,
           "path": "sak3y/snippet_123.js"
         }
       ],
-      "findings": [],
+      "findings": [
+        "DOM XSS: location.search -> new URLSearchParams -> get -> (expr).innerHTML"
+      ],
       "id": "sak3y/snippet_123"
     },
     {
@@ -1733,6 +1989,7 @@
         {
           "bytes": 96,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_124.js"
         }
@@ -1751,6 +2008,9 @@
         {
           "bytes": 96,
           "elapsed_ms": 0,
+          "findings": [
+            "DOM XSS: location.hash -> slice -> (expr).innerHTML"
+          ],
           "flows": 1,
           "path": "sak3y/snippet_125.js"
         }
@@ -1769,6 +2029,7 @@
         {
           "bytes": 80,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_126.js"
         }
@@ -1785,6 +2046,7 @@
         {
           "bytes": 78,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_127.js"
         }
@@ -1801,6 +2063,7 @@
         {
           "bytes": 94,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_137.js"
         }
@@ -1819,6 +2082,9 @@
         {
           "bytes": 94,
           "elapsed_ms": 0,
+          "findings": [
+            "DOM XSS: document.referrer -> (expr).innerHTML"
+          ],
           "flows": 1,
           "path": "sak3y/snippet_138.js"
         }
@@ -1837,6 +2103,7 @@
         {
           "bytes": 96,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_139.js"
         }
@@ -1855,6 +2122,9 @@
         {
           "bytes": 94,
           "elapsed_ms": 0,
+          "findings": [
+            "DOM XSS: document.referrer -> (expr).innerHTML"
+          ],
           "flows": 1,
           "path": "sak3y/snippet_140.js"
         }
@@ -1873,6 +2143,7 @@
         {
           "bytes": 72,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_141.js"
         }
@@ -1891,6 +2162,9 @@
         {
           "bytes": 72,
           "elapsed_ms": 0,
+          "findings": [
+            "DOM XSS: document.referrer -> document.body.innerHTML"
+          ],
           "flows": 1,
           "path": "sak3y/snippet_142.js"
         }
@@ -1909,6 +2183,7 @@
         {
           "bytes": 153,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_143.js"
         }
@@ -1917,19 +2192,26 @@
       "id": "sak3y/snippet_143"
     },
     {
-      "confidences": [],
-      "detected": false,
+      "confidences": [
+        "Medium"
+      ],
+      "detected": true,
       "error": null,
       "evaluable": true,
       "files": [
         {
           "bytes": 153,
           "elapsed_ms": 0,
-          "flows": 0,
+          "findings": [
+            "DOM XSS: location.search -> new URLSearchParams -> get -> (expr).innerHTML"
+          ],
+          "flows": 1,
           "path": "sak3y/snippet_144.js"
         }
       ],
-      "findings": [],
+      "findings": [
+        "DOM XSS: location.search -> new URLSearchParams -> get -> (expr).innerHTML"
+      ],
       "id": "sak3y/snippet_144"
     },
     {
@@ -1941,6 +2223,7 @@
         {
           "bytes": 112,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_145.js"
         }
@@ -1949,19 +2232,26 @@
       "id": "sak3y/snippet_145"
     },
     {
-      "confidences": [],
-      "detected": false,
+      "confidences": [
+        "Medium"
+      ],
+      "detected": true,
       "error": null,
       "evaluable": true,
       "files": [
         {
           "bytes": 131,
           "elapsed_ms": 0,
-          "flows": 0,
+          "findings": [
+            "DOM XSS: location.search -> new URLSearchParams -> get -> (expr).innerHTML"
+          ],
+          "flows": 1,
           "path": "sak3y/snippet_154.js"
         }
       ],
-      "findings": [],
+      "findings": [
+        "DOM XSS: location.search -> new URLSearchParams -> get -> (expr).innerHTML"
+      ],
       "id": "sak3y/snippet_154"
     },
     {
@@ -1973,6 +2263,7 @@
         {
           "bytes": 132,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_155.js"
         }
@@ -1991,6 +2282,9 @@
         {
           "bytes": 124,
           "elapsed_ms": 0,
+          "findings": [
+            "DOM XSS: location.hash -> slice -> (expr).innerHTML"
+          ],
           "flows": 1,
           "path": "sak3y/snippet_156.js"
         }
@@ -2001,19 +2295,26 @@
       "id": "sak3y/snippet_156"
     },
     {
-      "confidences": [],
-      "detected": false,
+      "confidences": [
+        "Medium"
+      ],
+      "detected": true,
       "error": null,
       "evaluable": true,
       "files": [
         {
           "bytes": 172,
           "elapsed_ms": 0,
-          "flows": 0,
+          "findings": [
+            "DOM XSS: location.search -> new URLSearchParams -> get -> (expr).outerHTML"
+          ],
+          "flows": 1,
           "path": "sak3y/snippet_157.js"
         }
       ],
-      "findings": [],
+      "findings": [
+        "DOM XSS: location.search -> new URLSearchParams -> get -> (expr).outerHTML"
+      ],
       "id": "sak3y/snippet_157"
     },
     {
@@ -2027,6 +2328,9 @@
         {
           "bytes": 112,
           "elapsed_ms": 0,
+          "findings": [
+            "DOM XSS: location.search -> split -> (expr).innerHTML"
+          ],
           "flows": 1,
           "path": "sak3y/snippet_158.js"
         }
@@ -2037,19 +2341,26 @@
       "id": "sak3y/snippet_158"
     },
     {
-      "confidences": [],
-      "detected": false,
+      "confidences": [
+        "Medium"
+      ],
+      "detected": true,
       "error": null,
       "evaluable": true,
       "files": [
         {
           "bytes": 156,
           "elapsed_ms": 0,
-          "flows": 0,
+          "findings": [
+            "DOM XSS: location.search -> new URLSearchParams -> get -> (expr).innerHTML"
+          ],
+          "flows": 1,
           "path": "sak3y/snippet_161.js"
         }
       ],
-      "findings": [],
+      "findings": [
+        "DOM XSS: location.search -> new URLSearchParams -> get -> (expr).innerHTML"
+      ],
       "id": "sak3y/snippet_161"
     },
     {
@@ -2063,6 +2374,9 @@
         {
           "bytes": 146,
           "elapsed_ms": 0,
+          "findings": [
+            "DOM XSS: location.href -> split -> insertAdjacentHTML"
+          ],
           "flows": 1,
           "path": "sak3y/snippet_165.js"
         }
@@ -2083,6 +2397,9 @@
         {
           "bytes": 108,
           "elapsed_ms": 0,
+          "findings": [
+            "DOM XSS: document.referrer -> split -> pop -> (expr).innerHTML"
+          ],
           "flows": 1,
           "path": "sak3y/snippet_166.js"
         }
@@ -2103,6 +2420,9 @@
         {
           "bytes": 139,
           "elapsed_ms": 0,
+          "findings": [
+            "DOM XSS: location.hash -> substring -> h.innerHTML"
+          ],
           "flows": 1,
           "path": "sak3y/snippet_167.js"
         }
@@ -2123,6 +2443,9 @@
         {
           "bytes": 136,
           "elapsed_ms": 0,
+          "findings": [
+            "DOM XSS: location.search -> replace -> (expr).outerHTML"
+          ],
           "flows": 1,
           "path": "sak3y/snippet_168.js"
         }
@@ -2141,6 +2464,7 @@
         {
           "bytes": 92,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_169.js"
         }
@@ -2157,6 +2481,7 @@
         {
           "bytes": 209,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_170.js"
         }
@@ -2173,6 +2498,7 @@
         {
           "bytes": 146,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_171.js"
         }
@@ -2189,6 +2515,7 @@
         {
           "bytes": 86,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_172.js"
         }
@@ -2205,6 +2532,7 @@
         {
           "bytes": 158,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_173.js"
         }
@@ -2221,6 +2549,7 @@
         {
           "bytes": 204,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_174.js"
         }
@@ -2237,6 +2566,7 @@
         {
           "bytes": 185,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_175.js"
         }
@@ -2253,6 +2583,7 @@
         {
           "bytes": 123,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_176.js"
         }
@@ -2269,6 +2600,7 @@
         {
           "bytes": 117,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_177.js"
         }
@@ -2285,6 +2617,7 @@
         {
           "bytes": 204,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_178.js"
         }
@@ -2293,19 +2626,26 @@
       "id": "sak3y/snippet_178"
     },
     {
-      "confidences": [],
-      "detected": false,
+      "confidences": [
+        "Medium"
+      ],
+      "detected": true,
       "error": null,
       "evaluable": true,
       "files": [
         {
           "bytes": 216,
           "elapsed_ms": 0,
-          "flows": 0,
+          "findings": [
+            "DOM XSS: location.search -> new URLSearchParams -> get -> replace -> replace -> replace -> (expr).innerHTML"
+          ],
+          "flows": 1,
           "path": "sak3y/snippet_179.js"
         }
       ],
-      "findings": [],
+      "findings": [
+        "DOM XSS: location.search -> new URLSearchParams -> get -> replace -> replace -> replace -> (expr).innerHTML"
+      ],
       "id": "sak3y/snippet_179"
     },
     {
@@ -2317,6 +2657,7 @@
         {
           "bytes": 145,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_180.js"
         }
@@ -2333,6 +2674,7 @@
         {
           "bytes": 164,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_181.js"
         }
@@ -2349,6 +2691,7 @@
         {
           "bytes": 122,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_182.js"
         }
@@ -2365,6 +2708,7 @@
         {
           "bytes": 103,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_183.js"
         }
@@ -2381,6 +2725,7 @@
         {
           "bytes": 125,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_184.js"
         }
@@ -2399,6 +2744,9 @@
         {
           "bytes": 127,
           "elapsed_ms": 0,
+          "findings": [
+            "DOM XSS: location.href -> split -> pop -> split -> (expr).innerHTML"
+          ],
           "flows": 1,
           "path": "sak3y/snippet_185.js"
         }
@@ -2417,6 +2765,7 @@
         {
           "bytes": 115,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_186.js"
         }
@@ -2433,6 +2782,7 @@
         {
           "bytes": 148,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_187.js"
         }
@@ -2451,6 +2801,9 @@
         {
           "bytes": 140,
           "elapsed_ms": 0,
+          "findings": [
+            "DOM XSS: location.hash -> substring -> (expr).innerHTML"
+          ],
           "flows": 1,
           "path": "sak3y/snippet_188.js"
         }
@@ -2471,6 +2824,9 @@
         {
           "bytes": 154,
           "elapsed_ms": 0,
+          "findings": [
+            "DOM XSS: location.hash -> slice -> atob -> (expr).innerHTML"
+          ],
           "flows": 1,
           "path": "sak3y/snippet_189.js"
         }
@@ -2481,19 +2837,26 @@
       "id": "sak3y/snippet_189"
     },
     {
-      "confidences": [],
-      "detected": false,
+      "confidences": [
+        "Medium"
+      ],
+      "detected": true,
       "error": null,
       "evaluable": true,
       "files": [
         {
           "bytes": 163,
           "elapsed_ms": 0,
-          "flows": 0,
+          "findings": [
+            "DOM XSS: location.search -> new URLSearchParams -> get -> (expr).innerHTML"
+          ],
+          "flows": 1,
           "path": "sak3y/snippet_190.js"
         }
       ],
-      "findings": [],
+      "findings": [
+        "DOM XSS: location.search -> new URLSearchParams -> get -> (expr).innerHTML"
+      ],
       "id": "sak3y/snippet_190"
     },
     {
@@ -2505,6 +2868,7 @@
         {
           "bytes": 180,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_191.js"
         }
@@ -2521,6 +2885,7 @@
         {
           "bytes": 167,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_192.js"
         }
@@ -2539,6 +2904,9 @@
         {
           "bytes": 201,
           "elapsed_ms": 0,
+          "findings": [
+            "DOM XSS: location.hash -> slice -> div.innerHTML"
+          ],
           "flows": 1,
           "path": "sak3y/snippet_193.js"
         }
@@ -2557,6 +2925,7 @@
         {
           "bytes": 129,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_194.js"
         }
@@ -2573,6 +2942,7 @@
         {
           "bytes": 115,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_195.js"
         }
@@ -2589,6 +2959,7 @@
         {
           "bytes": 152,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_196.js"
         }
@@ -2605,6 +2976,7 @@
         {
           "bytes": 150,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_197.js"
         }
@@ -2621,6 +2993,7 @@
         {
           "bytes": 157,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_198.js"
         }
@@ -2637,6 +3010,7 @@
         {
           "bytes": 198,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_199.js"
         }
@@ -2653,6 +3027,7 @@
         {
           "bytes": 209,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_200.js"
         }
@@ -2669,6 +3044,7 @@
         {
           "bytes": 161,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_201.js"
         }
@@ -2685,6 +3061,7 @@
         {
           "bytes": 94,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_202.js"
         }
@@ -2701,6 +3078,7 @@
         {
           "bytes": 187,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_203.js"
         }
@@ -2709,35 +3087,49 @@
       "id": "sak3y/snippet_203"
     },
     {
-      "confidences": [],
-      "detected": false,
+      "confidences": [
+        "Medium"
+      ],
+      "detected": true,
       "error": null,
       "evaluable": true,
       "files": [
         {
           "bytes": 105,
           "elapsed_ms": 0,
-          "flows": 0,
+          "findings": [
+            "DOM XSS: location.search -> new URLSearchParams -> get -> document.write"
+          ],
+          "flows": 1,
           "path": "sak3y/snippet_204.js"
         }
       ],
-      "findings": [],
+      "findings": [
+        "DOM XSS: location.search -> new URLSearchParams -> get -> document.write"
+      ],
       "id": "sak3y/snippet_204"
     },
     {
-      "confidences": [],
-      "detected": false,
+      "confidences": [
+        "Medium"
+      ],
+      "detected": true,
       "error": null,
       "evaluable": true,
       "files": [
         {
           "bytes": 121,
           "elapsed_ms": 0,
-          "flows": 0,
+          "findings": [
+            "DOM XSS: location.search -> new URLSearchParams -> get -> (expr).outerHTML"
+          ],
+          "flows": 1,
           "path": "sak3y/snippet_205.js"
         }
       ],
-      "findings": [],
+      "findings": [
+        "DOM XSS: location.search -> new URLSearchParams -> get -> (expr).outerHTML"
+      ],
       "id": "sak3y/snippet_205"
     },
     {
@@ -2749,6 +3141,7 @@
         {
           "bytes": 92,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_206.js"
         }
@@ -2757,19 +3150,26 @@
       "id": "sak3y/snippet_206"
     },
     {
-      "confidences": [],
-      "detected": false,
+      "confidences": [
+        "Medium"
+      ],
+      "detected": true,
       "error": null,
       "evaluable": true,
       "files": [
         {
           "bytes": 143,
           "elapsed_ms": 0,
-          "flows": 0,
+          "findings": [
+            "DOM XSS: location.search -> new URLSearchParams -> get -> insertAdjacentHTML"
+          ],
+          "flows": 1,
           "path": "sak3y/snippet_207.js"
         }
       ],
-      "findings": [],
+      "findings": [
+        "DOM XSS: location.search -> new URLSearchParams -> get -> insertAdjacentHTML"
+      ],
       "id": "sak3y/snippet_207"
     },
     {
@@ -2781,6 +3181,7 @@
         {
           "bytes": 136,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_208.js"
         }
@@ -2797,6 +3198,7 @@
         {
           "bytes": 179,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_209.js"
         }
@@ -2813,6 +3215,7 @@
         {
           "bytes": 130,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_210.js"
         }
@@ -2829,6 +3232,7 @@
         {
           "bytes": 157,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_211.js"
         }
@@ -2837,35 +3241,49 @@
       "id": "sak3y/snippet_211"
     },
     {
-      "confidences": [],
-      "detected": false,
+      "confidences": [
+        "Medium"
+      ],
+      "detected": true,
       "error": null,
       "evaluable": true,
       "files": [
         {
           "bytes": 114,
           "elapsed_ms": 0,
-          "flows": 0,
+          "findings": [
+            "DOM XSS: location.search -> new URLSearchParams -> get -> document.write"
+          ],
+          "flows": 1,
           "path": "sak3y/snippet_212.js"
         }
       ],
-      "findings": [],
+      "findings": [
+        "DOM XSS: location.search -> new URLSearchParams -> get -> document.write"
+      ],
       "id": "sak3y/snippet_212"
     },
     {
-      "confidences": [],
-      "detected": false,
+      "confidences": [
+        "Medium"
+      ],
+      "detected": true,
       "error": null,
       "evaluable": true,
       "files": [
         {
           "bytes": 128,
           "elapsed_ms": 0,
-          "flows": 0,
+          "findings": [
+            "DOM XSS: location.search -> new URLSearchParams -> get -> (expr).outerHTML"
+          ],
+          "flows": 1,
           "path": "sak3y/snippet_213.js"
         }
       ],
-      "findings": [],
+      "findings": [
+        "DOM XSS: location.search -> new URLSearchParams -> get -> (expr).outerHTML"
+      ],
       "id": "sak3y/snippet_213"
     },
     {
@@ -2877,6 +3295,7 @@
         {
           "bytes": 100,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_214.js"
         }
@@ -2893,6 +3312,7 @@
         {
           "bytes": 129,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_215.js"
         }
@@ -2909,6 +3329,7 @@
         {
           "bytes": 159,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_216.js"
         }
@@ -2925,6 +3346,7 @@
         {
           "bytes": 265,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_217.js"
         }
@@ -2941,6 +3363,7 @@
         {
           "bytes": 82,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_218.js"
         }
@@ -2957,6 +3380,7 @@
         {
           "bytes": 128,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_219.js"
         }
@@ -2973,6 +3397,7 @@
         {
           "bytes": 86,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_220.js"
         }
@@ -2989,6 +3414,7 @@
         {
           "bytes": 82,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_221.js"
         }
@@ -3005,6 +3431,7 @@
         {
           "bytes": 128,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_222.js"
         }
@@ -3021,6 +3448,7 @@
         {
           "bytes": 115,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_223.js"
         }
@@ -3037,6 +3465,7 @@
         {
           "bytes": 178,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_224.js"
         }
@@ -3045,35 +3474,49 @@
       "id": "sak3y/snippet_224"
     },
     {
-      "confidences": [],
-      "detected": false,
+      "confidences": [
+        "Medium"
+      ],
+      "detected": true,
       "error": null,
       "evaluable": true,
       "files": [
         {
           "bytes": 104,
           "elapsed_ms": 0,
-          "flows": 0,
+          "findings": [
+            "DOM XSS: location.search -> new URLSearchParams -> get -> document.write"
+          ],
+          "flows": 1,
           "path": "sak3y/snippet_225.js"
         }
       ],
-      "findings": [],
+      "findings": [
+        "DOM XSS: location.search -> new URLSearchParams -> get -> document.write"
+      ],
       "id": "sak3y/snippet_225"
     },
     {
-      "confidences": [],
-      "detected": false,
+      "confidences": [
+        "Medium"
+      ],
+      "detected": true,
       "error": null,
       "evaluable": true,
       "files": [
         {
           "bytes": 140,
           "elapsed_ms": 0,
-          "flows": 0,
+          "findings": [
+            "DOM XSS: location.search -> new URLSearchParams -> get -> (expr).outerHTML"
+          ],
+          "flows": 1,
           "path": "sak3y/snippet_226.js"
         }
       ],
-      "findings": [],
+      "findings": [
+        "DOM XSS: location.search -> new URLSearchParams -> get -> (expr).outerHTML"
+      ],
       "id": "sak3y/snippet_226"
     },
     {
@@ -3085,6 +3528,7 @@
         {
           "bytes": 108,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_227.js"
         }
@@ -3101,6 +3545,7 @@
         {
           "bytes": 114,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_228.js"
         }
@@ -3109,19 +3554,26 @@
       "id": "sak3y/snippet_228"
     },
     {
-      "confidences": [],
-      "detected": false,
+      "confidences": [
+        "Medium"
+      ],
+      "detected": true,
       "error": null,
       "evaluable": true,
       "files": [
         {
           "bytes": 100,
           "elapsed_ms": 0,
-          "flows": 0,
+          "findings": [
+            "DOM XSS: location.search -> new URLSearchParams -> get -> eval"
+          ],
+          "flows": 1,
           "path": "sak3y/snippet_229.js"
         }
       ],
-      "findings": [],
+      "findings": [
+        "DOM XSS: location.search -> new URLSearchParams -> get -> eval"
+      ],
       "id": "sak3y/snippet_229"
     },
     {
@@ -3133,6 +3585,7 @@
         {
           "bytes": 142,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_230.js"
         }
@@ -3149,6 +3602,7 @@
         {
           "bytes": 144,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_231.js"
         }
@@ -3165,6 +3619,7 @@
         {
           "bytes": 187,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_232.js"
         }
@@ -3181,6 +3636,7 @@
         {
           "bytes": 79,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_233.js"
         }
@@ -3197,6 +3653,7 @@
         {
           "bytes": 95,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_234.js"
         }
@@ -3213,6 +3670,7 @@
         {
           "bytes": 53,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_235.js"
         }
@@ -3229,6 +3687,7 @@
         {
           "bytes": 113,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_236.js"
         }
@@ -3245,6 +3704,7 @@
         {
           "bytes": 114,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_237.js"
         }
@@ -3261,6 +3721,7 @@
         {
           "bytes": 133,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_238.js"
         }
@@ -3277,6 +3738,7 @@
         {
           "bytes": 53,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_239.js"
         }
@@ -3295,6 +3757,9 @@
         {
           "bytes": 94,
           "elapsed_ms": 0,
+          "findings": [
+            "DOM XSS: location.hash -> slice -> document.write"
+          ],
           "flows": 1,
           "path": "sak3y/snippet_240.js"
         }
@@ -3315,6 +3780,9 @@
         {
           "bytes": 109,
           "elapsed_ms": 0,
+          "findings": [
+            "DOM XSS: location.hash -> slice -> (expr).outerHTML"
+          ],
           "flows": 1,
           "path": "sak3y/snippet_241.js"
         }
@@ -3333,6 +3801,7 @@
         {
           "bytes": 67,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_242.js"
         }
@@ -3351,6 +3820,9 @@
         {
           "bytes": 57,
           "elapsed_ms": 0,
+          "findings": [
+            "DOM XSS: location.hash -> slice -> eval"
+          ],
           "flows": 1,
           "path": "sak3y/snippet_243.js"
         }
@@ -3369,6 +3841,7 @@
         {
           "bytes": 108,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_244.js"
         }
@@ -3385,6 +3858,7 @@
         {
           "bytes": 153,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_245.js"
         }
@@ -3401,6 +3875,7 @@
         {
           "bytes": 78,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_246.js"
         }
@@ -3417,6 +3892,7 @@
         {
           "bytes": 66,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_247.js"
         }
@@ -3433,6 +3909,7 @@
         {
           "bytes": 116,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_248.js"
         }
@@ -3449,6 +3926,7 @@
         {
           "bytes": 175,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_249.js"
         }
@@ -3465,6 +3943,7 @@
         {
           "bytes": 115,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_250.js"
         }
@@ -3473,19 +3952,26 @@
       "id": "sak3y/snippet_250"
     },
     {
-      "confidences": [],
-      "detected": false,
+      "confidences": [
+        "Medium"
+      ],
+      "detected": true,
       "error": null,
       "evaluable": true,
       "files": [
         {
           "bytes": 121,
           "elapsed_ms": 0,
-          "flows": 0,
+          "findings": [
+            "DOM XSS: location.search -> new URLSearchParams -> get -> document.write"
+          ],
+          "flows": 1,
           "path": "sak3y/snippet_251.js"
         }
       ],
-      "findings": [],
+      "findings": [
+        "DOM XSS: location.search -> new URLSearchParams -> get -> document.write"
+      ],
       "id": "sak3y/snippet_251"
     },
     {
@@ -3497,6 +3983,7 @@
         {
           "bytes": 112,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_252.js"
         }
@@ -3513,6 +4000,7 @@
         {
           "bytes": 230,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_253.js"
         }
@@ -3529,6 +4017,7 @@
         {
           "bytes": 140,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_254.js"
         }
@@ -3547,6 +4036,9 @@
         {
           "bytes": 61,
           "elapsed_ms": 0,
+          "findings": [
+            "DOM XSS: document.referrer -> document.write"
+          ],
           "flows": 1,
           "path": "sak3y/snippet_255.js"
         }
@@ -3565,6 +4057,7 @@
         {
           "bytes": 61,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_256.js"
         }
@@ -3583,6 +4076,9 @@
         {
           "bytes": 96,
           "elapsed_ms": 0,
+          "findings": [
+            "DOM XSS: document.referrer -> (expr).outerHTML"
+          ],
           "flows": 1,
           "path": "sak3y/snippet_257.js"
         }
@@ -3601,6 +4097,7 @@
         {
           "bytes": 133,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_258.js"
         }
@@ -3617,6 +4114,7 @@
         {
           "bytes": 132,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_259.js"
         }
@@ -3633,6 +4131,7 @@
         {
           "bytes": 132,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_260.js"
         }
@@ -3649,6 +4148,7 @@
         {
           "bytes": 202,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_261.js"
         }
@@ -3665,6 +4165,7 @@
         {
           "bytes": 114,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_262.js"
         }
@@ -3681,6 +4182,7 @@
         {
           "bytes": 130,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_263.js"
         }
@@ -3697,6 +4199,7 @@
         {
           "bytes": 169,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_264.js"
         }
@@ -3713,6 +4216,7 @@
         {
           "bytes": 91,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_265.js"
         }
@@ -3729,6 +4233,7 @@
         {
           "bytes": 125,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_266.js"
         }
@@ -3745,6 +4250,7 @@
         {
           "bytes": 164,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_267.js"
         }
@@ -3761,6 +4267,7 @@
         {
           "bytes": 191,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_268.js"
         }
@@ -3777,6 +4284,7 @@
         {
           "bytes": 192,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_269.js"
         }
@@ -3793,6 +4301,7 @@
         {
           "bytes": 125,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_270.js"
         }
@@ -3809,6 +4318,7 @@
         {
           "bytes": 81,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_271.js"
         }
@@ -3825,6 +4335,7 @@
         {
           "bytes": 177,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_272.js"
         }
@@ -3841,6 +4352,7 @@
         {
           "bytes": 176,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_273.js"
         }
@@ -3857,6 +4369,7 @@
         {
           "bytes": 117,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_274.js"
         }
@@ -3865,35 +4378,49 @@
       "id": "sak3y/snippet_274"
     },
     {
-      "confidences": [],
-      "detected": false,
+      "confidences": [
+        "Medium"
+      ],
+      "detected": true,
       "error": null,
       "evaluable": true,
       "files": [
         {
           "bytes": 156,
           "elapsed_ms": 0,
-          "flows": 0,
+          "findings": [
+            "DOM XSS: location.search -> new URLSearchParams -> get -> (expr).outerHTML"
+          ],
+          "flows": 1,
           "path": "sak3y/snippet_275.js"
         }
       ],
-      "findings": [],
+      "findings": [
+        "DOM XSS: location.search -> new URLSearchParams -> get -> (expr).outerHTML"
+      ],
       "id": "sak3y/snippet_275"
     },
     {
-      "confidences": [],
-      "detected": false,
+      "confidences": [
+        "Medium"
+      ],
+      "detected": true,
       "error": null,
       "evaluable": true,
       "files": [
         {
           "bytes": 116,
           "elapsed_ms": 0,
-          "flows": 0,
+          "findings": [
+            "DOM XSS: location.search -> new URLSearchParams -> get -> document.body.innerHTML"
+          ],
+          "flows": 1,
           "path": "sak3y/snippet_276.js"
         }
       ],
-      "findings": [],
+      "findings": [
+        "DOM XSS: location.search -> new URLSearchParams -> get -> document.body.innerHTML"
+      ],
       "id": "sak3y/snippet_276"
     },
     {
@@ -3905,6 +4432,7 @@
         {
           "bytes": 159,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_277.js"
         }
@@ -3921,6 +4449,7 @@
         {
           "bytes": 174,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_278.js"
         }
@@ -3937,6 +4466,7 @@
         {
           "bytes": 203,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_279.js"
         }
@@ -3953,6 +4483,7 @@
         {
           "bytes": 134,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_280.js"
         }
@@ -3969,6 +4500,7 @@
         {
           "bytes": 81,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_281.js"
         }
@@ -3985,6 +4517,7 @@
         {
           "bytes": 164,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_282.js"
         }
@@ -4001,6 +4534,7 @@
         {
           "bytes": 118,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_283.js"
         }
@@ -4017,6 +4551,7 @@
         {
           "bytes": 120,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_284.js"
         }
@@ -4025,19 +4560,26 @@
       "id": "sak3y/snippet_284"
     },
     {
-      "confidences": [],
-      "detected": false,
+      "confidences": [
+        "Medium"
+      ],
+      "detected": true,
       "error": null,
       "evaluable": true,
       "files": [
         {
           "bytes": 133,
           "elapsed_ms": 0,
-          "flows": 0,
+          "findings": [
+            "DOM XSS: location.search -> new URLSearchParams -> get -> document.body.innerHTML"
+          ],
+          "flows": 1,
           "path": "sak3y/snippet_285.js"
         }
       ],
-      "findings": [],
+      "findings": [
+        "DOM XSS: location.search -> new URLSearchParams -> get -> document.body.innerHTML"
+      ],
       "id": "sak3y/snippet_285"
     },
     {
@@ -4049,6 +4591,7 @@
         {
           "bytes": 135,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_286.js"
         }
@@ -4065,6 +4608,7 @@
         {
           "bytes": 188,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_287.js"
         }
@@ -4081,6 +4625,7 @@
         {
           "bytes": 82,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_288.js"
         }
@@ -4097,6 +4642,7 @@
         {
           "bytes": 136,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_289.js"
         }
@@ -4113,6 +4659,7 @@
         {
           "bytes": 243,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_290.js"
         }
@@ -4121,51 +4668,72 @@
       "id": "sak3y/snippet_290"
     },
     {
-      "confidences": [],
-      "detected": false,
+      "confidences": [
+        "Medium"
+      ],
+      "detected": true,
       "error": null,
       "evaluable": true,
       "files": [
         {
           "bytes": 136,
           "elapsed_ms": 0,
-          "flows": 0,
+          "findings": [
+            "DOM XSS: location.search -> new URLSearchParams -> get -> setAttribute(onclick)"
+          ],
+          "flows": 1,
           "path": "sak3y/snippet_291.js"
         }
       ],
-      "findings": [],
+      "findings": [
+        "DOM XSS: location.search -> new URLSearchParams -> get -> setAttribute(onclick)"
+      ],
       "id": "sak3y/snippet_291"
     },
     {
-      "confidences": [],
-      "detected": false,
+      "confidences": [
+        "Medium"
+      ],
+      "detected": true,
       "error": null,
       "evaluable": true,
       "files": [
         {
           "bytes": 154,
           "elapsed_ms": 0,
-          "flows": 0,
+          "findings": [
+            "DOM XSS: location.search -> new URLSearchParams -> get -> (expr).outerHTML"
+          ],
+          "flows": 1,
           "path": "sak3y/snippet_292.js"
         }
       ],
-      "findings": [],
+      "findings": [
+        "DOM XSS: location.search -> new URLSearchParams -> get -> (expr).outerHTML"
+      ],
       "id": "sak3y/snippet_292"
     },
     {
-      "confidences": [],
-      "detected": false,
+      "confidences": [
+        "Medium"
+      ],
+      "detected": true,
       "error": null,
       "evaluable": true,
       "files": [
         {
           "bytes": 135,
           "elapsed_ms": 0,
-          "flows": 0,
+          "findings": [
+            "DOM XSS: location.search -> new URLSearchParams -> get -> document.body.innerHTML"
+          ],
+          "flows": 1,
           "path": "sak3y/snippet_293.js"
         }
       ],
-      "findings": [],
+      "findings": [
+        "DOM XSS: location.search -> new URLSearchParams -> get -> document.body.innerHTML"
+      ],
       "id": "sak3y/snippet_293"
     },
     {
@@ -4177,6 +4745,7 @@
         {
           "bytes": 136,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_294.js"
         }
@@ -4193,6 +4762,7 @@
         {
           "bytes": 118,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_295.js"
         }
@@ -4209,6 +4779,7 @@
         {
           "bytes": 211,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_296.js"
         }
@@ -4225,6 +4796,7 @@
         {
           "bytes": 137,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_297.js"
         }
@@ -4233,35 +4805,49 @@
       "id": "sak3y/snippet_297"
     },
     {
-      "confidences": [],
-      "detected": false,
+      "confidences": [
+        "Medium"
+      ],
+      "detected": true,
       "error": null,
       "evaluable": true,
       "files": [
         {
           "bytes": 86,
           "elapsed_ms": 0,
-          "flows": 0,
+          "findings": [
+            "DOM XSS: location.search -> new URLSearchParams -> get -> eval"
+          ],
+          "flows": 1,
           "path": "sak3y/snippet_298.js"
         }
       ],
-      "findings": [],
+      "findings": [
+        "DOM XSS: location.search -> new URLSearchParams -> get -> eval"
+      ],
       "id": "sak3y/snippet_298"
     },
     {
-      "confidences": [],
-      "detected": false,
+      "confidences": [
+        "Medium"
+      ],
+      "detected": true,
       "error": null,
       "evaluable": true,
       "files": [
         {
           "bytes": 96,
           "elapsed_ms": 0,
-          "flows": 0,
+          "findings": [
+            "DOM XSS: location.search -> new URLSearchParams -> get -> new Function"
+          ],
+          "flows": 1,
           "path": "sak3y/snippet_299.js"
         }
       ],
-      "findings": [],
+      "findings": [
+        "DOM XSS: location.search -> new URLSearchParams -> get -> new Function"
+      ],
       "id": "sak3y/snippet_299"
     },
     {
@@ -4273,6 +4859,7 @@
         {
           "bytes": 94,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_300.js"
         }
@@ -4289,6 +4876,7 @@
         {
           "bytes": 96,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_301.js"
         }
@@ -4305,6 +4893,7 @@
         {
           "bytes": 187,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_302.js"
         }
@@ -4321,6 +4910,7 @@
         {
           "bytes": 93,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_303.js"
         }
@@ -4337,6 +4927,7 @@
         {
           "bytes": 118,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_304.js"
         }
@@ -4353,6 +4944,7 @@
         {
           "bytes": 101,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_305.js"
         }
@@ -4369,6 +4961,7 @@
         {
           "bytes": 121,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_306.js"
         }
@@ -4385,6 +4978,7 @@
         {
           "bytes": 87,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_307.js"
         }
@@ -4401,6 +4995,7 @@
         {
           "bytes": 154,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_308.js"
         }
@@ -4417,6 +5012,7 @@
         {
           "bytes": 120,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_309.js"
         }
@@ -4433,6 +5029,7 @@
         {
           "bytes": 188,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_310.js"
         }
@@ -4449,6 +5046,7 @@
         {
           "bytes": 150,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_311.js"
         }
@@ -4465,6 +5063,7 @@
         {
           "bytes": 116,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_312.js"
         }
@@ -4481,6 +5080,7 @@
         {
           "bytes": 258,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_313.js"
         }
@@ -4497,6 +5097,7 @@
         {
           "bytes": 156,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_314.js"
         }
@@ -4513,6 +5114,7 @@
         {
           "bytes": 121,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_315.js"
         }
@@ -4529,6 +5131,7 @@
         {
           "bytes": 113,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_316.js"
         }
@@ -4545,6 +5148,7 @@
         {
           "bytes": 123,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_317.js"
         }
@@ -4561,6 +5165,7 @@
         {
           "bytes": 82,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_318.js"
         }
@@ -4577,6 +5182,7 @@
         {
           "bytes": 123,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_319.js"
         }
@@ -4593,6 +5199,7 @@
         {
           "bytes": 163,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_320.js"
         }
@@ -4609,6 +5216,7 @@
         {
           "bytes": 109,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_321.js"
         }
@@ -4625,6 +5233,7 @@
         {
           "bytes": 136,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_322.js"
         }
@@ -4643,6 +5252,9 @@
         {
           "bytes": 112,
           "elapsed_ms": 0,
+          "findings": [
+            "DOM XSS: event.data -> (expr).innerHTML"
+          ],
           "flows": 1,
           "path": "sak3y/snippet_323.js"
         }
@@ -4663,6 +5275,9 @@
         {
           "bytes": 94,
           "elapsed_ms": 0,
+          "findings": [
+            "DOM XSS: event.data -> document.body.innerHTML"
+          ],
           "flows": 1,
           "path": "sak3y/snippet_324.js"
         }
@@ -4683,6 +5298,9 @@
         {
           "bytes": 71,
           "elapsed_ms": 0,
+          "findings": [
+            "DOM XSS: event.data -> eval"
+          ],
           "flows": 1,
           "path": "sak3y/snippet_325.js"
         }
@@ -4701,6 +5319,7 @@
         {
           "bytes": 159,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_326.js"
         }
@@ -4717,6 +5336,7 @@
         {
           "bytes": 193,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_327.js"
         }
@@ -4725,83 +5345,118 @@
       "id": "sak3y/snippet_327"
     },
     {
-      "confidences": [],
-      "detected": false,
+      "confidences": [
+        "Medium"
+      ],
+      "detected": true,
       "error": null,
       "evaluable": true,
       "files": [
         {
           "bytes": 268,
           "elapsed_ms": 0,
-          "flows": 0,
+          "findings": [
+            "DOM XSS: location -> new URL -> get -> replace -> uganda.innerHTML"
+          ],
+          "flows": 1,
           "path": "pwnfunction/warmups/da-wey.html"
         }
       ],
-      "findings": [],
+      "findings": [
+        "DOM XSS: location -> new URL -> get -> replace -> uganda.innerHTML"
+      ],
       "id": "pwnfunction/warmups/da-wey"
     },
     {
-      "confidences": [],
-      "detected": false,
+      "confidences": [
+        "Medium"
+      ],
+      "detected": true,
       "error": null,
       "evaluable": true,
       "files": [
         {
           "bytes": 247,
           "elapsed_ms": 0,
-          "flows": 0,
+          "findings": [
+            "DOM XSS: location -> new URL -> get -> eval"
+          ],
+          "flows": 1,
           "path": "pwnfunction/warmups/jefff.html"
         }
       ],
-      "findings": [],
+      "findings": [
+        "DOM XSS: location -> new URL -> get -> eval"
+      ],
       "id": "pwnfunction/warmups/jefff"
     },
     {
-      "confidences": [],
-      "detected": false,
+      "confidences": [
+        "Medium"
+      ],
+      "detected": true,
       "error": null,
       "evaluable": true,
       "files": [
         {
           "bytes": 145,
           "elapsed_ms": 0,
-          "flows": 0,
+          "findings": [
+            "DOM XSS: location -> new URL -> get -> replace -> eval"
+          ],
+          "flows": 1,
           "path": "pwnfunction/warmups/ligma.js"
         }
       ],
-      "findings": [],
+      "findings": [
+        "DOM XSS: location -> new URL -> get -> replace -> eval"
+      ],
       "id": "pwnfunction/warmups/ligma"
     },
     {
-      "confidences": [],
-      "detected": false,
+      "confidences": [
+        "Medium"
+      ],
+      "detected": true,
       "error": null,
       "evaluable": true,
       "files": [
         {
           "bytes": 172,
           "elapsed_ms": 0,
-          "flows": 0,
+          "findings": [
+            "DOM XSS: location -> new URL -> get -> spaghet.innerHTML"
+          ],
+          "flows": 1,
           "path": "pwnfunction/warmups/ma-spaghet.html"
         }
       ],
-      "findings": [],
+      "findings": [
+        "DOM XSS: location -> new URL -> get -> spaghet.innerHTML"
+      ],
       "id": "pwnfunction/warmups/ma-spaghet"
     },
     {
-      "confidences": [],
-      "detected": false,
+      "confidences": [
+        "Medium"
+      ],
+      "detected": true,
       "error": null,
       "evaluable": true,
       "files": [
         {
           "bytes": 208,
           "elapsed_ms": 0,
-          "flows": 0,
+          "findings": [
+            "DOM XSS: location -> new URL -> get -> slice -> replace -> replace -> eval"
+          ],
+          "flows": 1,
           "path": "pwnfunction/warmups/mafia.js"
         }
       ],
-      "findings": [],
+      "findings": [
+        "DOM XSS: location -> new URL -> get -> slice -> replace -> replace -> eval"
+      ],
       "id": "pwnfunction/warmups/mafia"
     },
     {
@@ -4813,6 +5468,7 @@
         {
           "bytes": 200,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "pwnfunction/warmups/ok-boomer.html"
         }
@@ -4829,6 +5485,7 @@
         {
           "bytes": 305,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "pwnfunction/warmups/ricardo.html"
         }
@@ -4837,35 +5494,49 @@
       "id": "pwnfunction/warmups/ricardo"
     },
     {
-      "confidences": [],
-      "detected": false,
+      "confidences": [
+        "Medium"
+      ],
+      "detected": true,
       "error": null,
       "evaluable": true,
       "files": [
         {
           "bytes": 218,
           "elapsed_ms": 0,
-          "flows": 0,
+          "findings": [
+            "DOM XSS: location -> new URL -> get -> replace -> will.innerHTML"
+          ],
+          "flows": 1,
           "path": "pwnfunction/warmups/thats-hawt.html"
         }
       ],
-      "findings": [],
+      "findings": [
+        "DOM XSS: location -> new URL -> get -> replace -> will.innerHTML"
+      ],
       "id": "pwnfunction/warmups/thats-hawt"
     },
     {
-      "confidences": [],
-      "detected": false,
+      "confidences": [
+        "Medium"
+      ],
+      "detected": true,
       "error": null,
       "evaluable": true,
       "files": [
         {
           "bytes": 329,
           "elapsed_ms": 0,
-          "flows": 0,
+          "findings": [
+            "DOM XSS: location -> new URL -> get -> replace -> template.innerHTML"
+          ],
+          "flows": 1,
           "path": "pwnfunction/challenges/area-51.html"
         }
       ],
-      "findings": [],
+      "findings": [
+        "DOM XSS: location -> new URL -> get -> replace -> template.innerHTML"
+      ],
       "id": "pwnfunction/challenges/area-51"
     },
     {
@@ -4877,6 +5548,7 @@
         {
           "bytes": 1541,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "pwnfunction/challenges/bourne.html"
         }
@@ -4893,6 +5565,7 @@
         {
           "bytes": 1416,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "pwnfunction/challenges/ded.html"
         }
@@ -4909,6 +5582,7 @@
         {
           "bytes": 1027,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "pwnfunction/challenges/keanu.html"
         }
@@ -4925,6 +5599,7 @@
         {
           "bytes": 1872,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "pwnfunction/challenges/me-and-the-bois.html"
         }
@@ -4933,19 +5608,26 @@
       "id": "pwnfunction/challenges/me-and-the-bois"
     },
     {
-      "confidences": [],
-      "detected": false,
+      "confidences": [
+        "Medium"
+      ],
+      "detected": true,
       "error": null,
       "evaluable": true,
       "files": [
         {
           "bytes": 1844,
           "elapsed_ms": 0,
-          "flows": 0,
+          "findings": [
+            "DOM XSS: location -> new URL -> get -> escape -> document.write"
+          ],
+          "flows": 1,
           "path": "pwnfunction/challenges/ww3.html"
         }
       ],
-      "findings": [],
+      "findings": [
+        "DOM XSS: location -> new URL -> get -> escape -> document.write"
+      ],
       "id": "pwnfunction/challenges/ww3"
     },
     {
@@ -4959,12 +5641,16 @@
         {
           "bytes": 502,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "domdig/attributes.html"
         },
         {
           "bytes": 180,
           "elapsed_ms": 0,
+          "findings": [
+            "DOM XSS: location.href -> split -> location.href"
+          ],
           "flows": 1,
           "path": "domdig/common.js"
         }
@@ -4985,12 +5671,16 @@
         {
           "bytes": 180,
           "elapsed_ms": 0,
+          "findings": [
+            "DOM XSS: location.href -> split -> location.href"
+          ],
           "flows": 1,
           "path": "domdig/common.js"
         },
         {
           "bytes": 1720,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "domdig/deep.html"
         }
@@ -5011,12 +5701,16 @@
         {
           "bytes": 180,
           "elapsed_ms": 0,
+          "findings": [
+            "DOM XSS: location.href -> split -> location.href"
+          ],
           "flows": 1,
           "path": "domdig/common.js"
         },
         {
           "bytes": 1123,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "domdig/fetch.html"
         }
@@ -5038,12 +5732,18 @@
         {
           "bytes": 180,
           "elapsed_ms": 0,
+          "findings": [
+            "DOM XSS: location.href -> split -> location.href"
+          ],
           "flows": 1,
           "path": "domdig/common.js"
         },
         {
           "bytes": 905,
           "elapsed_ms": 0,
+          "findings": [
+            "DOM XSS: location.href -> split -> location.href"
+          ],
           "flows": 1,
           "path": "domdig/hidden.html"
         }
@@ -5065,12 +5765,16 @@
         {
           "bytes": 180,
           "elapsed_ms": 0,
+          "findings": [
+            "DOM XSS: location.href -> split -> location.href"
+          ],
           "flows": 1,
           "path": "domdig/common.js"
         },
         {
           "bytes": 301,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "domdig/href.html"
         }
@@ -5091,12 +5795,16 @@
         {
           "bytes": 180,
           "elapsed_ms": 0,
+          "findings": [
+            "DOM XSS: location.href -> split -> location.href"
+          ],
           "flows": 1,
           "path": "domdig/common.js"
         },
         {
           "bytes": 423,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "domdig/postmessage-frame.html"
         }
@@ -5117,12 +5825,16 @@
         {
           "bytes": 180,
           "elapsed_ms": 0,
+          "findings": [
+            "DOM XSS: location.href -> split -> location.href"
+          ],
           "flows": 1,
           "path": "domdig/common.js"
         },
         {
           "bytes": 172,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "domdig/simple.html"
         }
@@ -5143,12 +5855,16 @@
         {
           "bytes": 180,
           "elapsed_ms": 0,
+          "findings": [
+            "DOM XSS: location.href -> split -> location.href"
+          ],
           "flows": 1,
           "path": "domdig/common.js"
         },
         {
           "bytes": 174,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "domdig/tplstring.html"
         }
@@ -5169,12 +5885,16 @@
         {
           "bytes": 180,
           "elapsed_ms": 0,
+          "findings": [
+            "DOM XSS: location.href -> split -> location.href"
+          ],
           "flows": 1,
           "path": "domdig/common.js"
         },
         {
           "bytes": 1727,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "domdig/xhr.html"
         }
@@ -5193,6 +5913,7 @@
         {
           "bytes": 285314,
           "elapsed_ms": 18,
+          "findings": [],
           "flows": 0,
           "path": "npm/jquery@3.7.1/dist/jquery.js"
         }
@@ -5209,6 +5930,7 @@
         {
           "bytes": 544098,
           "elapsed_ms": 33,
+          "findings": [],
           "flows": 0,
           "path": "npm/lodash@4.17.21/lodash.js"
         }
@@ -5225,6 +5947,7 @@
         {
           "bytes": 68778,
           "elapsed_ms": 6,
+          "findings": [],
           "flows": 0,
           "path": "npm/underscore@1.13.7/underscore-umd.js"
         }
@@ -5241,6 +5964,7 @@
         {
           "bytes": 176435,
           "elapsed_ms": 9,
+          "findings": [],
           "flows": 0,
           "path": "npm/moment@2.30.1/moment.js"
         }
@@ -5257,6 +5981,7 @@
         {
           "bytes": 80390,
           "elapsed_ms": 5,
+          "findings": [],
           "flows": 0,
           "path": "npm/backbone@1.6.0/backbone.js"
         }
@@ -5272,7 +5997,8 @@
       "files": [
         {
           "bytes": 202012,
-          "elapsed_ms": 14,
+          "elapsed_ms": 15,
+          "findings": [],
           "flows": 0,
           "path": "npm/handlebars@4.7.8/dist/handlebars.js"
         }
@@ -5289,6 +6015,7 @@
         {
           "bytes": 25124,
           "elapsed_ms": 1,
+          "findings": [],
           "flows": 0,
           "path": "npm/mustache@4.2.0/mustache.js"
         }
@@ -5304,7 +6031,8 @@
       "files": [
         {
           "bytes": 102765,
-          "elapsed_ms": 7,
+          "elapsed_ms": 8,
+          "findings": [],
           "flows": 0,
           "path": "npm/marked@4.3.0/lib/marked.umd.js"
         }
@@ -5321,6 +6049,7 @@
         {
           "bytes": 67137,
           "elapsed_ms": 5,
+          "findings": [],
           "flows": 0,
           "path": "npm/dompurify@3.1.6/dist/purify.js"
         }
@@ -5336,7 +6065,8 @@
       "files": [
         {
           "bytes": 207819,
-          "elapsed_ms": 18,
+          "elapsed_ms": 19,
+          "findings": [],
           "flows": 0,
           "path": "npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.js"
         }
@@ -5352,7 +6082,8 @@
       "files": [
         {
           "bytes": 145668,
-          "elapsed_ms": 10,
+          "elapsed_ms": 11,
+          "findings": [],
           "flows": 0,
           "path": "npm/axios@1.7.7/dist/axios.js"
         }
@@ -5368,7 +6099,8 @@
       "files": [
         {
           "bytes": 525616,
-          "elapsed_ms": 39,
+          "elapsed_ms": 38,
+          "findings": [],
           "flows": 0,
           "path": "npm/vue@3.4.38/dist/vue.global.js"
         }
@@ -5385,6 +6117,7 @@
         {
           "bytes": 109931,
           "elapsed_ms": 6,
+          "findings": [],
           "flows": 0,
           "path": "npm/react@18.3.1/umd/react.development.js"
         }
@@ -5400,7 +6133,8 @@
       "files": [
         {
           "bytes": 1080227,
-          "elapsed_ms": 77,
+          "elapsed_ms": 74,
+          "findings": [],
           "flows": 0,
           "path": "npm/react-dom@18.3.1/umd/react-dom.development.js"
         }
@@ -5416,7 +6150,8 @@
       "files": [
         {
           "bytes": 108883,
-          "elapsed_ms": 9,
+          "elapsed_ms": 10,
+          "findings": [],
           "flows": 0,
           "path": "npm/alpinejs@3.14.1/dist/cdn.js"
         }
@@ -5432,7 +6167,8 @@
       "files": [
         {
           "bytes": 160809,
-          "elapsed_ms": 9,
+          "elapsed_ms": 10,
+          "findings": [],
           "flows": 0,
           "path": "npm/htmx.org@2.0.2/dist/htmx.js"
         }
@@ -5448,7 +6184,8 @@
       "files": [
         {
           "bytes": 587043,
-          "elapsed_ms": 67,
+          "elapsed_ms": 66,
+          "findings": [],
           "flows": 0,
           "path": "npm/d3@7.9.0/dist/d3.js"
         }
@@ -5464,7 +6201,8 @@
       "files": [
         {
           "bytes": 205475,
-          "elapsed_ms": 31,
+          "elapsed_ms": 30,
+          "findings": [],
           "flows": 0,
           "path": "npm/chart.js@4.4.4/dist/chart.umd.js"
         }
@@ -5481,6 +6219,7 @@
         {
           "bytes": 26807,
           "elapsed_ms": 2,
+          "findings": [],
           "flows": 0,
           "path": "npm/clipboard@2.0.11/dist/clipboard.js"
         }
@@ -5496,7 +6235,8 @@
       "files": [
         {
           "bytes": 173566,
-          "elapsed_ms": 15,
+          "elapsed_ms": 16,
+          "findings": [],
           "flows": 0,
           "path": "npm/select2@4.0.13/dist/js/select2.full.js"
         }
@@ -5513,6 +6253,7 @@
         {
           "bytes": 450229,
           "elapsed_ms": 34,
+          "findings": [],
           "flows": 0,
           "path": "npm/leaflet@1.9.4/dist/leaflet-src.js"
         }
@@ -5529,6 +6270,7 @@
         {
           "bytes": 188161,
           "elapsed_ms": 15,
+          "findings": [],
           "flows": 0,
           "path": "npm/validator@13.12.0/validator.js"
         }
@@ -5545,6 +6287,7 @@
         {
           "bytes": 4189,
           "elapsed_ms": 0,
+          "findings": [],
           "flows": 0,
           "path": "npm/js-cookie@3.0.5/dist/js.cookie.js"
         }
@@ -5561,6 +6304,7 @@
         {
           "bytes": 162615,
           "elapsed_ms": 13,
+          "findings": [],
           "flows": 0,
           "path": "npm/sweetalert2@11.14.0/dist/sweetalert2.all.js"
         }
@@ -5576,7 +6320,8 @@
       "files": [
         {
           "bytes": 377684,
-          "elapsed_ms": 30,
+          "elapsed_ms": 29,
+          "findings": [],
           "flows": 0,
           "path": "npm/datatables.net@2.1.5/js/dataTables.js"
         }
@@ -5593,6 +6338,7 @@
         {
           "bytes": 31759,
           "elapsed_ms": 2,
+          "findings": [],
           "flows": 0,
           "path": "npm/page@1.11.6/page.js"
         }
@@ -5608,7 +6354,8 @@
       "files": [
         {
           "bytes": 24622,
-          "elapsed_ms": 1,
+          "elapsed_ms": 2,
+          "findings": [],
           "flows": 0,
           "path": "npm/history@5.3.0/umd/history.development.js"
         }
@@ -5624,7 +6371,8 @@
       "files": [
         {
           "bytes": 162295,
-          "elapsed_ms": 12,
+          "elapsed_ms": 13,
+          "findings": [],
           "flows": 0,
           "path": "npm/vue-router@4.4.3/dist/vue-router.global.js"
         }
@@ -5633,7 +6381,7 @@
       "id": "npm/vue-router@4.4.3"
     }
   ],
-  "commit": "6b33d8d9837164036f33e48439118aa1c9d1c260",
+  "commit": "ca1fc0dac8541a9d647f4076ac95f888ce089bd3",
   "corpus": "external-corpus-v1",
   "mode": "static registry (ExtractorRegistry::with_defaults), per file, release build"
 }

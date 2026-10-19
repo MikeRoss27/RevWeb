@@ -31,6 +31,13 @@ pub(super) const TAINT_PRESERVING_CALLS: &[&str] = &[
     "atob",
 ];
 
+/// `new` targets that preserve taint on their first argument: parsing a
+/// tainted string into a `URL` or `URLSearchParams` keeps every property and
+/// accessor (`.href`, `.search`, `.searchParams.get(...)`, ...) tainted,
+/// because the member-access and method-call rules already treat a property
+/// or method result of a tainted value as tainted.
+pub(super) const TAINT_PRESERVING_CONSTRUCTORS: &[&str] = &["URL", "URLSearchParams"];
+
 /// Drop a `window.`/`self.` global prefix and fold `document.location` into
 /// `location`, which the DOM defines as the same object.
 pub(super) fn global_tail(path: &str) -> &str {

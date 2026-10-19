@@ -116,6 +116,36 @@ fn traces_decoder_and_method_chain() {
 }
 
 #[test]
+fn traces_new_url_search_params_get() {
+    let found = run("el.innerHTML = new URL(location).searchParams.get('x');");
+    let f = find_value(
+        &found,
+        "DOM XSS: location -> new URL -> get -> el.innerHTML",
+    )
+    .expect("new URL(location).searchParams.get(...) must stay tainted");
+    assert_eq!(f.confidence, Confidence::Medium);
+
+    let found = run("el.innerHTML = new URLSearchParams(location.search).get('x');");
+    let f = find_value(
+        &found,
+        "DOM XSS: location.search -> new URLSearchParams -> get -> el.innerHTML",
+    )
+    .expect("new URLSearchParams(location.search).get(...) must stay tainted");
+    assert_eq!(f.confidence, Confidence::Medium);
+}
+
+#[test]
+fn traces_logical_or_and_nullish_fallback_as_medium() {
+    let or_found = run("el.innerHTML = location.hash || 'default';");
+    find_value(&or_found, "DOM XSS: location.hash -> el.innerHTML")
+        .expect("`tainted || default` must still trace the tainted operand");
+
+    let nullish_found = run("el.innerHTML = location.hash ?? 'default';");
+    find_value(&nullish_found, "DOM XSS: location.hash -> el.innerHTML")
+        .expect("`tainted ?? default` must still trace the tainted operand");
+}
+
+#[test]
 fn numeric_and_boolean_string_methods_break_string_taint() {
     let found = run(
         r#"const input = location.href.substring(1); const index = input.search(/f(oo*)/g); if (index >= 0) document.write("found " + index);"#,

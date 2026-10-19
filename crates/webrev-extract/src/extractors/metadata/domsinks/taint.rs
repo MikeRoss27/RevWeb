@@ -8,12 +8,12 @@ use super::ast::{
     fn_or_arrow_span, member_expr_path, member_prop_name, object_is_document, span_tuple,
 };
 use super::sinks::{is_event_handler_attribute, nav_sink, NON_STRING_RESULT_CALLS};
-use super::sources::{known_source, TAINT_PRESERVING_CALLS};
+use super::sources::{known_source, TAINT_PRESERVING_CALLS, TAINT_PRESERVING_CONSTRUCTORS};
 use std::collections::{BTreeMap, BTreeSet};
 use swc_core::common::Spanned;
 use swc_core::ecma::ast::{
     AssignExpr, AssignOp, AssignTarget, BinaryOp, CallExpr, Callee, Expr, ExprOrSpread, Lit,
-    MemberExpr, SimpleAssignTarget,
+    MemberExpr, NewExpr, SimpleAssignTarget,
 };
 use webrev_core::Confidence;
 
@@ -152,10 +152,24 @@ impl TaintVisitor {
                 self.classify(&m.obj)
             }
             Expr::Call(call) => self.classify_call(call),
-            Expr::Bin(bin) if bin.op == BinaryOp::Add => self
-                .classify(&bin.left)
-                .or_else(|| self.classify(&bin.right))
-                .map(|(origin, _)| (origin, false)),
+            Expr::New(new_expr) => self.classify_new(new_expr),
+            // `+` concatenation and the `||`/`??`/`&&` fallback idioms
+            // (`param || "default"`, `param ?? "default"`) all may evaluate
+            // to either operand, so a tainted operand on either side taints
+            // the whole expression.
+            Expr::Bin(bin)
+                if matches!(
+                    bin.op,
+                    BinaryOp::Add
+                        | BinaryOp::LogicalOr
+                        | BinaryOp::LogicalAnd
+                        | BinaryOp::NullishCoalescing
+                ) =>
+            {
+                self.classify(&bin.left)
+                    .or_else(|| self.classify(&bin.right))
+                    .map(|(origin, _)| (origin, false))
+            }
             Expr::Tpl(tpl) => tpl
                 .exprs
                 .iter()
@@ -199,6 +213,23 @@ impl TaintVisitor {
                 .map(|(origin, _)| (format!("{origin} -> {}", id.sym), false)),
             _ => None,
         }
+    }
+
+    /// `new URL(tainted)` / `new URLSearchParams(tainted)`: the constructed
+    /// object carries the argument's taint, so a later `.search`, `.href` or
+    /// `.searchParams.get(...)` on it is still caught by the member-access
+    /// and method-call rules in [`Self::classify`] / [`Self::classify_call`].
+    pub(super) fn classify_new(&self, new_expr: &NewExpr) -> Option<Taint> {
+        let Expr::Ident(id) = &*new_expr.callee else {
+            return None;
+        };
+        let name = id.sym.as_ref();
+        if !TAINT_PRESERVING_CONSTRUCTORS.contains(&name) || self.module_binding_shadows(name) {
+            return None;
+        }
+        let args = new_expr.args.as_deref()?;
+        self.first_tainted_arg(args)
+            .map(|(origin, _)| (format!("{origin} -> new {name}"), false))
     }
 
     pub(super) fn first_tainted_arg(&self, args: &[ExprOrSpread]) -> Option<Taint> {
