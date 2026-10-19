@@ -5,7 +5,9 @@
 //! free text of findings can carry live credentials (`?token=...`, a bearer in
 //! a captured WebSocket frame, a JWT in a path). [`SessionReport::redacted`]
 //! returns a copy with those masked; [`SessionReport::render`] and
-//! [`SessionReport::export_json`] call it unless the caller opts out.
+//! [`SessionReport::export_json`] call it only when the caller asks for it
+//! (`--redact`). An exported report is raw by default: it is the deliverable
+//! of a bug-bounty run and the proof of a finding lives in those values.
 //!
 //! What is kept on purpose: `Finding::plaintext` of a secret finding (the
 //! detected credential is the deliverable, see `docs/security.md`) and its
@@ -434,21 +436,21 @@ mod tests {
                 format,
                 ..RenderOptions::default()
             };
-            assert!(opts.redact, "masking must be the default");
-            let masked = report.render(opts).unwrap();
-            for leaked in [JWT, TOKEN, "hunter2pass"] {
-                assert!(!masked.contains(leaked), "{format:?} leaked {leaked}");
-            }
-            let raw = report
+            assert!(!opts.redact, "the exported report is raw by default");
+            let raw = report.render(opts).unwrap();
+            assert!(
+                [JWT, TOKEN].iter().any(|s| raw.contains(s)),
+                "{format:?} should keep credentials by default"
+            );
+            let masked = report
                 .render(RenderOptions {
-                    redact: false,
+                    redact: true,
                     ..opts
                 })
                 .unwrap();
-            assert!(
-                [JWT, TOKEN].iter().any(|s| raw.contains(s)),
-                "{format:?} should keep credentials when unredacted"
-            );
+            for leaked in [JWT, TOKEN, "hunter2pass"] {
+                assert!(!masked.contains(leaked), "{format:?} leaked {leaked}");
+            }
         }
     }
 

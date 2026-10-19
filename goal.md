@@ -56,7 +56,7 @@ Ces objectifs sont des seuils de validation proposés, pas des performances actu
 - [ ] Chaque test possède un résultat : exécuté, non exécuté, refusé, inconclusif ou erreur.
 - [ ] Une couverture incomplète ne produit jamais un verdict « sécurisé ».
 - [ ] Les User-Agent et autres exigences des programmes sont configurables.
-- [ ] Les preuves sensibles sont protégées contre une exposition accidentelle.
+- [ ] Les preuves sensibles sont protégées dans les journaux, erreurs et `Debug`, et les rapports sont masquables à l'export sur demande (`--redact`).
 
 **Validation :** tests d'intégration sur environnement local contrôlé, dont tentatives simulées de sortie du scope et dépassement de budget, sans requêtes non autorisées.
 
@@ -88,13 +88,24 @@ compact sur stdout passe par `redact_url`. Le critère reste décoché : le
 résumé affiche le texte clair des secrets détectés, les rapports exportés ne
 sont pas masqués, et les heuristiques ne couvrent pas les secrets courts sous
 un nom quelconque (voir `docs/security.md`).
-**Suivi (2026-10-19, rapports exportés) :** tous les formats d'export masquent
-désormais les identifiants par défaut (`SessionReport::redacted`, option
-`--unredacted` / `WEBREV_REPORT_UNREDACTED=1` pour garder le brut ; `bola`
-refuse un rapport masqué ; corrigé le jour même : les identifiants d'objets ne
-sont plus masqués et `bola` accepte un rapport masqué, voir `docs/security.md`,
-« Suivi : identifiants d'objets lisibles »). Le texte clair des secrets détectés reste exporté
-volontairement. Le critère reste décoché : secrets courts sous un nom de clé
+**Suivi (2026-10-19, rapports exportés) :** tous les formats d'export
+savent masquer les identifiants (`SessionReport::redacted`) ; corrigé le jour
+même : les identifiants d'objets ne sont plus masqués et `bola` accepte un
+rapport masqué (voir `docs/security.md`, « Suivi : identifiants d'objets
+lisibles »). Le texte clair des secrets détectés reste exporté volontairement.
+**Décision de produit (2026-10-19, rapports bruts) :** l'export est **brut par
+défaut**, car un chasseur de bugs a besoin des valeurs capturées pour prouver et
+signaler ; `--redact` / `WEBREV_REPORT_REDACT=1` masque pour partager
+(`--unredacted` est supprimé), et un rapport brut écrit dans un fichier affiche
+un avertissement. Restent masqués dans tous les modes : journaux, erreurs,
+`Debug`, ligne `dynamic: <seed>` et résumé compact de fin de scan. Le critère
+a été reformulé en conséquence ; voir `docs/security.md`, « Suivi : rapports
+bruts par défaut ». **Il reste décoché** : journaux, erreurs, `Debug` et
+`--redact` sont couverts par des tests, mais les heuristiques de `--redact` ont
+des trous documentés (secrets courts sous un nom de clé quelconque, secrets
+dans le nom d'hôte, secret coupé par la troncature à 256 caractères d'un
+extrait de sonde), et l'affichage de la TUI à l'écran et le proxy en amont ne
+sont pas audités. Le critère reste décoché : secrets courts sous un nom de clé
 quelconque, secrets dans le nom d'hôte, affichage de la TUI et proxy en amont
 restent non traités (voir `docs/security.md`, « Suivi : rapports exportés »).
 

@@ -103,6 +103,7 @@ pub fn cli(dir: &Path, args: &[&str]) -> Output {
         .env_remove("WEBREV_PROXY")
         .env_remove("WEBREV_BEARER")
         .env_remove("WEBREV_NAME")
+        .env_remove("WEBREV_REPORT_REDACT")
         // Legacy settings must neither restore persistence nor hide secrets.
         .env("WEBREV_DB", dir.join("legacy.db"))
         .env("WEBREV_REVEAL_SECRETS", "false")
@@ -152,6 +153,7 @@ pub fn cli_env(dir: &Path, args: &[&str], key: &str, value: &str) -> Output {
         .env_remove("WEBREV_PROXY")
         .env_remove("WEBREV_BEARER")
         .env_remove("WEBREV_NAME")
+        .env_remove("WEBREV_REPORT_REDACT")
         .env("NO_PROXY", "*")
         .env(key, value)
         .args(args)

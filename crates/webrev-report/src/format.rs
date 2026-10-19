@@ -61,8 +61,9 @@ pub struct RenderOptions {
     pub min_confidence: Confidence,
     /// Findings below this severity are dropped from finding-oriented output.
     pub min_severity: Severity,
-    /// Mask credentials in URLs, evidence and finding text (the default).
-    /// Detected secret plaintext is kept. Disable with `--unredacted`.
+    /// Mask credentials in URLs, evidence and finding text. Off by default: an
+    /// exported report is a bug-bounty deliverable and keeps what was captured.
+    /// Detected secret plaintext is kept either way. Enable with `--redact`.
     pub redact: bool,
 }
 
@@ -73,7 +74,7 @@ impl Default for RenderOptions {
             scope: ScopeFilter::All,
             min_confidence: Confidence::Low,
             min_severity: Severity::Info,
-            redact: true,
+            redact: false,
         }
     }
 }

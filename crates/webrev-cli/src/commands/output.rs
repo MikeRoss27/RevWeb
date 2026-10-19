@@ -4,7 +4,7 @@
 //! surface values go through [`redact_url`] (userinfo, token-like path
 //! segments and credential parameters). Detected secrets are the point of the
 //! finding and keep their plaintext. Exported reports are masked separately
-//! (`SessionReport::redacted`) unless `--unredacted` is given.
+//! (`SessionReport::redacted`) only when `--redact` is given.
 use std::fmt::Write;
 use std::io::IsTerminal;
 use webrev_core::{

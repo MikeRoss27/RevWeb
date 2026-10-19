@@ -1,5 +1,6 @@
-//! A BOLA/IDOR result must stay usable with the default masking: the reader
-//! has to see which object leaked, while no credential appears.
+//! A BOLA/IDOR result is raw by default and must stay usable under `--redact`
+//! too: the reader has to see which object leaked, and the account
+//! credentials that drove the comparison are never written to the result.
 
 use std::io::{Read, Write};
 use std::net::TcpListener;
@@ -103,8 +104,7 @@ impl Drop for Api {
     }
 }
 
-/// A capture of one account, exported the way a scan exports it: with the
-/// default masking.
+/// A capture of one account, exported the way a scan exports it by default.
 fn capture(api: &Api, id: &str) -> String {
     let mission = Mission::new(
         "capture",
@@ -121,16 +121,16 @@ fn capture(api: &Api, id: &str) -> String {
         Provenance::new(Source::Browser, Some(url)),
     );
     SessionReport::build(mission, vec![endpoint], vec![])
-        .export_json(true)
+        .export_json(false)
         .unwrap()
 }
 
-fn run_bola(dir: &Path) -> Output {
+fn run_bola(dir: &Path, extra: &[&str]) -> Output {
     Command::new(env!("CARGO_BIN_EXE_webrev"))
         .current_dir(dir)
         .env_remove("WEBREV_PROXY")
         .env_remove("WEBREV_BEARER")
-        .env_remove("WEBREV_REPORT_UNREDACTED")
+        .env_remove("WEBREV_REPORT_REDACT")
         .env("NO_PROXY", "*")
         .args([
             "bola",
@@ -147,11 +147,12 @@ fn run_bola(dir: &Path) -> Output {
             "--max-requests",
             "8",
         ])
+        .args(extra)
         .output()
         .unwrap()
 }
 
-fn scenario(vulnerable: bool) -> (SessionReport, String, String) {
+fn scenario(vulnerable: bool, extra: &[&str]) -> (SessionReport, String, String) {
     let api = Api::new(vulnerable);
     let dir = tempfile::tempdir().unwrap();
     let a = capture(&api, ID_A);
@@ -168,9 +169,8 @@ fn scenario(vulnerable: bool) -> (SessionReport, String, String) {
         format!(r#"{{"bearer":"{BEARER_B}"}}"#),
     )
     .unwrap();
-    // The captures are the masked exports a scan writes: object ids survive.
     assert!(a.contains(ID_A) && b.contains(ID_B), "{a}\n{b}");
-    let output = run_bola(dir.path());
+    let output = run_bola(dir.path(), extra);
     assert!(
         output.status.success(),
         "stdout: {}\nstderr: {}",
@@ -183,11 +183,8 @@ fn scenario(vulnerable: bool) -> (SessionReport, String, String) {
     (report, stdout, stderr)
 }
 
-#[test]
-fn an_idor_result_names_the_object_and_hides_the_credentials() {
-    let (report, stdout, stderr) = scenario(true);
-    assert!(stderr.contains("1 captured object pair"), "{stderr}");
-    assert!(report.redacted, "masking is on by default");
+/// The result names the affected object and says which accounts could read it.
+fn assert_idor_is_readable(report: &SessionReport, stdout: &str) {
     let idor = report
         .findings
         .iter()
@@ -220,7 +217,17 @@ fn an_idor_result_names_the_object_and_hides_the_credentials() {
             "{role}: {}",
             observation.url
         );
+        // BOLA keeps a fingerprint of each body, not the body: the same
+        // fingerprint on both accounts is what proves the object was shared.
+        assert!(
+            observation.excerpt.starts_with("sha256="),
+            "{role}: {}",
+            observation.excerpt
+        );
     }
+}
+
+fn assert_no_account_credential(stdout: &str) {
     for credential in [BEARER_A, BEARER_B] {
         assert!(
             !stdout.contains(credential),
@@ -230,17 +237,32 @@ fn an_idor_result_names_the_object_and_hides_the_credentials() {
 }
 
 #[test]
-fn protected_objects_give_no_signal_and_no_credential() {
-    let (report, stdout, stderr) = scenario(false);
+fn an_idor_result_is_raw_and_readable_by_default() {
+    let (report, stdout, stderr) = scenario(true, &[]);
     assert!(stderr.contains("1 captured object pair"), "{stderr}");
-    assert!(
-        !report.findings.iter().any(|f| f.kind == FindingKind::Idor),
-        "{stdout}"
-    );
-    for credential in [BEARER_A, BEARER_B] {
+    assert!(!report.redacted, "the result is raw by default");
+    assert_idor_is_readable(&report, &stdout);
+    assert_no_account_credential(&stdout);
+}
+
+#[test]
+fn an_idor_result_stays_readable_under_redact() {
+    let (report, stdout, stderr) = scenario(true, &["--redact"]);
+    assert!(stderr.contains("1 captured object pair"), "{stderr}");
+    assert!(report.redacted, "--redact marks the result");
+    assert_idor_is_readable(&report, &stdout);
+    assert_no_account_credential(&stdout);
+}
+
+#[test]
+fn protected_objects_give_no_signal_and_no_credential() {
+    for extra in [&[][..], &["--redact"][..]] {
+        let (report, stdout, stderr) = scenario(false, extra);
+        assert!(stderr.contains("1 captured object pair"), "{stderr}");
         assert!(
-            !stdout.contains(credential),
-            "{credential} leaked: {stdout}"
+            !report.findings.iter().any(|f| f.kind == FindingKind::Idor),
+            "{stdout}"
         );
+        assert_no_account_credential(&stdout);
     }
 }

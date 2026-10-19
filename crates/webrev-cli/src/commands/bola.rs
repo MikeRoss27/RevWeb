@@ -53,7 +53,7 @@ pub async fn run(args: BolaArgs) -> anyhow::Result<()> {
     if skipped > 0 {
         eprintln!(
             "BOLA: skipped {skipped} pair(s) whose captured URL had a credential masked; \
-             capture them again with --unredacted (or WEBREV_REPORT_UNREDACTED=1) to compare them"
+             capture them again without --redact (or WEBREV_REPORT_REDACT) to compare them"
         );
     }
     eprintln!(
@@ -87,7 +87,7 @@ pub async fn run(args: BolaArgs) -> anyhow::Result<()> {
         .filter(|f| f.kind == webrev_core::FindingKind::Idor)
         .count();
     let report = SessionReport::build(a.mission.clone(), findings, Vec::new());
-    let rendered = report.export_json(!args.unredacted)?;
+    let rendered = report.export_json(args.redact)?;
     if args.output == std::path::Path::new("-") {
         super::report::write_stdout(&rendered)?;
     } else {
@@ -97,6 +97,7 @@ pub async fn run(args: BolaArgs) -> anyhow::Result<()> {
             "BOLA: {signals} signal(s); report written to {}",
             args.output.display()
         );
+        super::warn_if_raw(args.redact);
     }
     Ok(())
 }
@@ -211,7 +212,7 @@ mod tests {
             max_requests: 4,
             proxy: None,
             duration_secs: 0,
-            unredacted: false,
+            redact: false,
         })
         .await
         .unwrap();

@@ -38,7 +38,7 @@ impl SessionReport {
     }
 
     /// Pretty JSON for a report that leaves the process: credentials are
-    /// masked unless `redact` is false (`--unredacted`).
+    /// masked only when `redact` is true (`--redact`); the default is raw.
     pub fn export_json(&self, redact: bool) -> Result<String> {
         if redact {
             self.redacted().to_json()

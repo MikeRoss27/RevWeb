@@ -106,7 +106,7 @@ fn dynamic_scans_preserve_captured_tokens_without_database() {
     for command in ["dynamic", "scan"] {
         let dir = tempfile::tempdir().unwrap();
         let mut args = scan_args(command, &fixture);
-        args.extend(["--duration-secs", "1", "--unredacted"]);
+        args.extend(["--duration-secs", "1"]);
         if command == "scan" {
             args.push("--dynamic");
         }
@@ -274,7 +274,7 @@ fn observation_only_exports_refusals_and_preserves_plaintext() {
     for command in ["dynamic", "scan"] {
         let dir = tempfile::tempdir().unwrap();
         let mut args = scan_args(command, &fixture);
-        args.extend(["--duration-secs", "1", "--observation-only", "--unredacted"]);
+        args.extend(["--duration-secs", "1", "--observation-only"]);
         if command == "scan" {
             args.push("--dynamic");
         }

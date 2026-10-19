@@ -110,6 +110,14 @@ extractor gets raw bytes from `extract_registry` only. There is no
 differential or grammar-based JavaScript generator, so deep taint paths in
 `domsinks` depend on the corpus seeds.
 
+### The masked mode is the one under test
+
+Exported reports are raw by default since 2026-10-19, so `RenderOptions::default()`
+no longer masks. The `report_redaction` target sets `redact: true` explicitly:
+its property ("the known secret never survives an export") is the contract of
+`--redact`. A raw export keeps those secrets on purpose, so fuzzing it for
+leaks would fail on correct output.
+
 ### Object identifiers are not canaries
 
 The redaction targets plant credential-shaped canaries (`Zk3J…`, an AWS key, a
