@@ -364,6 +364,39 @@ de généralisation à tous les sites.
 - Augmentation de mémoire maximale ≤ 25 %.
 - Aucun crash ou comportement non déterministe identifié dans les tests de stabilité.
 
+**Définition de la mesure (révisée le 2026-10-19, fixée AVANT la mesure qui
+l'applique).** Les seuils ne changent pas (p95 ≤ +20 %, RSS max ≤ +25 %). Ce qui
+change est la façon de les estimer. *Raison :* le texte d'origine appliquait le
+seuil à un p95 calculé sur 30 exécutions, soit la 29e valeur sur 30. Sur les
+mêmes binaires, ce nombre varie de +9,9 % à +24,7 % d'une invocation à l'autre
+(remesure du 2026-10-18, 10 invocations) : il mesure le bruit, pas le code. Le
+critère est donc exprimé sur un pool, avec son incertitude :
+
+- *Pool :* au moins 3 invocations propres et au moins 90 exécutions par révision,
+  mêmes binaires fixes (`--baseline-bin` / `--current-bin`), baseline `61b843d`,
+  profil `site` de 120 pages. Une invocation est « propre » si la charge 1 min
+  était sous 4 pendant toute sa durée ; les autres sont exclues et listées.
+- *p95 :* p95 au rang le plus proche calculé sur le pool entier, avec un
+  intervalle de confiance bootstrap à 95 % à deux niveaux (ré-échantillonnage des
+  invocations, puis des exécutions dans chacune ; 2 000 tirages, graine fixe
+  20261019) sur le rapport p95 actuel / p95 baseline.
+- *Verdict PASS :* l'estimation ponctuelle ET la **borne haute** de l'IC à 95 % du
+  p95 sont ≤ +20 %. *Justification de la borne haute :* l'objectif est de
+  démontrer l'absence de régression au-delà de 20 %, pas seulement de ne pas
+  l'observer ; une estimation à +17 % avec une borne haute à +26 % n'exclut pas
+  une régression de 26 %. C'est plus strict que le critère d'origine, assumé.
+  Si l'estimation passe mais pas la borne haute : *non démontré* (case non cochée),
+  avec les chiffres.
+- *RSS :* RSS max du pool ≤ +25 % ; la médiane de RSS et son IC sont rapportés.
+  Une invocation dont la base s'écarte de plus de 15 % de la médiane des autres
+  est signalée comme anormale (sans être retirée silencieusement : elle est
+  listée et son effet sur le pool est donné).
+- *Temps médian :* rapporté avec son IC, à titre indicatif (pas de seuil).
+
+L'ancienne formulation (p95 de 30 exécutions ≤ +20 %) reste citée comme
+historique dans les résultats ci-dessous, et chaque mesure est rapportée selon
+les deux définitions.
+
 Toute exception doit être chiffrée, justifiée et signalée avant validation.
 
 ## Étape 6 — Livraison finale
