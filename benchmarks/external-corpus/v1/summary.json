@@ -1,0 +1,1072 @@
+{
+ "detector_commit": "6b33d8d9837164036f33e48439118aa1c9d1c260",
+ "mode": "static registry (ExtractorRegistry::with_defaults), per file, release build",
+ "cases": 331,
+ "by_source": {
+  "domdig": {
+   "tp": 2,
+   "fp": 0,
+   "fn": 6,
+   "tn": 0,
+   "positives": 8,
+   "negatives": 0,
+   "precision": 1.0,
+   "precision_ci95": [
+    0.3424,
+    1.0
+   ],
+   "recall": 0.25,
+   "recall_ci95": [
+    0.0715,
+    0.5907
+   ],
+   "fpr": null,
+   "fpr_ci95": null,
+   "cases": 9,
+   "not_evaluable": 0
+  },
+  "ghsa": {
+   "tp": 0,
+   "fp": 0,
+   "fn": 15,
+   "tn": 0,
+   "positives": 15,
+   "negatives": 0,
+   "precision": null,
+   "precision_ci95": null,
+   "recall": 0.0,
+   "recall_ci95": [
+    0.0,
+    0.2039
+   ],
+   "fpr": null,
+   "fpr_ci95": null,
+   "cases": 30,
+   "not_evaluable": 0
+  },
+  "npm": {
+   "tp": 0,
+   "fp": 0,
+   "fn": 0,
+   "tn": 0,
+   "positives": 0,
+   "negatives": 0,
+   "precision": null,
+   "precision_ci95": null,
+   "recall": null,
+   "recall_ci95": null,
+   "fpr": null,
+   "fpr_ci95": null,
+   "cases": 28,
+   "not_evaluable": 0
+  },
+  "pwnfunction": {
+   "tp": 0,
+   "fp": 0,
+   "fn": 14,
+   "tn": 0,
+   "positives": 14,
+   "negatives": 0,
+   "precision": null,
+   "precision_ci95": null,
+   "recall": 0.0,
+   "recall_ci95": [
+    0.0,
+    0.2153
+   ],
+   "fpr": null,
+   "fpr_ci95": null,
+   "cases": 14,
+   "not_evaluable": 0
+  },
+  "sak3y": {
+   "tp": 25,
+   "fp": 0,
+   "fn": 99,
+   "tn": 126,
+   "positives": 124,
+   "negatives": 126,
+   "precision": 1.0,
+   "precision_ci95": [
+    0.8668,
+    1.0
+   ],
+   "recall": 0.2016,
+   "recall_ci95": [
+    0.1405,
+    0.2807
+   ],
+   "fpr": 0.0,
+   "fpr_ci95": [
+    0.0,
+    0.0296
+   ],
+   "cases": 250,
+   "not_evaluable": 0
+  }
+ },
+ "flows_not_matching_the_labelled_sink": [
+  {
+   "id": "domdig/deep.html",
+   "expected": "html",
+   "findings": [
+    "DOM XSS: location.href -> split -> location.href"
+   ]
+  },
+  {
+   "id": "domdig/fetch.html",
+   "expected": "html",
+   "findings": [
+    "DOM XSS: location.href -> split -> location.href"
+   ]
+  },
+  {
+   "id": "domdig/hidden.html",
+   "expected": "html",
+   "findings": [
+    "DOM XSS: location.href -> split -> location.href",
+    "DOM XSS: location.href -> split -> location.href"
+   ]
+  },
+  {
+   "id": "domdig/postmessage-frame.html",
+   "expected": "html",
+   "findings": [
+    "DOM XSS: location.href -> split -> location.href"
+   ]
+  },
+  {
+   "id": "domdig/simple.html",
+   "expected": "html",
+   "findings": [
+    "DOM XSS: location.href -> split -> location.href"
+   ]
+  },
+  {
+   "id": "domdig/tplstring.html",
+   "expected": "code",
+   "findings": [
+    "DOM XSS: location.href -> split -> location.href"
+   ]
+  },
+  {
+   "id": "domdig/xhr.html",
+   "expected": "html",
+   "findings": [
+    "DOM XSS: location.href -> split -> location.href"
+   ]
+  }
+ ],
+ "mismatches": [
+  {
+   "id": "ghsa/GHSA-w937-fg2h-xhq2/pre",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "ghsa/GHSA-j5mf-6rh3-rhgg/pre",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "ghsa/GHSA-hhqj-cfjx-vj25/pre",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "ghsa/GHSA-xvg9-69gf-fjrf/pre",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "ghsa/GHSA-9q4r-x2hj-jmvr/pre",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "ghsa/GHSA-m2jw-cj8v-937r/pre",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "ghsa/GHSA-vgjm-2cpf-4g7c/pre",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "ghsa/GHSA-g3hc-697w-wm82/pre",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "ghsa/GHSA-24x4-j6x9-rfw5/pre",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "ghsa/GHSA-xr7p-8q82-878q/pre",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "ghsa/GHSA-rh4r-f7f7-r99m/pre",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "ghsa/GHSA-867c-p784-5q6g/pre",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "ghsa/GHSA-8j72-p2wm-6738/pre",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "ghsa/GHSA-gc5h-6jx9-q2qh/pre",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "ghsa/GHSA-78qv-3mpx-9cqq/pre",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_002",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_004",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_006",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_012",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_016",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_019",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_021",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_023",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_027",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_036",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_038",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_040",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_044",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_053",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_057",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_061",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_070",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_074",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_076",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_087",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_089",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_091",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_101",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_104",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_108",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_110",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_121",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_123",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_127",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_144",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_154",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_155",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_157",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_161",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_184",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_186",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_187",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_190",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_191",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_192",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_204",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_205",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_206",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_207",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_212",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_213",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_214",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_218",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_219",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_220",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_221",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_225",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_226",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_227",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_228",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_229",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_233",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_234",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_235",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_236",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_242",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_246",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_247",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_248",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_251",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_252",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_256",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_260",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_262",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_263",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_264",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_265",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_269",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_270",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_274",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_275",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_276",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_277",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_283",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_284",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_285",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_286",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_291",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_292",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_293",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_298",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_299",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_300",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_301",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_304",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_305",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_306",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_307",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_312",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_314",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_315",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_316",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_317",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "sak3y/snippet_318",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "pwnfunction/warmups/da-wey",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "pwnfunction/warmups/jefff",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "pwnfunction/warmups/ligma",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "pwnfunction/warmups/ma-spaghet",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "pwnfunction/warmups/mafia",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "pwnfunction/warmups/ok-boomer",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "pwnfunction/warmups/ricardo",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "pwnfunction/warmups/thats-hawt",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "pwnfunction/challenges/area-51",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "pwnfunction/challenges/bourne",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "pwnfunction/challenges/ded",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "pwnfunction/challenges/keanu",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "pwnfunction/challenges/me-and-the-bois",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "pwnfunction/challenges/ww3",
+   "label": "positive",
+   "detected": false,
+   "findings": []
+  },
+  {
+   "id": "domdig/deep.html",
+   "label": "positive",
+   "detected": false,
+   "findings": [
+    "DOM XSS: location.href -> split -> location.href"
+   ]
+  },
+  {
+   "id": "domdig/fetch.html",
+   "label": "positive",
+   "detected": false,
+   "findings": [
+    "DOM XSS: location.href -> split -> location.href"
+   ]
+  },
+  {
+   "id": "domdig/hidden.html",
+   "label": "positive",
+   "detected": false,
+   "findings": [
+    "DOM XSS: location.href -> split -> location.href",
+    "DOM XSS: location.href -> split -> location.href"
+   ]
+  },
+  {
+   "id": "domdig/simple.html",
+   "label": "positive",
+   "detected": false,
+   "findings": [
+    "DOM XSS: location.href -> split -> location.href"
+   ]
+  },
+  {
+   "id": "domdig/tplstring.html",
+   "label": "positive",
+   "detected": false,
+   "findings": [
+    "DOM XSS: location.href -> split -> location.href"
+   ]
+  },
+  {
+   "id": "domdig/xhr.html",
+   "label": "positive",
+   "detected": false,
+   "findings": [
+    "DOM XSS: location.href -> split -> location.href"
+   ]
+  }
+ ],
+ "ghsa_by_source_class": {
+  "browser": {
+   "pre_fix_cases": 4,
+   "pre_fix_detected": 0
+  },
+  "other": {
+   "pre_fix_cases": 11,
+   "pre_fix_detected": 0
+  }
+ },
+ "ghsa_fixed_detected": 0,
+ "ghsa_fixed_cases": 15,
+ "sak3y_real_world_subset": {
+  "tp": 4,
+  "fp": 0,
+  "fn": 7,
+  "tn": 11,
+  "positives": 11,
+  "negatives": 11,
+  "precision": 1.0,
+  "precision_ci95": [
+   0.5101,
+   1.0
+  ],
+  "recall": 0.3636,
+  "recall_ci95": [
+   0.1517,
+   0.6462
+  ],
+  "fpr": 0.0,
+  "fpr_ci95": [
+   0.0,
+   0.2588
+  ],
+  "cases": 22
+ },
+ "sak3y_in_model": {
+  "positives": {
+   "tp": 25,
+   "fp": 0,
+   "fn": 63,
+   "tn": 0,
+   "positives": 88,
+   "negatives": 0,
+   "precision": 1.0,
+   "precision_ci95": [
+    0.8668,
+    1.0
+   ],
+   "recall": 0.2841,
+   "recall_ci95": [
+    0.2004,
+    0.3858
+   ],
+   "fpr": null,
+   "fpr_ci95": null
+  },
+  "hard_negatives": {
+   "tp": 0,
+   "fp": 0,
+   "fn": 0,
+   "tn": 79,
+   "positives": 0,
+   "negatives": 79,
+   "precision": null,
+   "precision_ci95": null,
+   "recall": null,
+   "recall_ci95": null,
+   "fpr": 0.0,
+   "fpr_ci95": [
+    0.0,
+    0.0464
+   ]
+  }
+ },
+ "pwnfunction_by_filtered": {
+  "true": {
+   "cases": 11,
+   "detected": 0
+  },
+  "false": {
+   "cases": 3,
+   "detected": 0
+  }
+ },
+ "finding_confidence_counts": {
+  "Medium": 35
+ },
+ "npm_background": {
+  "files": 28,
+  "files_with_flows": 0,
+  "flow_findings": 0
+ }
+}

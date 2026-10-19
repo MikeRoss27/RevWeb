@@ -140,6 +140,27 @@ alias de champs. Ce résultat est un diagnostic petit, mainteneur-revu et non
 indépendant. Aucune URL réelle du corpus SWIPE n'a été scannée. Détails dans
 `docs/benchmark-methodology.md`.
 
+**Corpus externe v1 (2026-10-19) :** `benchmarks/external-corpus/v1/` ajoute
+331 cas sur cinq sources dont les labels viennent d'un tiers indépendant de ce
+dépôt (15 CVE GitHub Security Advisory DOM XSS avec leur commit de correction,
+le dataset `sak3y/ML-XSS-Detector`, les challenges `pwnfunction`, les pages de
+test du scanner `domdig`, et 28 fichiers npm non labellisés). Aucun code tiers
+n'est commité : `sources.json` épingle chaque entrée par SHA de commit ou
+version npm, `manifest.json` enregistre le SHA-256 de chaque fichier,
+`scripts/external_corpus.py fetch` télécharge dans un cache ignoré par git et
+échoue si un octet diffère. Run sur le détecteur au commit `6b33d8d` :
+précision 100 % partout où elle est mesurable (0 faux positif), mais rappel
+**0 % sur les 15 CVE GHSA et 0 % sur les 14 challenges pwnfunction**, 20 %
+sur sak3y (124 positifs), 25 % sur domdig. Ce résultat contredit la lecture
+optimiste du run SWIPE ci-dessus (rappel 87,5 %, corpus maintenu par ce
+dépôt) : le détecteur généralise mal dès qu'il voit du code DOM XSS qu'il n'a
+pas été ajusté sur. Limites du protocole (à ne pas lisser) : l'unité
+d'évaluation est un fichier, pas un flux inter-fichiers (les CVE avec flux
+coupé entre fichiers comptent comme ratées par construction) ; `sak3y` n'a
+qu'un seul labelleur, sans mesure d'accord ; les métriques ne sont jamais
+regroupées entre sources. Détails et protocole figé avant le run dans
+`benchmarks/external-corpus/v1/README.md`.
+
 La suite synthétique existante a été exécutée : cinq checks, chacun TP=2,
 FP=0, FN=0, TN=2. Elle reste une suite de régression, pas une estimation de
 qualité.

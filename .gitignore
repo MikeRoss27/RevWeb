@@ -30,6 +30,12 @@ desktop.ini
 # Local Python helper bytecode
 __pycache__/
 
+# Scratch space for fetching/exploring third-party sources before they are
+# pinned into benchmarks/external-corpus/v1/sources.json. Never committed:
+# see benchmarks/external-corpus/v1/README.md ("No third-party code is
+# committed").
+/.ext-work/
+
 # Archived benchmark evidence is pinned by SHA256SUMS and must be committed even
 # though it matches the report patterns above.
 !benchmarks/**/*-report.json

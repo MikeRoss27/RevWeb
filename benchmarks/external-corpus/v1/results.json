@@ -1,0 +1,5639 @@
+{
+  "cases": [
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 2218,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "ghsa/GHSA-w937-fg2h-xhq2/pre/src/api/handleEditKey.js"
+        },
+        {
+          "bytes": 1656,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "ghsa/GHSA-w937-fg2h-xhq2/pre/src/api/handleRequestPopupChanges.js"
+        },
+        {
+          "bytes": 4087,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "ghsa/GHSA-w937-fg2h-xhq2/pre/src/api/postMessage.js"
+        }
+      ],
+      "findings": [],
+      "id": "ghsa/GHSA-w937-fg2h-xhq2/pre"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 5105,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "ghsa/GHSA-w937-fg2h-xhq2/post/src/api/handleEditKey.js"
+        },
+        {
+          "bytes": 2652,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "ghsa/GHSA-w937-fg2h-xhq2/post/src/api/handleRequestPopupChanges.js"
+        },
+        {
+          "bytes": 4709,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "ghsa/GHSA-w937-fg2h-xhq2/post/src/api/postMessage.js"
+        }
+      ],
+      "findings": [],
+      "id": "ghsa/GHSA-w937-fg2h-xhq2/post"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 24589,
+          "elapsed_ms": 1,
+          "flows": 0,
+          "path": "ghsa/GHSA-j5mf-6rh3-rhgg/pre/src/modules/notification.js"
+        },
+        {
+          "bytes": 14985,
+          "elapsed_ms": 1,
+          "flows": 0,
+          "path": "ghsa/GHSA-j5mf-6rh3-rhgg/pre/src/modules/visualBuilder/pageBuilder.js"
+        },
+        {
+          "bytes": 5193,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "ghsa/GHSA-j5mf-6rh3-rhgg/pre/src/util/campaignRender/nativeDisplay.js"
+        }
+      ],
+      "findings": [],
+      "id": "ghsa/GHSA-j5mf-6rh3-rhgg/pre"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 24747,
+          "elapsed_ms": 1,
+          "flows": 0,
+          "path": "ghsa/GHSA-j5mf-6rh3-rhgg/post/src/modules/notification.js"
+        },
+        {
+          "bytes": 14889,
+          "elapsed_ms": 1,
+          "flows": 0,
+          "path": "ghsa/GHSA-j5mf-6rh3-rhgg/post/src/modules/visualBuilder/pageBuilder.js"
+        },
+        {
+          "bytes": 5193,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "ghsa/GHSA-j5mf-6rh3-rhgg/post/src/util/campaignRender/nativeDisplay.js"
+        }
+      ],
+      "findings": [],
+      "id": "ghsa/GHSA-j5mf-6rh3-rhgg/post"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 22812,
+          "elapsed_ms": 1,
+          "flows": 0,
+          "path": "ghsa/GHSA-hhqj-cfjx-vj25/pre/plugin/notes/speaker-view.html"
+        }
+      ],
+      "findings": [],
+      "id": "ghsa/GHSA-hhqj-cfjx-vj25/pre"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 22885,
+          "elapsed_ms": 1,
+          "flows": 0,
+          "path": "ghsa/GHSA-hhqj-cfjx-vj25/post/plugin/notes/speaker-view.html"
+        }
+      ],
+      "findings": [],
+      "id": "ghsa/GHSA-hhqj-cfjx-vj25/post"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 11130,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "ghsa/GHSA-xvg9-69gf-fjrf/pre/material/templates/base.html"
+        }
+      ],
+      "findings": [],
+      "id": "ghsa/GHSA-xvg9-69gf-fjrf/pre"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 11130,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "ghsa/GHSA-xvg9-69gf-fjrf/post/material/templates/base.html"
+        }
+      ],
+      "findings": [],
+      "id": "ghsa/GHSA-xvg9-69gf-fjrf/post"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 315936,
+          "elapsed_ms": 33,
+          "flows": 0,
+          "path": "ghsa/GHSA-9q4r-x2hj-jmvr/pre/copyparty/web/browser.js"
+        }
+      ],
+      "findings": [],
+      "id": "ghsa/GHSA-9q4r-x2hj-jmvr/pre"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 315966,
+          "elapsed_ms": 34,
+          "flows": 0,
+          "path": "ghsa/GHSA-9q4r-x2hj-jmvr/post/copyparty/web/browser.js"
+        }
+      ],
+      "findings": [],
+      "id": "ghsa/GHSA-9q4r-x2hj-jmvr/post"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 102518,
+          "elapsed_ms": 11,
+          "flows": 0,
+          "path": "ghsa/GHSA-m2jw-cj8v-937r/pre/copyparty/web/up2k.js"
+        }
+      ],
+      "findings": [],
+      "id": "ghsa/GHSA-m2jw-cj8v-937r/pre"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 102528,
+          "elapsed_ms": 10,
+          "flows": 0,
+          "path": "ghsa/GHSA-m2jw-cj8v-937r/post/copyparty/web/up2k.js"
+        }
+      ],
+      "findings": [],
+      "id": "ghsa/GHSA-m2jw-cj8v-937r/post"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 47845,
+          "elapsed_ms": 3,
+          "flows": 0,
+          "path": "ghsa/GHSA-vgjm-2cpf-4g7c/pre/public/js/gogs.js"
+        }
+      ],
+      "findings": [],
+      "id": "ghsa/GHSA-vgjm-2cpf-4g7c/pre"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 47885,
+          "elapsed_ms": 3,
+          "flows": 0,
+          "path": "ghsa/GHSA-vgjm-2cpf-4g7c/post/public/js/gogs.js"
+        }
+      ],
+      "findings": [],
+      "id": "ghsa/GHSA-vgjm-2cpf-4g7c/post"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 6254,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "ghsa/GHSA-g3hc-697w-wm82/pre/js/component.js"
+        },
+        {
+          "bytes": 922,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "ghsa/GHSA-g3hc-697w-wm82/pre/js/features/supportDispatches.js"
+        },
+        {
+          "bytes": 1431,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "ghsa/GHSA-g3hc-697w-wm82/pre/js/features/supportFileDownloads.js"
+        },
+        {
+          "bytes": 1070,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "ghsa/GHSA-g3hc-697w-wm82/pre/js/features/supportHotReloading.js"
+        },
+        {
+          "bytes": 774,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "ghsa/GHSA-g3hc-697w-wm82/pre/js/features/supportJsEvaluation.js"
+        },
+        {
+          "bytes": 2479,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "ghsa/GHSA-g3hc-697w-wm82/pre/js/features/supportLaravelEcho.js"
+        }
+      ],
+      "findings": [],
+      "id": "ghsa/GHSA-g3hc-697w-wm82/pre"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 6486,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "ghsa/GHSA-g3hc-697w-wm82/post/js/component.js"
+        },
+        {
+          "bytes": 1121,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "ghsa/GHSA-g3hc-697w-wm82/post/js/features/supportDispatches.js"
+        },
+        {
+          "bytes": 1536,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "ghsa/GHSA-g3hc-697w-wm82/post/js/features/supportFileDownloads.js"
+        },
+        {
+          "bytes": 1173,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "ghsa/GHSA-g3hc-697w-wm82/post/js/features/supportHotReloading.js"
+        },
+        {
+          "bytes": 938,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "ghsa/GHSA-g3hc-697w-wm82/post/js/features/supportJsEvaluation.js"
+        },
+        {
+          "bytes": 2594,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "ghsa/GHSA-g3hc-697w-wm82/post/js/features/supportLaravelEcho.js"
+        }
+      ],
+      "findings": [],
+      "id": "ghsa/GHSA-g3hc-697w-wm82/post"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 18999,
+          "elapsed_ms": 1,
+          "flows": 0,
+          "path": "ghsa/GHSA-24x4-j6x9-rfw5/pre/src/web/assets/craftsupport/src/CraftSupportWidget.js"
+        }
+      ],
+      "findings": [],
+      "id": "ghsa/GHSA-24x4-j6x9-rfw5/pre"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 19052,
+          "elapsed_ms": 1,
+          "flows": 0,
+          "path": "ghsa/GHSA-24x4-j6x9-rfw5/post/src/web/assets/craftsupport/src/CraftSupportWidget.js"
+        }
+      ],
+      "findings": [],
+      "id": "ghsa/GHSA-24x4-j6x9-rfw5/post"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 6435,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "ghsa/GHSA-xr7p-8q82-878q/pre/internal/event/www/script.js"
+        }
+      ],
+      "findings": [],
+      "id": "ghsa/GHSA-xr7p-8q82-878q/pre"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 6694,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "ghsa/GHSA-xr7p-8q82-878q/post/internal/event/www/script.js"
+        }
+      ],
+      "findings": [],
+      "id": "ghsa/GHSA-xr7p-8q82-878q/post"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 4649,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "ghsa/GHSA-rh4r-f7f7-r99m/pre/www/index.html"
+        },
+        {
+          "bytes": 8517,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "ghsa/GHSA-rh4r-f7f7-r99m/pre/www/links.html"
+        }
+      ],
+      "findings": [],
+      "id": "ghsa/GHSA-rh4r-f7f7-r99m/pre"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 4716,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "ghsa/GHSA-rh4r-f7f7-r99m/post/www/index.html"
+        },
+        {
+          "bytes": 8551,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "ghsa/GHSA-rh4r-f7f7-r99m/post/www/links.html"
+        }
+      ],
+      "findings": [],
+      "id": "ghsa/GHSA-rh4r-f7f7-r99m/post"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 193370,
+          "elapsed_ms": 12,
+          "flows": 0,
+          "path": "ghsa/GHSA-867c-p784-5q6g/pre/js/privatebin.js"
+        }
+      ],
+      "findings": [],
+      "id": "ghsa/GHSA-867c-p784-5q6g/pre"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 193736,
+          "elapsed_ms": 12,
+          "flows": 0,
+          "path": "ghsa/GHSA-867c-p784-5q6g/post/js/privatebin.js"
+        }
+      ],
+      "findings": [],
+      "id": "ghsa/GHSA-867c-p784-5q6g/post"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 167601,
+          "elapsed_ms": 10,
+          "flows": 0,
+          "path": "ghsa/GHSA-8j72-p2wm-6738/pre/js/privatebin.js"
+        }
+      ],
+      "findings": [],
+      "id": "ghsa/GHSA-8j72-p2wm-6738/pre"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 167765,
+          "elapsed_ms": 10,
+          "flows": 0,
+          "path": "ghsa/GHSA-8j72-p2wm-6738/post/js/privatebin.js"
+        }
+      ],
+      "findings": [],
+      "id": "ghsa/GHSA-8j72-p2wm-6738/post"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 2521,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "ghsa/GHSA-gc5h-6jx9-q2qh/pre/src/bundle/Resources/public/js/scripts/fieldType/ezbinaryfile.js"
+        },
+        {
+          "bytes": 5936,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "ghsa/GHSA-gc5h-6jx9-q2qh/pre/src/bundle/Resources/public/js/scripts/fieldType/ezimage.js"
+        },
+        {
+          "bytes": 6441,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "ghsa/GHSA-gc5h-6jx9-q2qh/pre/src/bundle/Resources/public/js/scripts/fieldType/ezmedia.js"
+        }
+      ],
+      "findings": [],
+      "id": "ghsa/GHSA-gc5h-6jx9-q2qh/pre"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 2621,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "ghsa/GHSA-gc5h-6jx9-q2qh/post/src/bundle/Resources/public/js/scripts/fieldType/ezbinaryfile.js"
+        },
+        {
+          "bytes": 6035,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "ghsa/GHSA-gc5h-6jx9-q2qh/post/src/bundle/Resources/public/js/scripts/fieldType/ezimage.js"
+        },
+        {
+          "bytes": 6540,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "ghsa/GHSA-gc5h-6jx9-q2qh/post/src/bundle/Resources/public/js/scripts/fieldType/ezmedia.js"
+        }
+      ],
+      "findings": [],
+      "id": "ghsa/GHSA-gc5h-6jx9-q2qh/post"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 19346,
+          "elapsed_ms": 1,
+          "flows": 0,
+          "path": "ghsa/GHSA-78qv-3mpx-9cqq/pre/nicegui/static/nicegui.js"
+        }
+      ],
+      "findings": [],
+      "id": "ghsa/GHSA-78qv-3mpx-9cqq/pre"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 19476,
+          "elapsed_ms": 1,
+          "flows": 0,
+          "path": "ghsa/GHSA-78qv-3mpx-9cqq/post/nicegui/static/nicegui.js"
+        }
+      ],
+      "findings": [],
+      "id": "ghsa/GHSA-78qv-3mpx-9cqq/post"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 103,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_001.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_001"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 103,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_002.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_002"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 121,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_003.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_003"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 121,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_004.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_004"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 118,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_005.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_005"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 116,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_006.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_006"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 121,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_011.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_011"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 121,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_012.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_012"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 121,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_015.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_015"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 121,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_016.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_016"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 129,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_017.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_017"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 116,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_018.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_018"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 116,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_019.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_019"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 127,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_020.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_020"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 125,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_021.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_021"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 99,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_022.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_022"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 99,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_023.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_023"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 112,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_026.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_026"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 113,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_027.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_027"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 115,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_034.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_034"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 110,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_035.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_035"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 110,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_036.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_036"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 112,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_037.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_037"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 110,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_038.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_038"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 109,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_039.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_039"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 109,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_040.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_040"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 113,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_043.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_043"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 112,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_044.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_044"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 138,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_052.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_052"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 138,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_053.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_053"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 110,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_054.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_054"
+    },
+    {
+      "confidences": [
+        "Medium"
+      ],
+      "detected": true,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 110,
+          "elapsed_ms": 0,
+          "flows": 1,
+          "path": "sak3y/snippet_055.js"
+        }
+      ],
+      "findings": [
+        "DOM XSS: location.hash -> slice -> (expr).innerHTML"
+      ],
+      "id": "sak3y/snippet_055"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 128,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_056.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_056"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 128,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_057.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_057"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 115,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_060.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_060"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 116,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_061.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_061"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 111,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_068.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_068"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 129,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_069.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_069"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 129,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_070.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_070"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 96,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_071.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_071"
+    },
+    {
+      "confidences": [
+        "Medium"
+      ],
+      "detected": true,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 96,
+          "elapsed_ms": 0,
+          "flows": 1,
+          "path": "sak3y/snippet_072.js"
+        }
+      ],
+      "findings": [
+        "DOM XSS: location.hash -> slice -> (expr).innerHTML"
+      ],
+      "id": "sak3y/snippet_072"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 114,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_073.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_073"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 114,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_074.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_074"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 88,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_075.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_075"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 86,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_076.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_076"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 110,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_085.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_085"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 101,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_086.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_086"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 101,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_087.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_087"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 128,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_088.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_088"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 128,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_089.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_089"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 86,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_090.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_090"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 86,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_091.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_091"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 120,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_100.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_100"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 120,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_101.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_101"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 114,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_102.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_102"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 122,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_103.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_103"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 122,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_104.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_104"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 98,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_105.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_105"
+    },
+    {
+      "confidences": [
+        "Medium"
+      ],
+      "detected": true,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 98,
+          "elapsed_ms": 0,
+          "flows": 1,
+          "path": "sak3y/snippet_106.js"
+        }
+      ],
+      "findings": [
+        "DOM XSS: location.hash -> slice -> (expr).innerHTML"
+      ],
+      "id": "sak3y/snippet_106"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 111,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_107.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_107"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 111,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_108.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_108"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 81,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_109.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_109"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 79,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_110.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_110"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 112,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_119.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_119"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 121,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_120.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_120"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 121,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_121.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_121"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 129,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_122.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_122"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 127,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_123.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_123"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 96,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_124.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_124"
+    },
+    {
+      "confidences": [
+        "Medium"
+      ],
+      "detected": true,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 96,
+          "elapsed_ms": 0,
+          "flows": 1,
+          "path": "sak3y/snippet_125.js"
+        }
+      ],
+      "findings": [
+        "DOM XSS: location.hash -> slice -> (expr).innerHTML"
+      ],
+      "id": "sak3y/snippet_125"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 80,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_126.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_126"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 78,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_127.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_127"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 94,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_137.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_137"
+    },
+    {
+      "confidences": [
+        "Medium"
+      ],
+      "detected": true,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 94,
+          "elapsed_ms": 0,
+          "flows": 1,
+          "path": "sak3y/snippet_138.js"
+        }
+      ],
+      "findings": [
+        "DOM XSS: document.referrer -> (expr).innerHTML"
+      ],
+      "id": "sak3y/snippet_138"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 96,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_139.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_139"
+    },
+    {
+      "confidences": [
+        "Medium"
+      ],
+      "detected": true,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 94,
+          "elapsed_ms": 0,
+          "flows": 1,
+          "path": "sak3y/snippet_140.js"
+        }
+      ],
+      "findings": [
+        "DOM XSS: document.referrer -> (expr).innerHTML"
+      ],
+      "id": "sak3y/snippet_140"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 72,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_141.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_141"
+    },
+    {
+      "confidences": [
+        "Medium"
+      ],
+      "detected": true,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 72,
+          "elapsed_ms": 0,
+          "flows": 1,
+          "path": "sak3y/snippet_142.js"
+        }
+      ],
+      "findings": [
+        "DOM XSS: document.referrer -> document.body.innerHTML"
+      ],
+      "id": "sak3y/snippet_142"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 153,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_143.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_143"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 153,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_144.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_144"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 112,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_145.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_145"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 131,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_154.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_154"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 132,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_155.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_155"
+    },
+    {
+      "confidences": [
+        "Medium"
+      ],
+      "detected": true,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 124,
+          "elapsed_ms": 0,
+          "flows": 1,
+          "path": "sak3y/snippet_156.js"
+        }
+      ],
+      "findings": [
+        "DOM XSS: location.hash -> slice -> (expr).innerHTML"
+      ],
+      "id": "sak3y/snippet_156"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 172,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_157.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_157"
+    },
+    {
+      "confidences": [
+        "Medium"
+      ],
+      "detected": true,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 112,
+          "elapsed_ms": 0,
+          "flows": 1,
+          "path": "sak3y/snippet_158.js"
+        }
+      ],
+      "findings": [
+        "DOM XSS: location.search -> split -> (expr).innerHTML"
+      ],
+      "id": "sak3y/snippet_158"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 156,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_161.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_161"
+    },
+    {
+      "confidences": [
+        "Medium"
+      ],
+      "detected": true,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 146,
+          "elapsed_ms": 0,
+          "flows": 1,
+          "path": "sak3y/snippet_165.js"
+        }
+      ],
+      "findings": [
+        "DOM XSS: location.href -> split -> insertAdjacentHTML"
+      ],
+      "id": "sak3y/snippet_165"
+    },
+    {
+      "confidences": [
+        "Medium"
+      ],
+      "detected": true,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 108,
+          "elapsed_ms": 0,
+          "flows": 1,
+          "path": "sak3y/snippet_166.js"
+        }
+      ],
+      "findings": [
+        "DOM XSS: document.referrer -> split -> pop -> (expr).innerHTML"
+      ],
+      "id": "sak3y/snippet_166"
+    },
+    {
+      "confidences": [
+        "Medium"
+      ],
+      "detected": true,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 139,
+          "elapsed_ms": 0,
+          "flows": 1,
+          "path": "sak3y/snippet_167.js"
+        }
+      ],
+      "findings": [
+        "DOM XSS: location.hash -> substring -> h.innerHTML"
+      ],
+      "id": "sak3y/snippet_167"
+    },
+    {
+      "confidences": [
+        "Medium"
+      ],
+      "detected": true,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 136,
+          "elapsed_ms": 0,
+          "flows": 1,
+          "path": "sak3y/snippet_168.js"
+        }
+      ],
+      "findings": [
+        "DOM XSS: location.search -> replace -> (expr).outerHTML"
+      ],
+      "id": "sak3y/snippet_168"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 92,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_169.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_169"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 209,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_170.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_170"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 146,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_171.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_171"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 86,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_172.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_172"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 158,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_173.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_173"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 204,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_174.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_174"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 185,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_175.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_175"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 123,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_176.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_176"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 117,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_177.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_177"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 204,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_178.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_178"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 216,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_179.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_179"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 145,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_180.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_180"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 164,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_181.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_181"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 122,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_182.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_182"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 103,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_183.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_183"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 125,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_184.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_184"
+    },
+    {
+      "confidences": [
+        "Medium"
+      ],
+      "detected": true,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 127,
+          "elapsed_ms": 0,
+          "flows": 1,
+          "path": "sak3y/snippet_185.js"
+        }
+      ],
+      "findings": [
+        "DOM XSS: location.href -> split -> pop -> split -> (expr).innerHTML"
+      ],
+      "id": "sak3y/snippet_185"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 115,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_186.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_186"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 148,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_187.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_187"
+    },
+    {
+      "confidences": [
+        "Medium"
+      ],
+      "detected": true,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 140,
+          "elapsed_ms": 0,
+          "flows": 1,
+          "path": "sak3y/snippet_188.js"
+        }
+      ],
+      "findings": [
+        "DOM XSS: location.hash -> substring -> (expr).innerHTML"
+      ],
+      "id": "sak3y/snippet_188"
+    },
+    {
+      "confidences": [
+        "Medium"
+      ],
+      "detected": true,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 154,
+          "elapsed_ms": 0,
+          "flows": 1,
+          "path": "sak3y/snippet_189.js"
+        }
+      ],
+      "findings": [
+        "DOM XSS: location.hash -> slice -> atob -> (expr).innerHTML"
+      ],
+      "id": "sak3y/snippet_189"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 163,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_190.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_190"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 180,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_191.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_191"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 167,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_192.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_192"
+    },
+    {
+      "confidences": [
+        "Medium"
+      ],
+      "detected": true,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 201,
+          "elapsed_ms": 0,
+          "flows": 1,
+          "path": "sak3y/snippet_193.js"
+        }
+      ],
+      "findings": [
+        "DOM XSS: location.hash -> slice -> div.innerHTML"
+      ],
+      "id": "sak3y/snippet_193"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 129,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_194.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_194"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 115,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_195.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_195"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 152,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_196.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_196"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 150,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_197.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_197"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 157,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_198.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_198"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 198,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_199.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_199"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 209,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_200.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_200"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 161,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_201.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_201"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 94,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_202.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_202"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 187,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_203.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_203"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 105,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_204.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_204"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 121,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_205.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_205"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 92,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_206.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_206"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 143,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_207.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_207"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 136,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_208.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_208"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 179,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_209.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_209"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 130,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_210.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_210"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 157,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_211.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_211"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 114,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_212.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_212"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 128,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_213.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_213"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 100,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_214.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_214"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 129,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_215.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_215"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 159,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_216.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_216"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 265,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_217.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_217"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 82,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_218.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_218"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 128,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_219.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_219"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 86,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_220.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_220"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 82,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_221.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_221"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 128,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_222.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_222"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 115,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_223.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_223"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 178,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_224.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_224"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 104,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_225.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_225"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 140,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_226.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_226"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 108,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_227.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_227"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 114,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_228.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_228"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 100,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_229.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_229"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 142,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_230.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_230"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 144,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_231.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_231"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 187,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_232.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_232"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 79,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_233.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_233"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 95,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_234.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_234"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 53,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_235.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_235"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 113,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_236.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_236"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 114,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_237.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_237"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 133,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_238.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_238"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 53,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_239.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_239"
+    },
+    {
+      "confidences": [
+        "Medium"
+      ],
+      "detected": true,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 94,
+          "elapsed_ms": 0,
+          "flows": 1,
+          "path": "sak3y/snippet_240.js"
+        }
+      ],
+      "findings": [
+        "DOM XSS: location.hash -> slice -> document.write"
+      ],
+      "id": "sak3y/snippet_240"
+    },
+    {
+      "confidences": [
+        "Medium"
+      ],
+      "detected": true,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 109,
+          "elapsed_ms": 0,
+          "flows": 1,
+          "path": "sak3y/snippet_241.js"
+        }
+      ],
+      "findings": [
+        "DOM XSS: location.hash -> slice -> (expr).outerHTML"
+      ],
+      "id": "sak3y/snippet_241"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 67,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_242.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_242"
+    },
+    {
+      "confidences": [
+        "Medium"
+      ],
+      "detected": true,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 57,
+          "elapsed_ms": 0,
+          "flows": 1,
+          "path": "sak3y/snippet_243.js"
+        }
+      ],
+      "findings": [
+        "DOM XSS: location.hash -> slice -> eval"
+      ],
+      "id": "sak3y/snippet_243"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 108,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_244.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_244"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 153,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_245.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_245"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 78,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_246.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_246"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 66,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_247.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_247"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 116,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_248.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_248"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 175,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_249.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_249"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 115,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_250.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_250"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 121,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_251.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_251"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 112,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_252.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_252"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 230,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_253.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_253"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 140,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_254.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_254"
+    },
+    {
+      "confidences": [
+        "Medium"
+      ],
+      "detected": true,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 61,
+          "elapsed_ms": 0,
+          "flows": 1,
+          "path": "sak3y/snippet_255.js"
+        }
+      ],
+      "findings": [
+        "DOM XSS: document.referrer -> document.write"
+      ],
+      "id": "sak3y/snippet_255"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 61,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_256.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_256"
+    },
+    {
+      "confidences": [
+        "Medium"
+      ],
+      "detected": true,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 96,
+          "elapsed_ms": 0,
+          "flows": 1,
+          "path": "sak3y/snippet_257.js"
+        }
+      ],
+      "findings": [
+        "DOM XSS: document.referrer -> (expr).outerHTML"
+      ],
+      "id": "sak3y/snippet_257"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 133,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_258.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_258"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 132,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_259.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_259"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 132,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_260.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_260"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 202,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_261.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_261"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 114,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_262.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_262"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 130,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_263.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_263"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 169,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_264.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_264"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 91,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_265.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_265"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 125,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_266.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_266"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 164,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_267.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_267"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 191,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_268.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_268"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 192,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_269.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_269"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 125,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_270.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_270"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 81,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_271.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_271"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 177,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_272.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_272"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 176,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_273.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_273"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 117,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_274.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_274"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 156,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_275.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_275"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 116,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_276.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_276"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 159,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_277.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_277"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 174,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_278.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_278"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 203,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_279.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_279"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 134,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_280.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_280"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 81,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_281.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_281"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 164,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_282.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_282"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 118,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_283.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_283"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 120,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_284.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_284"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 133,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_285.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_285"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 135,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_286.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_286"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 188,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_287.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_287"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 82,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_288.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_288"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 136,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_289.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_289"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 243,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_290.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_290"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 136,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_291.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_291"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 154,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_292.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_292"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 135,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_293.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_293"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 136,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_294.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_294"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 118,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_295.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_295"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 211,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_296.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_296"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 137,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_297.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_297"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 86,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_298.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_298"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 96,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_299.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_299"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 94,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_300.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_300"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 96,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_301.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_301"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 187,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_302.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_302"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 93,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_303.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_303"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 118,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_304.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_304"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 101,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_305.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_305"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 121,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_306.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_306"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 87,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_307.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_307"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 154,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_308.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_308"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 120,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_309.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_309"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 188,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_310.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_310"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 150,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_311.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_311"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 116,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_312.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_312"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 258,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_313.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_313"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 156,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_314.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_314"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 121,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_315.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_315"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 113,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_316.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_316"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 123,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_317.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_317"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 82,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_318.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_318"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 123,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_319.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_319"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 163,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_320.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_320"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 109,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_321.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_321"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 136,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_322.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_322"
+    },
+    {
+      "confidences": [
+        "Medium"
+      ],
+      "detected": true,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 112,
+          "elapsed_ms": 0,
+          "flows": 1,
+          "path": "sak3y/snippet_323.js"
+        }
+      ],
+      "findings": [
+        "DOM XSS: event.data -> (expr).innerHTML"
+      ],
+      "id": "sak3y/snippet_323"
+    },
+    {
+      "confidences": [
+        "Medium"
+      ],
+      "detected": true,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 94,
+          "elapsed_ms": 0,
+          "flows": 1,
+          "path": "sak3y/snippet_324.js"
+        }
+      ],
+      "findings": [
+        "DOM XSS: event.data -> document.body.innerHTML"
+      ],
+      "id": "sak3y/snippet_324"
+    },
+    {
+      "confidences": [
+        "Medium"
+      ],
+      "detected": true,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 71,
+          "elapsed_ms": 0,
+          "flows": 1,
+          "path": "sak3y/snippet_325.js"
+        }
+      ],
+      "findings": [
+        "DOM XSS: event.data -> eval"
+      ],
+      "id": "sak3y/snippet_325"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 159,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_326.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_326"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 193,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "sak3y/snippet_327.js"
+        }
+      ],
+      "findings": [],
+      "id": "sak3y/snippet_327"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 268,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "pwnfunction/warmups/da-wey.html"
+        }
+      ],
+      "findings": [],
+      "id": "pwnfunction/warmups/da-wey"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 247,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "pwnfunction/warmups/jefff.html"
+        }
+      ],
+      "findings": [],
+      "id": "pwnfunction/warmups/jefff"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 145,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "pwnfunction/warmups/ligma.js"
+        }
+      ],
+      "findings": [],
+      "id": "pwnfunction/warmups/ligma"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 172,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "pwnfunction/warmups/ma-spaghet.html"
+        }
+      ],
+      "findings": [],
+      "id": "pwnfunction/warmups/ma-spaghet"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 208,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "pwnfunction/warmups/mafia.js"
+        }
+      ],
+      "findings": [],
+      "id": "pwnfunction/warmups/mafia"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 200,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "pwnfunction/warmups/ok-boomer.html"
+        }
+      ],
+      "findings": [],
+      "id": "pwnfunction/warmups/ok-boomer"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 305,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "pwnfunction/warmups/ricardo.html"
+        }
+      ],
+      "findings": [],
+      "id": "pwnfunction/warmups/ricardo"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 218,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "pwnfunction/warmups/thats-hawt.html"
+        }
+      ],
+      "findings": [],
+      "id": "pwnfunction/warmups/thats-hawt"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 329,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "pwnfunction/challenges/area-51.html"
+        }
+      ],
+      "findings": [],
+      "id": "pwnfunction/challenges/area-51"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 1541,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "pwnfunction/challenges/bourne.html"
+        }
+      ],
+      "findings": [],
+      "id": "pwnfunction/challenges/bourne"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 1416,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "pwnfunction/challenges/ded.html"
+        }
+      ],
+      "findings": [],
+      "id": "pwnfunction/challenges/ded"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 1027,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "pwnfunction/challenges/keanu.html"
+        }
+      ],
+      "findings": [],
+      "id": "pwnfunction/challenges/keanu"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 1872,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "pwnfunction/challenges/me-and-the-bois.html"
+        }
+      ],
+      "findings": [],
+      "id": "pwnfunction/challenges/me-and-the-bois"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 1844,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "pwnfunction/challenges/ww3.html"
+        }
+      ],
+      "findings": [],
+      "id": "pwnfunction/challenges/ww3"
+    },
+    {
+      "confidences": [
+        "Medium"
+      ],
+      "detected": true,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 502,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "domdig/attributes.html"
+        },
+        {
+          "bytes": 180,
+          "elapsed_ms": 0,
+          "flows": 1,
+          "path": "domdig/common.js"
+        }
+      ],
+      "findings": [
+        "DOM XSS: location.href -> split -> location.href"
+      ],
+      "id": "domdig/attributes.html"
+    },
+    {
+      "confidences": [
+        "Medium"
+      ],
+      "detected": true,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 180,
+          "elapsed_ms": 0,
+          "flows": 1,
+          "path": "domdig/common.js"
+        },
+        {
+          "bytes": 1720,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "domdig/deep.html"
+        }
+      ],
+      "findings": [
+        "DOM XSS: location.href -> split -> location.href"
+      ],
+      "id": "domdig/deep.html"
+    },
+    {
+      "confidences": [
+        "Medium"
+      ],
+      "detected": true,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 180,
+          "elapsed_ms": 0,
+          "flows": 1,
+          "path": "domdig/common.js"
+        },
+        {
+          "bytes": 1123,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "domdig/fetch.html"
+        }
+      ],
+      "findings": [
+        "DOM XSS: location.href -> split -> location.href"
+      ],
+      "id": "domdig/fetch.html"
+    },
+    {
+      "confidences": [
+        "Medium",
+        "Medium"
+      ],
+      "detected": true,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 180,
+          "elapsed_ms": 0,
+          "flows": 1,
+          "path": "domdig/common.js"
+        },
+        {
+          "bytes": 905,
+          "elapsed_ms": 0,
+          "flows": 1,
+          "path": "domdig/hidden.html"
+        }
+      ],
+      "findings": [
+        "DOM XSS: location.href -> split -> location.href",
+        "DOM XSS: location.href -> split -> location.href"
+      ],
+      "id": "domdig/hidden.html"
+    },
+    {
+      "confidences": [
+        "Medium"
+      ],
+      "detected": true,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 180,
+          "elapsed_ms": 0,
+          "flows": 1,
+          "path": "domdig/common.js"
+        },
+        {
+          "bytes": 301,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "domdig/href.html"
+        }
+      ],
+      "findings": [
+        "DOM XSS: location.href -> split -> location.href"
+      ],
+      "id": "domdig/href.html"
+    },
+    {
+      "confidences": [
+        "Medium"
+      ],
+      "detected": true,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 180,
+          "elapsed_ms": 0,
+          "flows": 1,
+          "path": "domdig/common.js"
+        },
+        {
+          "bytes": 423,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "domdig/postmessage-frame.html"
+        }
+      ],
+      "findings": [
+        "DOM XSS: location.href -> split -> location.href"
+      ],
+      "id": "domdig/postmessage-frame.html"
+    },
+    {
+      "confidences": [
+        "Medium"
+      ],
+      "detected": true,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 180,
+          "elapsed_ms": 0,
+          "flows": 1,
+          "path": "domdig/common.js"
+        },
+        {
+          "bytes": 172,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "domdig/simple.html"
+        }
+      ],
+      "findings": [
+        "DOM XSS: location.href -> split -> location.href"
+      ],
+      "id": "domdig/simple.html"
+    },
+    {
+      "confidences": [
+        "Medium"
+      ],
+      "detected": true,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 180,
+          "elapsed_ms": 0,
+          "flows": 1,
+          "path": "domdig/common.js"
+        },
+        {
+          "bytes": 174,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "domdig/tplstring.html"
+        }
+      ],
+      "findings": [
+        "DOM XSS: location.href -> split -> location.href"
+      ],
+      "id": "domdig/tplstring.html"
+    },
+    {
+      "confidences": [
+        "Medium"
+      ],
+      "detected": true,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 180,
+          "elapsed_ms": 0,
+          "flows": 1,
+          "path": "domdig/common.js"
+        },
+        {
+          "bytes": 1727,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "domdig/xhr.html"
+        }
+      ],
+      "findings": [
+        "DOM XSS: location.href -> split -> location.href"
+      ],
+      "id": "domdig/xhr.html"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 285314,
+          "elapsed_ms": 18,
+          "flows": 0,
+          "path": "npm/jquery@3.7.1/dist/jquery.js"
+        }
+      ],
+      "findings": [],
+      "id": "npm/jquery@3.7.1"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 544098,
+          "elapsed_ms": 33,
+          "flows": 0,
+          "path": "npm/lodash@4.17.21/lodash.js"
+        }
+      ],
+      "findings": [],
+      "id": "npm/lodash@4.17.21"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 68778,
+          "elapsed_ms": 6,
+          "flows": 0,
+          "path": "npm/underscore@1.13.7/underscore-umd.js"
+        }
+      ],
+      "findings": [],
+      "id": "npm/underscore@1.13.7"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 176435,
+          "elapsed_ms": 9,
+          "flows": 0,
+          "path": "npm/moment@2.30.1/moment.js"
+        }
+      ],
+      "findings": [],
+      "id": "npm/moment@2.30.1"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 80390,
+          "elapsed_ms": 5,
+          "flows": 0,
+          "path": "npm/backbone@1.6.0/backbone.js"
+        }
+      ],
+      "findings": [],
+      "id": "npm/backbone@1.6.0"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 202012,
+          "elapsed_ms": 14,
+          "flows": 0,
+          "path": "npm/handlebars@4.7.8/dist/handlebars.js"
+        }
+      ],
+      "findings": [],
+      "id": "npm/handlebars@4.7.8"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 25124,
+          "elapsed_ms": 1,
+          "flows": 0,
+          "path": "npm/mustache@4.2.0/mustache.js"
+        }
+      ],
+      "findings": [],
+      "id": "npm/mustache@4.2.0"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 102765,
+          "elapsed_ms": 7,
+          "flows": 0,
+          "path": "npm/marked@4.3.0/lib/marked.umd.js"
+        }
+      ],
+      "findings": [],
+      "id": "npm/marked@4.3.0"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 67137,
+          "elapsed_ms": 5,
+          "flows": 0,
+          "path": "npm/dompurify@3.1.6/dist/purify.js"
+        }
+      ],
+      "findings": [],
+      "id": "npm/dompurify@3.1.6"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 207819,
+          "elapsed_ms": 18,
+          "flows": 0,
+          "path": "npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.js"
+        }
+      ],
+      "findings": [],
+      "id": "npm/bootstrap@5.3.3"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 145668,
+          "elapsed_ms": 10,
+          "flows": 0,
+          "path": "npm/axios@1.7.7/dist/axios.js"
+        }
+      ],
+      "findings": [],
+      "id": "npm/axios@1.7.7"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 525616,
+          "elapsed_ms": 39,
+          "flows": 0,
+          "path": "npm/vue@3.4.38/dist/vue.global.js"
+        }
+      ],
+      "findings": [],
+      "id": "npm/vue@3.4.38"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 109931,
+          "elapsed_ms": 6,
+          "flows": 0,
+          "path": "npm/react@18.3.1/umd/react.development.js"
+        }
+      ],
+      "findings": [],
+      "id": "npm/react@18.3.1"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 1080227,
+          "elapsed_ms": 77,
+          "flows": 0,
+          "path": "npm/react-dom@18.3.1/umd/react-dom.development.js"
+        }
+      ],
+      "findings": [],
+      "id": "npm/react-dom@18.3.1"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 108883,
+          "elapsed_ms": 9,
+          "flows": 0,
+          "path": "npm/alpinejs@3.14.1/dist/cdn.js"
+        }
+      ],
+      "findings": [],
+      "id": "npm/alpinejs@3.14.1"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 160809,
+          "elapsed_ms": 9,
+          "flows": 0,
+          "path": "npm/htmx.org@2.0.2/dist/htmx.js"
+        }
+      ],
+      "findings": [],
+      "id": "npm/htmx.org@2.0.2"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 587043,
+          "elapsed_ms": 67,
+          "flows": 0,
+          "path": "npm/d3@7.9.0/dist/d3.js"
+        }
+      ],
+      "findings": [],
+      "id": "npm/d3@7.9.0"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 205475,
+          "elapsed_ms": 31,
+          "flows": 0,
+          "path": "npm/chart.js@4.4.4/dist/chart.umd.js"
+        }
+      ],
+      "findings": [],
+      "id": "npm/chart.js@4.4.4"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 26807,
+          "elapsed_ms": 2,
+          "flows": 0,
+          "path": "npm/clipboard@2.0.11/dist/clipboard.js"
+        }
+      ],
+      "findings": [],
+      "id": "npm/clipboard@2.0.11"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 173566,
+          "elapsed_ms": 15,
+          "flows": 0,
+          "path": "npm/select2@4.0.13/dist/js/select2.full.js"
+        }
+      ],
+      "findings": [],
+      "id": "npm/select2@4.0.13"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 450229,
+          "elapsed_ms": 34,
+          "flows": 0,
+          "path": "npm/leaflet@1.9.4/dist/leaflet-src.js"
+        }
+      ],
+      "findings": [],
+      "id": "npm/leaflet@1.9.4"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 188161,
+          "elapsed_ms": 15,
+          "flows": 0,
+          "path": "npm/validator@13.12.0/validator.js"
+        }
+      ],
+      "findings": [],
+      "id": "npm/validator@13.12.0"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 4189,
+          "elapsed_ms": 0,
+          "flows": 0,
+          "path": "npm/js-cookie@3.0.5/dist/js.cookie.js"
+        }
+      ],
+      "findings": [],
+      "id": "npm/js-cookie@3.0.5"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 162615,
+          "elapsed_ms": 13,
+          "flows": 0,
+          "path": "npm/sweetalert2@11.14.0/dist/sweetalert2.all.js"
+        }
+      ],
+      "findings": [],
+      "id": "npm/sweetalert2@11.14.0"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 377684,
+          "elapsed_ms": 30,
+          "flows": 0,
+          "path": "npm/datatables.net@2.1.5/js/dataTables.js"
+        }
+      ],
+      "findings": [],
+      "id": "npm/datatables.net@2.1.5"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 31759,
+          "elapsed_ms": 2,
+          "flows": 0,
+          "path": "npm/page@1.11.6/page.js"
+        }
+      ],
+      "findings": [],
+      "id": "npm/page@1.11.6"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 24622,
+          "elapsed_ms": 1,
+          "flows": 0,
+          "path": "npm/history@5.3.0/umd/history.development.js"
+        }
+      ],
+      "findings": [],
+      "id": "npm/history@5.3.0"
+    },
+    {
+      "confidences": [],
+      "detected": false,
+      "error": null,
+      "evaluable": true,
+      "files": [
+        {
+          "bytes": 162295,
+          "elapsed_ms": 12,
+          "flows": 0,
+          "path": "npm/vue-router@4.4.3/dist/vue-router.global.js"
+        }
+      ],
+      "findings": [],
+      "id": "npm/vue-router@4.4.3"
+    }
+  ],
+  "commit": "6b33d8d9837164036f33e48439118aa1c9d1c260",
+  "corpus": "external-corpus-v1",
+  "mode": "static registry (ExtractorRegistry::with_defaults), per file, release build"
+}
