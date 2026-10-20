@@ -237,6 +237,34 @@ regex multi-caractères (`/[&<>]/g`), une fonction de remplacement, ou un
 encodage via une bibliothèque autre que `DOMPurify` restent non reconnus et
 sont un faux positif potentiel documenté, pas corrigé ici.
 
+**Correction (2026-10-20, liaison inter-fichiers pour `postMessage`,
+rappel GHSA inchangé) :** la majorité des cas GHSA ratés avaient été
+attribués par hypothèse à des flux `postMessage` inter-fichiers hors de la
+portée intra-fichier existante. `modules.rs` (nouveau sous-module
+`handlers.rs`) lie maintenant `window.addEventListener('message',
+imported)` / `addEventListener('message', imported)` à travers les
+fichiers quand `imported` est un identifiant importé (nommé ou par défaut,
+un seul saut, pas via un barrel de ré-export) d'une déclaration `function`
+de premier niveau d'un autre module : le premier paramètre de cette
+déclaration est semé comme `event.data` et son corps analysé exactement
+comme un handler `message` du même fichier. Six tests dédiés
+(`tests_handlers.rs`) confirment le cas lié et les limites volontaires
+(membre de namespace, registre calculé, barrel de ré-export, handler
+d'expression plutôt que de déclaration — tous non liés). **Rappel GHSA
+inchangé : 6,7 % (1/15).** Lecture des 14 cas GHSA toujours ratés dans le
+cache local du corpus (`benchmarks/external-corpus/v1/cache/ghsa/`) :
+l'hypothèse ne tient pas. Les CVE réels enregistrent et distribuent les
+messages `postMessage` via des méthodes d'objet et des tables de dispatch
+par type de message (`api.source.postMessage(...)`, un gestionnaire
+affecté dynamiquement à `api.xxxHandler`), pas via une simple fonction
+`function` de premier niveau importée puis passée directement à
+`addEventListener`. Ce motif plus riche (fermetures, méthodes, dispatch
+par type) reste explicitement hors de portée (voir
+`docs/extractors.md`). La fonctionnalité livrée ici est correcte et
+testée sur son périmètre déclaré ; elle ne corrige simplement pas la
+cause réelle des misses GHSA de ce corpus. Aucune régression sur les
+autres sources (`sak3y`, `pwnfunction`, `domdig`, `npm`).
+
 La suite synthétique existante a été exécutée : cinq checks, chacun TP=2,
 FP=0, FN=0, TN=2. Elle reste une suite de régression, pas une estimation de
 qualité.

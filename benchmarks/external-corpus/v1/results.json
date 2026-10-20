@@ -8,21 +8,21 @@
       "files": [
         {
           "bytes": 2218,
-          "elapsed_ms": 0,
+          "elapsed_ms": 4,
           "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-w937-fg2h-xhq2/pre/src/api/handleEditKey.js"
         },
         {
           "bytes": 1656,
-          "elapsed_ms": 0,
+          "elapsed_ms": 2,
           "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-w937-fg2h-xhq2/pre/src/api/handleRequestPopupChanges.js"
         },
         {
           "bytes": 4087,
-          "elapsed_ms": 0,
+          "elapsed_ms": 5,
           "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-w937-fg2h-xhq2/pre/src/api/postMessage.js"
@@ -39,21 +39,21 @@
       "files": [
         {
           "bytes": 5105,
-          "elapsed_ms": 0,
+          "elapsed_ms": 5,
           "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-w937-fg2h-xhq2/post/src/api/handleEditKey.js"
         },
         {
           "bytes": 2652,
-          "elapsed_ms": 0,
+          "elapsed_ms": 4,
           "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-w937-fg2h-xhq2/post/src/api/handleRequestPopupChanges.js"
         },
         {
           "bytes": 4709,
-          "elapsed_ms": 0,
+          "elapsed_ms": 10,
           "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-w937-fg2h-xhq2/post/src/api/postMessage.js"
@@ -70,21 +70,21 @@
       "files": [
         {
           "bytes": 24589,
-          "elapsed_ms": 1,
+          "elapsed_ms": 28,
           "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-j5mf-6rh3-rhgg/pre/src/modules/notification.js"
         },
         {
           "bytes": 14985,
-          "elapsed_ms": 1,
+          "elapsed_ms": 14,
           "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-j5mf-6rh3-rhgg/pre/src/modules/visualBuilder/pageBuilder.js"
         },
         {
           "bytes": 5193,
-          "elapsed_ms": 0,
+          "elapsed_ms": 5,
           "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-j5mf-6rh3-rhgg/pre/src/util/campaignRender/nativeDisplay.js"
@@ -101,21 +101,21 @@
       "files": [
         {
           "bytes": 24747,
-          "elapsed_ms": 1,
+          "elapsed_ms": 24,
           "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-j5mf-6rh3-rhgg/post/src/modules/notification.js"
         },
         {
           "bytes": 14889,
-          "elapsed_ms": 1,
+          "elapsed_ms": 13,
           "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-j5mf-6rh3-rhgg/post/src/modules/visualBuilder/pageBuilder.js"
         },
         {
           "bytes": 5193,
-          "elapsed_ms": 0,
+          "elapsed_ms": 5,
           "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-j5mf-6rh3-rhgg/post/src/util/campaignRender/nativeDisplay.js"
@@ -132,7 +132,7 @@
       "files": [
         {
           "bytes": 22812,
-          "elapsed_ms": 2,
+          "elapsed_ms": 28,
           "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-hhqj-cfjx-vj25/pre/plugin/notes/speaker-view.html"
@@ -149,7 +149,7 @@
       "files": [
         {
           "bytes": 22885,
-          "elapsed_ms": 1,
+          "elapsed_ms": 26,
           "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-hhqj-cfjx-vj25/post/plugin/notes/speaker-view.html"
@@ -166,7 +166,7 @@
       "files": [
         {
           "bytes": 11130,
-          "elapsed_ms": 0,
+          "elapsed_ms": 8,
           "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-xvg9-69gf-fjrf/pre/material/templates/base.html"
@@ -183,7 +183,7 @@
       "files": [
         {
           "bytes": 11130,
-          "elapsed_ms": 0,
+          "elapsed_ms": 6,
           "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-xvg9-69gf-fjrf/post/material/templates/base.html"
@@ -200,7 +200,7 @@
       "files": [
         {
           "bytes": 315936,
-          "elapsed_ms": 32,
+          "elapsed_ms": 371,
           "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-9q4r-x2hj-jmvr/pre/copyparty/web/browser.js"
@@ -217,7 +217,7 @@
       "files": [
         {
           "bytes": 315966,
-          "elapsed_ms": 33,
+          "elapsed_ms": 360,
           "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-9q4r-x2hj-jmvr/post/copyparty/web/browser.js"
@@ -234,7 +234,7 @@
       "files": [
         {
           "bytes": 102518,
-          "elapsed_ms": 10,
+          "elapsed_ms": 112,
           "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-m2jw-cj8v-937r/pre/copyparty/web/up2k.js"
@@ -251,7 +251,7 @@
       "files": [
         {
           "bytes": 102528,
-          "elapsed_ms": 10,
+          "elapsed_ms": 113,
           "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-m2jw-cj8v-937r/post/copyparty/web/up2k.js"
@@ -268,7 +268,7 @@
       "files": [
         {
           "bytes": 47845,
-          "elapsed_ms": 3,
+          "elapsed_ms": 44,
           "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-vgjm-2cpf-4g7c/pre/public/js/gogs.js"
@@ -285,7 +285,7 @@
       "files": [
         {
           "bytes": 47885,
-          "elapsed_ms": 4,
+          "elapsed_ms": 43,
           "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-vgjm-2cpf-4g7c/post/public/js/gogs.js"
@@ -302,28 +302,28 @@
       "files": [
         {
           "bytes": 6254,
-          "elapsed_ms": 0,
+          "elapsed_ms": 6,
           "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-g3hc-697w-wm82/pre/js/component.js"
         },
         {
           "bytes": 922,
-          "elapsed_ms": 0,
+          "elapsed_ms": 1,
           "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-g3hc-697w-wm82/pre/js/features/supportDispatches.js"
         },
         {
           "bytes": 1431,
-          "elapsed_ms": 0,
+          "elapsed_ms": 1,
           "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-g3hc-697w-wm82/pre/js/features/supportFileDownloads.js"
         },
         {
           "bytes": 1070,
-          "elapsed_ms": 0,
+          "elapsed_ms": 1,
           "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-g3hc-697w-wm82/pre/js/features/supportHotReloading.js"
@@ -337,7 +337,7 @@
         },
         {
           "bytes": 2479,
-          "elapsed_ms": 0,
+          "elapsed_ms": 3,
           "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-g3hc-697w-wm82/pre/js/features/supportLaravelEcho.js"
@@ -354,42 +354,42 @@
       "files": [
         {
           "bytes": 6486,
-          "elapsed_ms": 0,
+          "elapsed_ms": 6,
           "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-g3hc-697w-wm82/post/js/component.js"
         },
         {
           "bytes": 1121,
-          "elapsed_ms": 0,
+          "elapsed_ms": 1,
           "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-g3hc-697w-wm82/post/js/features/supportDispatches.js"
         },
         {
           "bytes": 1536,
-          "elapsed_ms": 0,
+          "elapsed_ms": 1,
           "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-g3hc-697w-wm82/post/js/features/supportFileDownloads.js"
         },
         {
           "bytes": 1173,
-          "elapsed_ms": 0,
+          "elapsed_ms": 1,
           "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-g3hc-697w-wm82/post/js/features/supportHotReloading.js"
         },
         {
           "bytes": 938,
-          "elapsed_ms": 0,
+          "elapsed_ms": 1,
           "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-g3hc-697w-wm82/post/js/features/supportJsEvaluation.js"
         },
         {
           "bytes": 2594,
-          "elapsed_ms": 0,
+          "elapsed_ms": 3,
           "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-g3hc-697w-wm82/post/js/features/supportLaravelEcho.js"
@@ -406,7 +406,7 @@
       "files": [
         {
           "bytes": 18999,
-          "elapsed_ms": 1,
+          "elapsed_ms": 21,
           "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-24x4-j6x9-rfw5/pre/src/web/assets/craftsupport/src/CraftSupportWidget.js"
@@ -423,7 +423,7 @@
       "files": [
         {
           "bytes": 19052,
-          "elapsed_ms": 1,
+          "elapsed_ms": 21,
           "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-24x4-j6x9-rfw5/post/src/web/assets/craftsupport/src/CraftSupportWidget.js"
@@ -440,7 +440,7 @@
       "files": [
         {
           "bytes": 6435,
-          "elapsed_ms": 0,
+          "elapsed_ms": 7,
           "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-xr7p-8q82-878q/pre/internal/event/www/script.js"
@@ -457,7 +457,7 @@
       "files": [
         {
           "bytes": 6694,
-          "elapsed_ms": 0,
+          "elapsed_ms": 6,
           "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-xr7p-8q82-878q/post/internal/event/www/script.js"
@@ -477,7 +477,7 @@
       "files": [
         {
           "bytes": 4649,
-          "elapsed_ms": 0,
+          "elapsed_ms": 6,
           "findings": [
             "DOM XSS: location.href -> new URL -> location.href"
           ],
@@ -486,7 +486,7 @@
         },
         {
           "bytes": 8517,
-          "elapsed_ms": 0,
+          "elapsed_ms": 11,
           "findings": [
             "DOM XSS: location.search -> new URLSearchParams -> get -> (expr).innerHTML"
           ],
@@ -511,7 +511,7 @@
       "files": [
         {
           "bytes": 4716,
-          "elapsed_ms": 0,
+          "elapsed_ms": 6,
           "findings": [
             "DOM XSS: location.href -> new URL -> location.href"
           ],
@@ -520,7 +520,7 @@
         },
         {
           "bytes": 8551,
-          "elapsed_ms": 1,
+          "elapsed_ms": 10,
           "findings": [
             "DOM XSS: location.search -> new URLSearchParams -> get -> replace -> (expr).innerHTML"
           ],
@@ -542,7 +542,7 @@
       "files": [
         {
           "bytes": 193370,
-          "elapsed_ms": 13,
+          "elapsed_ms": 178,
           "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-867c-p784-5q6g/pre/js/privatebin.js"
@@ -559,7 +559,7 @@
       "files": [
         {
           "bytes": 193736,
-          "elapsed_ms": 12,
+          "elapsed_ms": 177,
           "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-867c-p784-5q6g/post/js/privatebin.js"
@@ -576,7 +576,7 @@
       "files": [
         {
           "bytes": 167601,
-          "elapsed_ms": 10,
+          "elapsed_ms": 155,
           "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-8j72-p2wm-6738/pre/js/privatebin.js"
@@ -593,7 +593,7 @@
       "files": [
         {
           "bytes": 167765,
-          "elapsed_ms": 10,
+          "elapsed_ms": 157,
           "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-8j72-p2wm-6738/post/js/privatebin.js"
@@ -610,21 +610,21 @@
       "files": [
         {
           "bytes": 2521,
-          "elapsed_ms": 0,
+          "elapsed_ms": 2,
           "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-gc5h-6jx9-q2qh/pre/src/bundle/Resources/public/js/scripts/fieldType/ezbinaryfile.js"
         },
         {
           "bytes": 5936,
-          "elapsed_ms": 0,
+          "elapsed_ms": 5,
           "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-gc5h-6jx9-q2qh/pre/src/bundle/Resources/public/js/scripts/fieldType/ezimage.js"
         },
         {
           "bytes": 6441,
-          "elapsed_ms": 0,
+          "elapsed_ms": 5,
           "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-gc5h-6jx9-q2qh/pre/src/bundle/Resources/public/js/scripts/fieldType/ezmedia.js"
@@ -641,21 +641,21 @@
       "files": [
         {
           "bytes": 2621,
-          "elapsed_ms": 0,
+          "elapsed_ms": 2,
           "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-gc5h-6jx9-q2qh/post/src/bundle/Resources/public/js/scripts/fieldType/ezbinaryfile.js"
         },
         {
           "bytes": 6035,
-          "elapsed_ms": 0,
+          "elapsed_ms": 5,
           "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-gc5h-6jx9-q2qh/post/src/bundle/Resources/public/js/scripts/fieldType/ezimage.js"
         },
         {
           "bytes": 6540,
-          "elapsed_ms": 0,
+          "elapsed_ms": 5,
           "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-gc5h-6jx9-q2qh/post/src/bundle/Resources/public/js/scripts/fieldType/ezmedia.js"
@@ -672,7 +672,7 @@
       "files": [
         {
           "bytes": 19346,
-          "elapsed_ms": 2,
+          "elapsed_ms": 18,
           "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-78qv-3mpx-9cqq/pre/nicegui/static/nicegui.js"
@@ -689,7 +689,7 @@
       "files": [
         {
           "bytes": 19476,
-          "elapsed_ms": 2,
+          "elapsed_ms": 17,
           "findings": [],
           "flows": 0,
           "path": "ghsa/GHSA-78qv-3mpx-9cqq/post/nicegui/static/nicegui.js"
@@ -1967,7 +1967,7 @@
       "files": [
         {
           "bytes": 127,
-          "elapsed_ms": 0,
+          "elapsed_ms": 1,
           "findings": [
             "DOM XSS: location.search -> new URLSearchParams -> get -> (expr).innerHTML"
           ],
@@ -2182,7 +2182,7 @@
       "files": [
         {
           "bytes": 153,
-          "elapsed_ms": 0,
+          "elapsed_ms": 1,
           "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_143.js"
@@ -2867,7 +2867,7 @@
       "files": [
         {
           "bytes": 180,
-          "elapsed_ms": 0,
+          "elapsed_ms": 1,
           "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_191.js"
@@ -2884,7 +2884,7 @@
       "files": [
         {
           "bytes": 167,
-          "elapsed_ms": 0,
+          "elapsed_ms": 1,
           "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_192.js"
@@ -2903,7 +2903,7 @@
       "files": [
         {
           "bytes": 201,
-          "elapsed_ms": 0,
+          "elapsed_ms": 1,
           "findings": [
             "DOM XSS: location.hash -> slice -> div.innerHTML"
           ],
@@ -3096,7 +3096,7 @@
       "files": [
         {
           "bytes": 105,
-          "elapsed_ms": 0,
+          "elapsed_ms": 1,
           "findings": [
             "DOM XSS: location.search -> new URLSearchParams -> get -> document.write"
           ],
@@ -3506,7 +3506,7 @@
       "files": [
         {
           "bytes": 140,
-          "elapsed_ms": 0,
+          "elapsed_ms": 1,
           "findings": [
             "DOM XSS: location.search -> new URLSearchParams -> get -> (expr).outerHTML"
           ],
@@ -3584,7 +3584,7 @@
       "files": [
         {
           "bytes": 142,
-          "elapsed_ms": 0,
+          "elapsed_ms": 1,
           "findings": [],
           "flows": 0,
           "path": "sak3y/snippet_230.js"
@@ -5354,7 +5354,7 @@
       "files": [
         {
           "bytes": 268,
-          "elapsed_ms": 0,
+          "elapsed_ms": 1,
           "findings": [
             "DOM XSS: location -> new URL -> get -> replace -> uganda.innerHTML"
           ],
@@ -5547,7 +5547,7 @@
       "files": [
         {
           "bytes": 1541,
-          "elapsed_ms": 0,
+          "elapsed_ms": 3,
           "findings": [],
           "flows": 0,
           "path": "pwnfunction/challenges/bourne.html"
@@ -5564,7 +5564,7 @@
       "files": [
         {
           "bytes": 1416,
-          "elapsed_ms": 0,
+          "elapsed_ms": 1,
           "findings": [],
           "flows": 0,
           "path": "pwnfunction/challenges/ded.html"
@@ -5581,7 +5581,7 @@
       "files": [
         {
           "bytes": 1027,
-          "elapsed_ms": 0,
+          "elapsed_ms": 1,
           "findings": [],
           "flows": 0,
           "path": "pwnfunction/challenges/keanu.html"
@@ -5598,7 +5598,7 @@
       "files": [
         {
           "bytes": 1872,
-          "elapsed_ms": 0,
+          "elapsed_ms": 3,
           "findings": [],
           "flows": 0,
           "path": "pwnfunction/challenges/me-and-the-bois.html"
@@ -5617,7 +5617,7 @@
       "files": [
         {
           "bytes": 1844,
-          "elapsed_ms": 0,
+          "elapsed_ms": 3,
           "findings": [
             "DOM XSS: location -> new URL -> get -> escape -> document.write"
           ],
@@ -5640,7 +5640,7 @@
       "files": [
         {
           "bytes": 502,
-          "elapsed_ms": 0,
+          "elapsed_ms": 1,
           "findings": [],
           "flows": 0,
           "path": "domdig/attributes.html"
@@ -5679,7 +5679,7 @@
         },
         {
           "bytes": 1720,
-          "elapsed_ms": 0,
+          "elapsed_ms": 2,
           "findings": [],
           "flows": 0,
           "path": "domdig/deep.html"
@@ -5709,7 +5709,7 @@
         },
         {
           "bytes": 1123,
-          "elapsed_ms": 0,
+          "elapsed_ms": 2,
           "findings": [],
           "flows": 0,
           "path": "domdig/fetch.html"
@@ -5740,7 +5740,7 @@
         },
         {
           "bytes": 905,
-          "elapsed_ms": 0,
+          "elapsed_ms": 1,
           "findings": [
             "DOM XSS: location.href -> split -> location.href"
           ],
@@ -5803,7 +5803,7 @@
         },
         {
           "bytes": 423,
-          "elapsed_ms": 0,
+          "elapsed_ms": 1,
           "findings": [],
           "flows": 0,
           "path": "domdig/postmessage-frame.html"
@@ -5893,7 +5893,7 @@
         },
         {
           "bytes": 1727,
-          "elapsed_ms": 0,
+          "elapsed_ms": 3,
           "findings": [],
           "flows": 0,
           "path": "domdig/xhr.html"
@@ -5912,7 +5912,7 @@
       "files": [
         {
           "bytes": 285314,
-          "elapsed_ms": 18,
+          "elapsed_ms": 223,
           "findings": [],
           "flows": 0,
           "path": "npm/jquery@3.7.1/dist/jquery.js"
@@ -5929,7 +5929,7 @@
       "files": [
         {
           "bytes": 544098,
-          "elapsed_ms": 33,
+          "elapsed_ms": 523,
           "findings": [],
           "flows": 0,
           "path": "npm/lodash@4.17.21/lodash.js"
@@ -5946,7 +5946,7 @@
       "files": [
         {
           "bytes": 68778,
-          "elapsed_ms": 6,
+          "elapsed_ms": 77,
           "findings": [],
           "flows": 0,
           "path": "npm/underscore@1.13.7/underscore-umd.js"
@@ -5963,7 +5963,7 @@
       "files": [
         {
           "bytes": 176435,
-          "elapsed_ms": 9,
+          "elapsed_ms": 146,
           "findings": [],
           "flows": 0,
           "path": "npm/moment@2.30.1/moment.js"
@@ -5980,7 +5980,7 @@
       "files": [
         {
           "bytes": 80390,
-          "elapsed_ms": 5,
+          "elapsed_ms": 79,
           "findings": [],
           "flows": 0,
           "path": "npm/backbone@1.6.0/backbone.js"
@@ -5997,7 +5997,7 @@
       "files": [
         {
           "bytes": 202012,
-          "elapsed_ms": 15,
+          "elapsed_ms": 180,
           "findings": [],
           "flows": 0,
           "path": "npm/handlebars@4.7.8/dist/handlebars.js"
@@ -6014,7 +6014,7 @@
       "files": [
         {
           "bytes": 25124,
-          "elapsed_ms": 1,
+          "elapsed_ms": 22,
           "findings": [],
           "flows": 0,
           "path": "npm/mustache@4.2.0/mustache.js"
@@ -6031,7 +6031,7 @@
       "files": [
         {
           "bytes": 102765,
-          "elapsed_ms": 8,
+          "elapsed_ms": 90,
           "findings": [],
           "flows": 0,
           "path": "npm/marked@4.3.0/lib/marked.umd.js"
@@ -6048,7 +6048,7 @@
       "files": [
         {
           "bytes": 67137,
-          "elapsed_ms": 5,
+          "elapsed_ms": 71,
           "findings": [],
           "flows": 0,
           "path": "npm/dompurify@3.1.6/dist/purify.js"
@@ -6065,7 +6065,7 @@
       "files": [
         {
           "bytes": 207819,
-          "elapsed_ms": 19,
+          "elapsed_ms": 231,
           "findings": [],
           "flows": 0,
           "path": "npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.js"
@@ -6082,7 +6082,7 @@
       "files": [
         {
           "bytes": 145668,
-          "elapsed_ms": 11,
+          "elapsed_ms": 128,
           "findings": [],
           "flows": 0,
           "path": "npm/axios@1.7.7/dist/axios.js"
@@ -6099,7 +6099,7 @@
       "files": [
         {
           "bytes": 525616,
-          "elapsed_ms": 38,
+          "elapsed_ms": 458,
           "findings": [],
           "flows": 0,
           "path": "npm/vue@3.4.38/dist/vue.global.js"
@@ -6116,7 +6116,7 @@
       "files": [
         {
           "bytes": 109931,
-          "elapsed_ms": 6,
+          "elapsed_ms": 94,
           "findings": [],
           "flows": 0,
           "path": "npm/react@18.3.1/umd/react.development.js"
@@ -6133,7 +6133,7 @@
       "files": [
         {
           "bytes": 1080227,
-          "elapsed_ms": 74,
+          "elapsed_ms": 1059,
           "findings": [],
           "flows": 0,
           "path": "npm/react-dom@18.3.1/umd/react-dom.development.js"
@@ -6150,7 +6150,7 @@
       "files": [
         {
           "bytes": 108883,
-          "elapsed_ms": 10,
+          "elapsed_ms": 101,
           "findings": [],
           "flows": 0,
           "path": "npm/alpinejs@3.14.1/dist/cdn.js"
@@ -6167,7 +6167,7 @@
       "files": [
         {
           "bytes": 160809,
-          "elapsed_ms": 10,
+          "elapsed_ms": 125,
           "findings": [],
           "flows": 0,
           "path": "npm/htmx.org@2.0.2/dist/htmx.js"
@@ -6184,7 +6184,7 @@
       "files": [
         {
           "bytes": 587043,
-          "elapsed_ms": 66,
+          "elapsed_ms": 696,
           "findings": [],
           "flows": 0,
           "path": "npm/d3@7.9.0/dist/d3.js"
@@ -6201,7 +6201,7 @@
       "files": [
         {
           "bytes": 205475,
-          "elapsed_ms": 30,
+          "elapsed_ms": 262,
           "findings": [],
           "flows": 0,
           "path": "npm/chart.js@4.4.4/dist/chart.umd.js"
@@ -6218,7 +6218,7 @@
       "files": [
         {
           "bytes": 26807,
-          "elapsed_ms": 2,
+          "elapsed_ms": 39,
           "findings": [],
           "flows": 0,
           "path": "npm/clipboard@2.0.11/dist/clipboard.js"
@@ -6235,7 +6235,7 @@
       "files": [
         {
           "bytes": 173566,
-          "elapsed_ms": 16,
+          "elapsed_ms": 217,
           "findings": [],
           "flows": 0,
           "path": "npm/select2@4.0.13/dist/js/select2.full.js"
@@ -6252,7 +6252,7 @@
       "files": [
         {
           "bytes": 450229,
-          "elapsed_ms": 34,
+          "elapsed_ms": 466,
           "findings": [],
           "flows": 0,
           "path": "npm/leaflet@1.9.4/dist/leaflet-src.js"
@@ -6269,7 +6269,7 @@
       "files": [
         {
           "bytes": 188161,
-          "elapsed_ms": 15,
+          "elapsed_ms": 269,
           "findings": [],
           "flows": 0,
           "path": "npm/validator@13.12.0/validator.js"
@@ -6286,7 +6286,7 @@
       "files": [
         {
           "bytes": 4189,
-          "elapsed_ms": 0,
+          "elapsed_ms": 4,
           "findings": [],
           "flows": 0,
           "path": "npm/js-cookie@3.0.5/dist/js.cookie.js"
@@ -6303,7 +6303,7 @@
       "files": [
         {
           "bytes": 162615,
-          "elapsed_ms": 13,
+          "elapsed_ms": 170,
           "findings": [],
           "flows": 0,
           "path": "npm/sweetalert2@11.14.0/dist/sweetalert2.all.js"
@@ -6320,7 +6320,7 @@
       "files": [
         {
           "bytes": 377684,
-          "elapsed_ms": 29,
+          "elapsed_ms": 380,
           "findings": [],
           "flows": 0,
           "path": "npm/datatables.net@2.1.5/js/dataTables.js"
@@ -6337,7 +6337,7 @@
       "files": [
         {
           "bytes": 31759,
-          "elapsed_ms": 2,
+          "elapsed_ms": 28,
           "findings": [],
           "flows": 0,
           "path": "npm/page@1.11.6/page.js"
@@ -6354,7 +6354,7 @@
       "files": [
         {
           "bytes": 24622,
-          "elapsed_ms": 2,
+          "elapsed_ms": 21,
           "findings": [],
           "flows": 0,
           "path": "npm/history@5.3.0/umd/history.development.js"
@@ -6371,7 +6371,7 @@
       "files": [
         {
           "bytes": 162295,
-          "elapsed_ms": 13,
+          "elapsed_ms": 168,
           "findings": [],
           "flows": 0,
           "path": "npm/vue-router@4.4.3/dist/vue-router.global.js"
@@ -6381,7 +6381,7 @@
       "id": "npm/vue-router@4.4.3"
     }
   ],
-  "commit": "ca1fc0dac8541a9d647f4076ac95f888ce089bd3",
+  "commit": "3787a4342fc96766ac60b961c33e04f23284b53d",
   "corpus": "external-corpus-v1",
   "mode": "static registry (ExtractorRegistry::with_defaults), per file, release build"
 }
