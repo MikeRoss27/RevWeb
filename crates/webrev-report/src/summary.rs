@@ -17,6 +17,11 @@ pub struct Summary {
     pub by_status: BTreeMap<String, usize>,
     /// Unique endpoints split by internal (in-scope) vs external (third-party).
     pub endpoints_by_scope: BTreeMap<String, usize>,
+    /// Unique endpoints split by best evidence tier (`inferred`/`static`/
+    /// `observed`) — the strongest source among every finding that
+    /// normalized into that endpoint. See `webrev_core::EndpointConfidence`.
+    #[serde(default)]
+    pub endpoints_by_evidence_tier: BTreeMap<String, usize>,
 }
 
 impl Summary {
@@ -48,12 +53,19 @@ impl Summary {
         summary
     }
 
-    /// Record the internal/external split of the session's unique endpoints.
+    /// Record the internal/external split and best-evidence-tier breakdown
+    /// of the session's unique (normalized) endpoints.
     pub fn set_endpoint_scopes(&mut self, endpoints: &[Endpoint]) {
+        self.endpoints_by_scope.clear();
+        self.endpoints_by_evidence_tier.clear();
         for endpoint in endpoints {
             *self
                 .endpoints_by_scope
                 .entry(endpoint.scope.slug().to_owned())
+                .or_insert(0) += 1;
+            *self
+                .endpoints_by_evidence_tier
+                .entry(endpoint.confidence.slug().to_owned())
                 .or_insert(0) += 1;
         }
     }
@@ -88,5 +100,21 @@ mod tests {
         assert_eq!(summary.by_kind["script"], 1);
         assert_eq!(summary.by_confidence["high"], 2);
         assert_eq!(summary.by_confidence["low"], 1);
+    }
+
+    #[test]
+    fn endpoint_evidence_tiers_are_tallied() {
+        use webrev_core::{Endpoint, Method};
+
+        let endpoints = vec![
+            Endpoint::new("/live", Method::Get, Source::Browser),
+            Endpoint::new("/static", Method::Get, Source::JsAst),
+            Endpoint::new("/guessed/{id}", Method::Get, Source::JsRegex).with_inferred_pattern(),
+        ];
+        let mut summary = Summary::default();
+        summary.set_endpoint_scopes(&endpoints);
+        assert_eq!(summary.endpoints_by_evidence_tier["observed"], 1);
+        assert_eq!(summary.endpoints_by_evidence_tier["static"], 1);
+        assert_eq!(summary.endpoints_by_evidence_tier["inferred"], 1);
     }
 }

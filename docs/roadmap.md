@@ -122,9 +122,20 @@ capacités déjà présentes.
       DOT/XML et le déterminisme de sortie.
       `crates/webrev-report/src/graph.rs`, `crates/webrev-report/src/format.rs`,
       `crates/webrev-cli/src/cli.rs`
-- [ ] **Score de confiance par endpoint** — distinguer "vu en trafic live" >
-      "vu en JS statique" > "deviné par normalisation de pattern".
-      `crates/webrev-core/src/model/endpoint.rs`, `crates/webrev-core/src/model/normalize.rs`
+- [x] **Score de confiance par endpoint** (2026-10-20) — `EndpointConfidence`
+      (`inferred` < `static` < `observed`) distingue "vu en trafic live" >
+      "vu en JS statique/HTML/manifest" > "deviné par normalisation de
+      pattern/template". `Endpoint::merge_from` conserve la meilleure preuve
+      (et sa source) quand plusieurs findings normalisent vers la même route,
+      quel que soit l'ordre d'écriture — une route déjà `observed` n'est
+      jamais rétrogradée par un hit statique ou inféré arrivant ensuite.
+      Persisté par endpoint dans `webrev-storage`, compté dans
+      `Summary::endpoints_by_evidence_tier`, exposé dans le rapport JSON
+      (`Endpoint::confidence`), la ligne "Endpoint evidence" du résumé CLI,
+      l'export GraphML/DOT et l'onglet Endpoints du TUI.
+      `crates/webrev-core/src/model/endpoint.rs`, `crates/webrev-core/src/model/normalize.rs`,
+      `crates/webrev-storage/src/backends/memory.rs`, `crates/webrev-report/src/summary.rs`,
+      `crates/webrev-cli/src/commands/output.rs`, `crates/webrev-tui/src/app/updates.rs`
 - [ ] **Fingerprint cross-cibles** — comparer la stack/API de plusieurs
       domaines scannés pour repérer la réutilisation d'infra dans un même
       engagement multi-cibles.

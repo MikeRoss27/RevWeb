@@ -92,8 +92,14 @@ impl App {
                     "ext"
                 }
             };
+            // The evidence tier for this one occurrence (live traffic > static
+            // JS/HTML > inferred/normalized). The deduplicated per-route best
+            // tier lives on the stored `Endpoint` (see
+            // `webrev_core::EndpointConfidence` and the JSON/graph exports);
+            // this live view shows the tier of the source that just fired.
+            let tier = finding.provenance.source.endpoint_confidence();
             self.endpoints.push(format!(
-                "{sev} {scope_tag} {} [{}]",
+                "{sev} {scope_tag} {} [{}; evidence={tier}]",
                 webrev_core::model::triage::terminal_text(&finding.value),
                 finding.provenance.source
             ));
