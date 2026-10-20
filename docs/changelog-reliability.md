@@ -737,3 +737,39 @@ par défaut » ci-dessous décrivent l'état avant ce changement.
 - Tests : deux tests positifs et un test de concaténation/fallback ajoutés
   dans `domsinks_tests.rs`. Suite complète du workspace, `clippy`
   `--all-targets -- -D warnings` et `fmt --check` passent.
+
+## 2026-10-20 — liaison inter-fichiers `postMessage` : rappel GHSA inchangé
+
+- Constat : les cas GHSA encore ratés (ci-dessus) avaient été attribués par
+  hypothèse à des flux `postMessage` passant d'un fichier à l'autre, hors de
+  la portée intra-fichier existante.
+- Changement : `modules.rs`
+  (`crates/webrev-extract/src/extractors/metadata/domsinks/`) gagne un
+  sous-module `handlers.rs` qui lie `window.addEventListener('message',
+  imported)` / `addEventListener('message', imported)` à travers les
+  fichiers, quand `imported` est un identifiant importé (nommé ou par
+  défaut, un seul saut — pas via un barrel de ré-export) d'une déclaration
+  `function` de premier niveau d'un autre module. Le premier paramètre de
+  cette déclaration est semé comme `event.data`, puis son corps analysé
+  exactement comme un handler `message` du même fichier le serait.
+- Tests : six tests dans `modules/tests_handlers.rs` — le cas lié
+  (import nommé et import par défaut), et les limites volontaires qui
+  restent non suivies : membre de namespace, registre calculé, handler
+  atteint seulement via un barrel de ré-export, handler lié à une
+  expression de fonction/flèche plutôt qu'à une déclaration `function`.
+- Rerun du corpus externe v1 : **rappel GHSA inchangé, 6,7 % (1/15)**.
+  Lecture des 14 cas GHSA toujours ratés dans le cache local du corpus
+  (`benchmarks/external-corpus/v1/cache/ghsa/`) : l'hypothèse ne tient pas
+  pour ce corpus — les CVE réels distribuent les messages `postMessage` via
+  des méthodes d'objet et des tables de dispatch par type de message
+  (`api.source.postMessage(...)`, un handler affecté dynamiquement à
+  `api.xxxHandler`), pas via une simple déclaration `function` de premier
+  niveau importée puis passée directement à `addEventListener`. Ce motif
+  plus riche (fermetures, méthodes, dispatch par type) reste explicitement
+  hors de portée. Aucun changement sur `sak3y`, `pwnfunction`, `domdig` ou
+  `npm`, et aucune régression sur les tests de liaison inter-modules
+  existants (`modules/tests_links.rs`).
+- Compromis : la fonctionnalité livrée est correcte et testée sur son
+  périmètre déclaré ; elle ne corrige simplement pas la cause réelle des
+  cas ratés de ce corpus. Documenté plutôt que masqué, conformément au
+  principe du projet de ne pas gonfler artificiellement les métriques.

@@ -17,6 +17,7 @@ use swc_core::ecma::ast::{
 use url::Url;
 
 mod functions;
+mod handlers;
 mod links;
 use functions::{function_exports, local_functions};
 
@@ -487,11 +488,97 @@ impl DomSinkExtractor {
                 findings.push(finding);
             }
         }
+        findings.extend(Self::cross_module_message_handler_findings(
+            session, &parsed,
+        ));
+        findings
+    }
+
+    /// `window.addEventListener('message', imported)` in one module, where
+    /// `imported` resolves (named or default import, no re-export hop) to a
+    /// top-level `function` declaration in another module: that declaration's
+    /// first parameter is seeded as `event.data` and its body analyzed exactly
+    /// as a same-file `message` handler would be. See [`handlers`] for the
+    /// precise, deliberately narrow boundaries of this linking.
+    fn cross_module_message_handler_findings(
+        session: webrev_core::SessionId,
+        parsed: &[ParsedModule],
+    ) -> Vec<Finding> {
+        let mut target_spans: BTreeMap<String, BTreeSet<(usize, usize)>> = BTreeMap::new();
+        let mut registrations: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
+        for module in parsed {
+            let mut idents = handlers::MessageHandlerIdents::default();
+            module.module.visit_with(&mut idents);
+            for name in idents.0 {
+                let Some((target_url, exported_name)) =
+                    handlers::imported_identifier(module, &name)
+                else {
+                    continue;
+                };
+                let Some(target) = parsed.iter().find(|m| m.url.as_str() == target_url) else {
+                    continue;
+                };
+                let Some(span) = handlers::exported_function(target, &exported_name) else {
+                    continue;
+                };
+                target_spans
+                    .entry(target_url.clone())
+                    .or_default()
+                    .insert(span);
+                registrations
+                    .entry(target_url)
+                    .or_default()
+                    .insert(module.url.to_string());
+            }
+        }
+        let mut findings = Vec::new();
+        for module in parsed {
+            let Some(spans) = target_spans.get(module.url.as_str()) else {
+                continue;
+            };
+            let mut visitor = TaintVisitor::new();
+            visitor.handler_spans.clone_from(spans);
+            for (name, function) in local_functions(module, &visitor, &BTreeMap::new()) {
+                visitor.scopes[0].entry(name.clone()).or_insert(None);
+                visitor.imported_functions.insert(name, function);
+            }
+            module.module.visit_with(&mut visitor);
+            let registering = registrations
+                .get(module.url.as_str())
+                .cloned()
+                .unwrap_or_default();
+            let mut seen = BTreeSet::new();
+            for (value, _) in visitor.traces {
+                if !seen.insert(value.clone()) {
+                    continue;
+                }
+                let mut finding = Finding::new(
+                    session,
+                    FindingKind::Config,
+                    None,
+                    value.clone(),
+                    Confidence::Medium,
+                    Provenance::new(Source::JsAst, Some(module.url.to_string())),
+                );
+                finding.status = webrev_core::FindingStatus::Suspicious;
+                finding.detectors.push("dom-sinks-modules".to_owned());
+                "Static source-to-sink candidate: a `message` event handler imported across an ES-module boundary and registered with addEventListener('message', <imported identifier>) in another module. Runtime reachability, sanitizer context and exploitability remain unverified.".clone_into(&mut finding.justification);
+                let mut provenances = BTreeSet::from([module.url.to_string()]);
+                provenances.extend(registering.iter().cloned());
+                finding.provenances = provenances
+                    .into_iter()
+                    .map(|url| Provenance::new(Source::JsAst, Some(url)))
+                    .collect();
+                findings.push(finding);
+            }
+        }
         findings
     }
 }
 
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod tests_handlers;
 #[cfg(test)]
 mod tests_links;
