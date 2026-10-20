@@ -511,7 +511,10 @@ mod tests {
             width: Some(50),
         };
         let text = render(&report, narrow);
-        let row = text.lines().find(|l| l.trim_start().starts_with('[')).unwrap();
+        let row = text
+            .lines()
+            .find(|l| l.trim_start().starts_with('['))
+            .unwrap();
         assert!(row.chars().count() <= 50, "{row}");
         assert!(
             row.contains('\u{2026}') && row.ends_with("final.js"),

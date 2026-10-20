@@ -41,6 +41,30 @@ impl std::fmt::Display for FindingsFailure {
 
 impl std::error::Error for FindingsFailure {}
 
+/// A mistake in how the command was invoked (exit status 2), as opposed to a
+/// runtime failure (exit status 1). Carries an optional fix-it hint.
+#[derive(Debug)]
+pub struct UsageError {
+    pub message: String,
+    pub hint: Option<&'static str>,
+}
+
+impl std::fmt::Display for UsageError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&self.message)
+    }
+}
+
+impl std::error::Error for UsageError {}
+
+fn usage(message: impl Into<String>, hint: Option<&'static str>) -> anyhow::Error {
+    UsageError {
+        message: message.into(),
+        hint,
+    }
+    .into()
+}
+
 fn severity_of(sel: SeveritySel) -> webrev_core::Severity {
     use webrev_core::Severity;
     match sel {
@@ -124,9 +148,10 @@ fn resolve_seeds(args: &ScanArgs) -> anyhow::Result<Vec<String>> {
     seeds.retain(|s| seen.insert(s.clone()));
 
     if seeds.is_empty() {
-        anyhow::bail!(
-            "no seeds: pass --seed <URL> (repeatable) or pipe URLs on stdin (one per line)"
-        );
+        return Err(usage(
+            "no seeds: no target URL was given",
+            Some("pass --seed <URL> (repeatable), or pipe URLs in: echo https://app.example.com/ | webrev scan"),
+        ));
     }
     Ok(seeds)
 }
@@ -270,7 +295,10 @@ fn validate_scope_host(host: &str) -> anyhow::Result<()> {
             .any(|c| matches!(c, '/' | '?' | '#' | '@' | '*'))
         || host.contains("://")
     {
-        anyhow::bail!("invalid scope host {host:?}; use a hostname or IP literal");
+        return Err(usage(
+            format!("invalid scope host {host:?}"),
+            Some("use a bare hostname or IP literal, e.g. --scope example.com"),
+        ));
     }
     let domain = host.strip_suffix('.').unwrap_or(host);
     let valid = domain.len() <= 253
@@ -284,7 +312,10 @@ fn validate_scope_host(host: &str) -> anyhow::Result<()> {
                     .all(|byte| byte.is_ascii_alphanumeric() || byte == b'-')
         });
     if !valid {
-        anyhow::bail!("invalid scope host {host:?}; use a hostname or IP literal");
+        return Err(usage(
+            format!("invalid scope host {host:?}"),
+            Some("use a bare hostname or IP literal, e.g. --scope example.com"),
+        ));
     }
     Ok(())
 }
@@ -301,8 +332,12 @@ pub async fn dispatch(cli: Cli) -> anyhow::Result<()> {
         Command::Bola(args) => bola::run(args).await,
         Command::WsReplay(args) => ws_replay::run(args).await,
         Command::Tui(args) => {
-            anyhow::ensure!(!args.observation_only,
-                "--observation-only is supported by dynamic and scan --dynamic; TUI browser exploration does not support this policy");
+            if args.observation_only {
+                return Err(usage(
+                    "--observation-only is supported by dynamic and scan --dynamic; TUI browser exploration does not support this policy",
+                    Some("use `webrev dynamic --observation-only`"),
+                ));
+            }
             let (mission, opsec) = build_mission(&args)?;
             webrev_tui::run(TuiOptions {
                 profile: MissionProfile::new(mission, opsec),

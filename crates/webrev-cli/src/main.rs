@@ -18,8 +18,52 @@ mod term;
 use clap::Parser;
 use cli::Command;
 
+/// Exit status: 0 success, 1 runtime failure, 2 usage error (clap and
+/// [`commands::UsageError`]), 3 `--fail-on` threshold reached.
+const EXIT_RUNTIME: u8 = 1;
+const EXIT_USAGE: u8 = 2;
+const EXIT_FINDINGS: u8 = 3;
+
+/// A fix-it hint for common runtime failures.
+fn hint_for(error: &anyhow::Error) -> Option<&'static str> {
+    if let Some(usage) = error.downcast_ref::<commands::UsageError>() {
+        return usage.hint;
+    }
+    let text = format!("{error:#}").to_ascii_lowercase();
+    if text.contains("reading json report") {
+        return Some("run a scan first, or point --input at an existing report");
+    }
+    if text.contains("chrom") {
+        return Some("dynamic analysis needs Chrome or Chromium installed and launchable");
+    }
+    None
+}
+
+fn exit_code_and_print(error: &anyhow::Error) -> u8 {
+    use std::io::IsTerminal;
+    let findings = error.downcast_ref::<commands::FindingsFailure>().is_some();
+    let mode = webrev_tui::color::mode(std::io::stderr().is_terminal());
+    let (red, reset) = if mode.enabled() {
+        ("\x1b[1;31m", "\x1b[0m")
+    } else {
+        ("", "")
+    };
+    let label = if findings { "findings" } else { "error" };
+    eprintln!("{red}{label}:{reset} {error:#}");
+    if let Some(hint) = hint_for(error) {
+        eprintln!("hint: {hint}");
+    }
+    if findings {
+        EXIT_FINDINGS
+    } else if error.downcast_ref::<commands::UsageError>().is_some() {
+        EXIT_USAGE
+    } else {
+        EXIT_RUNTIME
+    }
+}
+
 #[tokio::main]
-async fn main() -> anyhow::Result<()> {
+async fn main() -> std::process::ExitCode {
     // Bare `webrev` and any `--help` are answered by clap before `parse`
     // returns, so brand them up front (still stderr-only, tty-only).
     let args: Vec<String> = std::env::args().skip(1).collect();
@@ -55,5 +99,8 @@ async fn main() -> anyhow::Result<()> {
     if !matches!(parsed.command, Command::Tui(_)) {
         logging::init();
     }
-    commands::dispatch(parsed).await
+    match commands::dispatch(parsed).await {
+        Ok(()) => std::process::ExitCode::SUCCESS,
+        Err(error) => std::process::ExitCode::from(exit_code_and_print(&error)),
+    }
 }
