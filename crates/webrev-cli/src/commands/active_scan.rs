@@ -34,7 +34,7 @@ pub async fn run(args: ScanArgs) -> anyhow::Result<()> {
     }
 
     note!("active findings stored: {}", findings.len());
-    write_session_report(&mission, storage.as_ref(), &args.report, args.redact).await?;
+    write_session_report(&mission, storage.as_ref(), &args).await?;
     Ok(())
 }
 

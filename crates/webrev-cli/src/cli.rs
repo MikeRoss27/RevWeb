@@ -175,68 +175,96 @@ pub struct ScanArgs {
     /// Seed URL to analyze (repeatable). When omitted, seeds are read from
     /// stdin (one URL per line), so `webrev` composes with other tools:
     /// `subfinder -d x.com | httpx | webrev static`.
-    #[arg(long = "seed", value_name = "URL")]
+    #[arg(help_heading = "Target & scope", long = "seed", value_name = "URL")]
     pub seeds: Vec<String>,
     /// Read seed URLs from stdin even if `--seed` was also given (merge both).
-    #[arg(long)]
+    #[arg(help_heading = "Target & scope", long)]
     pub stdin: bool,
     /// In-scope host suffix (repeatable). Defaults to the seeds' hosts.
-    #[arg(long = "scope", value_name = "HOST")]
+    #[arg(help_heading = "Target & scope", long = "scope", value_name = "HOST")]
     pub scope: Vec<String>,
     /// JSON file containing explicit `include` and optional `exclude` host lists.
-    #[arg(long = "scope-file", value_name = "PATH")]
+    #[arg(
+        help_heading = "Target & scope",
+        long = "scope-file",
+        value_name = "PATH"
+    )]
     pub scope_file: Option<std::path::PathBuf>,
     /// Out-of-scope host suffix (repeatable).
-    #[arg(long = "exclude", value_name = "HOST")]
+    #[arg(help_heading = "Target & scope", long = "exclude", value_name = "HOST")]
     pub exclude: Vec<String>,
     /// Mission name.
-    #[arg(long, env = "WEBREV_NAME", default_value = "webrev-mission")]
+    #[arg(
+        help_heading = "Target & scope",
+        long,
+        env = "WEBREV_NAME",
+        default_value = "webrev-mission"
+    )]
     pub name: String,
     /// Optional egress proxy (e.g. http://127.0.0.1:8080).
-    #[arg(long, env = "WEBREV_PROXY")]
+    #[arg(help_heading = "Network & auth", long, env = "WEBREV_PROXY")]
     pub proxy: Option<String>,
     /// Extra request header "Name: Value" (repeatable).
-    #[arg(long = "header", value_name = "NAME: VALUE")]
+    #[arg(
+        help_heading = "Network & auth",
+        long = "header",
+        value_name = "NAME: VALUE"
+    )]
     pub headers: Vec<String>,
     /// Cookie "name=value" (repeatable).
-    #[arg(long = "cookie", value_name = "NAME=VALUE")]
+    #[arg(
+        help_heading = "Network & auth",
+        long = "cookie",
+        value_name = "NAME=VALUE"
+    )]
     pub cookies: Vec<String>,
     /// Bearer token sent as `Authorization: Bearer <token>`.
-    #[arg(long, env = "WEBREV_BEARER")]
+    #[arg(help_heading = "Network & auth", long, env = "WEBREV_BEARER")]
     pub bearer: Option<String>,
     /// Lower bound of the inter-request delay window, in milliseconds.
-    #[arg(long, default_value_t = 150)]
+    #[arg(help_heading = "Budgets & pacing", long, default_value_t = 150)]
     pub delay_min_ms: u64,
     /// Upper bound of the inter-request delay window, in milliseconds.
-    #[arg(long, default_value_t = 600)]
+    #[arg(help_heading = "Budgets & pacing", long, default_value_t = 600)]
     pub delay_max_ms: u64,
     /// Maximum resources fetched per crawl (hard budget).
-    #[arg(long, default_value_t = 50)]
+    #[arg(help_heading = "Budgets & pacing", long, default_value_t = 50)]
     pub max_pages: usize,
     /// Shared active request budget, including controls and failed requests.
-    #[arg(long, default_value_t = 200)]
+    #[arg(help_heading = "Budgets & pacing", long, default_value_t = 200)]
     pub max_active_requests: usize,
     /// Maximum link-following depth from the seeds (0 = seeds only).
-    #[arg(long, default_value_t = 2)]
+    #[arg(help_heading = "Budgets & pacing", long, default_value_t = 2)]
     pub max_depth: usize,
     /// Maximum concurrent in-flight requests during the crawl.
-    #[arg(long, default_value_t = 4)]
+    #[arg(help_heading = "Budgets & pacing", long, default_value_t = 4)]
     pub max_concurrency: usize,
     /// Dynamic dwell time per seed, in seconds.
-    #[arg(long, default_value_t = 8)]
+    #[arg(help_heading = "Budgets & pacing", long, default_value_t = 8)]
     pub duration_secs: u64,
     /// Browser observation only: no driven clicks/scroll; refuse non-GET/HEAD/OPTIONS.
     /// Page scripts, GET and WebSockets can still mutate state. For dynamic and scan --dynamic.
-    #[arg(long)]
+    #[arg(help_heading = "Budgets & pacing", long)]
     pub observation_only: bool,
     /// Report output path (or the TUI's 'r' key). Use '-' for stdout in CLI scans.
-    #[arg(long, default_value = "webrev-report.json")]
+    #[arg(help_heading = "Output", long, default_value = "webrev-report.json")]
     pub report: PathBuf,
     /// Mask credentials in the exported report (URLs, evidence, captured
     /// frames, finding text) so it can be shared. By default the report is raw
     /// and keeps every captured value: treat it as confidential.
-    #[arg(long, env = "WEBREV_REPORT_REDACT", action = clap::ArgAction::SetTrue, value_parser = clap::builder::BoolishValueParser::new())]
+    #[arg(help_heading = "Output", long, env = "WEBREV_REPORT_REDACT", action = clap::ArgAction::SetTrue, value_parser = clap::builder::BoolishValueParser::new())]
     pub redact: bool,
+    /// Attack-surface rows listed in the scan summary (the report keeps all of them).
+    #[arg(long, help_heading = "Output", default_value_t = crate::commands::SUMMARY_LIMIT, value_name = "N", conflicts_with = "all")]
+    pub limit: usize,
+    /// List every attack-surface row in the scan summary.
+    #[arg(long, help_heading = "Output")]
+    pub all: bool,
+    /// Exit with status 3 when a vulnerability or secret at or above this
+    /// severity was found (for CI gates). Without it findings never change the
+    /// exit status.
+    #[arg(long, help_heading = "Output", value_enum, value_name = "SEVERITY")]
+    pub fail_on: Option<SeveritySel>,
 }
 
 /// Output serialization for `report`.

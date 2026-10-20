@@ -16,6 +16,12 @@ use webrev_report::{RenderOptions, ScopeFilter, SessionReport};
 use webrev_storage::{InMemoryStorage, Storage};
 
 pub async fn run(args: ScanAllArgs) -> anyhow::Result<()> {
+    let fail_on = args.scan.fail_on;
+    let report = run_scan(args).await?;
+    super::check_fail_on(&report, fail_on)
+}
+
+async fn run_scan(args: ScanAllArgs) -> anyhow::Result<SessionReport> {
     let ScanAllArgs {
         scan,
         dynamic,
@@ -91,13 +97,14 @@ pub async fn run(args: ScanAllArgs) -> anyhow::Result<()> {
     let findings = storage.findings_by_session(mission.id).await?;
     let endpoints = storage.endpoints_by_session(mission.id).await?;
     let report = SessionReport::build((*mission).clone(), findings, endpoints);
+    let opts = super::output::ShowOpts::from_args(&scan);
     if no_report {
-        super::output::show(&report)?;
+        super::output::show(&report, opts)?;
         note!("done. in-memory session discarded; no report written.");
-        return Ok(());
+        return Ok(report);
     }
     if scan.report != std::path::Path::new("-") {
-        super::output::show(&report)?;
+        super::output::show(&report, opts)?;
     }
 
     let options = RenderOptions {
@@ -110,7 +117,7 @@ pub async fn run(args: ScanAllArgs) -> anyhow::Result<()> {
     let rendered = report.render(options)?;
     if scan.report == std::path::Path::new("-") {
         super::report::write_stdout(&rendered)?;
-        return Ok(());
+        return Ok(report);
     }
     std::fs::write(&scan.report, &rendered)?;
     note!("report written to {}", scan.report.display());
@@ -123,5 +130,5 @@ pub async fn run(args: ScanAllArgs) -> anyhow::Result<()> {
     } else {
         note!("done. in-memory session discarded.");
     }
-    Ok(())
+    Ok(report)
 }

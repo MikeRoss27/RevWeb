@@ -12,10 +12,61 @@ mod scan;
 mod static_scan;
 mod ws_replay;
 
-use crate::cli::{Cli, Command, ScanArgs};
+use crate::cli::{Cli, Command, ScanArgs, SeveritySel};
 use serde_json::Value;
 use webrev_core::{AuthConfig, EgressPolicy, Mission, MissionProfile, OpsecConfig, Scope};
 use webrev_tui::TuiOptions;
+
+/// Default attack-surface rows in the scan summary (`--limit`).
+pub const SUMMARY_LIMIT: usize = 8;
+
+/// `--fail-on` tripped: the scan itself succeeded but found something at or
+/// above the requested severity. `main` maps this to exit status 3.
+#[derive(Debug)]
+pub struct FindingsFailure {
+    pub count: usize,
+    pub threshold: webrev_core::Severity,
+}
+
+impl std::fmt::Display for FindingsFailure {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{} vulnerability or secret finding(s) at or above {} (--fail-on)",
+            self.count,
+            self.threshold.tag().trim()
+        )
+    }
+}
+
+impl std::error::Error for FindingsFailure {}
+
+fn severity_of(sel: SeveritySel) -> webrev_core::Severity {
+    use webrev_core::Severity;
+    match sel {
+        SeveritySel::Info => Severity::Info,
+        SeveritySel::Low => Severity::Low,
+        SeveritySel::Medium => Severity::Medium,
+        SeveritySel::High => Severity::High,
+        SeveritySel::Critical => Severity::Critical,
+    }
+}
+
+/// Apply `--fail-on` to a finished report.
+fn check_fail_on(
+    report: &webrev_report::SessionReport,
+    fail_on: Option<SeveritySel>,
+) -> anyhow::Result<()> {
+    let Some(sel) = fail_on else {
+        return Ok(());
+    };
+    let threshold = severity_of(sel);
+    let count = output::count_at_least(report, threshold);
+    if count > 0 {
+        return Err(FindingsFailure { count, threshold }.into());
+    }
+    Ok(())
+}
 
 /// One line on stderr when a raw report lands on disk: it holds whatever the
 /// scan captured, credentials included, so it is confidential until masked.
@@ -32,21 +83,21 @@ fn warn_if_raw(redact: bool) {
 async fn write_session_report(
     mission: &Mission,
     storage: &dyn webrev_storage::Storage,
-    path: &std::path::Path,
-    redact: bool,
+    args: &ScanArgs,
 ) -> anyhow::Result<()> {
+    let (path, redact) = (args.report.as_path(), args.redact);
     let findings = storage.findings_by_session(mission.id).await?;
     let endpoints = storage.endpoints_by_session(mission.id).await?;
     let report = webrev_report::SessionReport::build(mission.clone(), findings, endpoints);
     if path == std::path::Path::new("-") {
         report::write_stdout(&report.export_json(redact)?)?;
     } else {
-        output::show(&report)?;
+        output::show(&report, output::ShowOpts::from_args(args))?;
         std::fs::write(path, report.export_json(redact)?)?;
         crate::progress::note!("report written to {}", path.display());
         warn_if_raw(redact);
     }
-    Ok(())
+    check_fail_on(&report, args.fail_on)
 }
 
 /// Resolve the seed list: explicit `--seed` values, plus stdin (one URL per

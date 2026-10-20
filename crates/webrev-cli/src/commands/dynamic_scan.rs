@@ -25,7 +25,7 @@ pub async fn run(args: ScanArgs) -> anyhow::Result<()> {
     )
     .await?;
     note!("dynamic findings stored: {total}");
-    write_session_report(&mission, &storage, &args.report, args.redact).await?;
+    write_session_report(&mission, &storage, &args).await?;
     Ok(())
 }
 

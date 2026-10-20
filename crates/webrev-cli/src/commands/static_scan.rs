@@ -38,6 +38,6 @@ pub async fn run(args: ScanArgs) -> anyhow::Result<()> {
     note!("stages: {}", summary.stages.join(" -> "));
     note!("findings stored: {}", summary.findings_emitted);
     note!("stage errors:    {}", summary.errors);
-    write_session_report(&mission, storage.as_ref(), &args.report, args.redact).await?;
+    write_session_report(&mission, storage.as_ref(), &args).await?;
     Ok(())
 }
