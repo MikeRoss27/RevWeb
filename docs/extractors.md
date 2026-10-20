@@ -73,6 +73,32 @@ Endpoints are normalized into route templates before being written to the
 Raw findings keep their original URL; only the endpoints side-table is
 normalized. See `webrev_core::normalize_url`.
 
+### Evidence tier (endpoint-level confidence)
+
+Each `Finding` already carries its own per-extractor `Confidence`
+(low/medium/high) as described above, but that is a *signal* confidence
+("is this really an endpoint/secret/etc."), not a statement about how the
+route itself was discovered. The `endpoints` side-table instead tracks an
+`EndpointConfidence` (`crates/webrev-core/src/model/endpoint.rs`): the best
+evidence tier among every finding that normalized into that route, ranked
+
+1. `observed` — seen in live dynamic-browser network traffic (`Source::Browser`
+   or `Source::Active`): an actual request was made and answered.
+2. `static` — parsed directly from JS/HTML/manifests/source maps
+   (`Source::JsAst`, `JsRegex`, `Html`, `SourceMap`, `Manifest`): it exists
+   literally in code, but may be dead, conditional, or unreachable.
+3. `inferred` — produced only by collapsing concrete instances into a route
+   template (`Endpoint::with_inferred_pattern`) or otherwise guessed, with no
+   direct textual match.
+
+`Endpoint::merge_from` keeps the strongest tier (and its source) whenever two
+findings normalize to the same method+route, regardless of write order — a
+route already `observed` on the wire is never downgraded by a later, weaker
+static or inferred hit. The tier is persisted per endpoint (`webrev-storage`),
+tallied in `Summary::endpoints_by_evidence_tier`, and surfaced in the JSON
+report (`Endpoint::confidence`), the CLI scan summary ("Endpoint evidence"
+line), the GraphML/DOT export, and the TUI Endpoints tab.
+
 ## Secret handling
 
 `SecretExtractor` always retains the detected plaintext. Each match also receives
