@@ -93,13 +93,49 @@ capacités déjà présentes.
 
 ## 4. Corrélation / intelligence
 
-- [ ] **Graphe de relations endpoint ↔ composant ↔ paramètres observés** —
-      export vers un format exploitable (DOT/GraphML/Neo4j) en plus du
-      JSON/CSV actuel.
-      `crates/webrev-report/src/*`, `crates/webrev-storage/src/*`
-- [ ] **Score de confiance par endpoint** — distinguer "vu en trafic live" >
-      "vu en JS statique" > "deviné par normalisation de pattern".
-      `crates/webrev-core/src/model/endpoint.rs`, `crates/webrev-core/src/model/normalize.rs`
+- [x] **Graphe de relations endpoint ↔ composant ↔ paramètres observés** —
+      `SessionReport` expose `render_dot`/`render_graphml` (`ReportFormat::Dot`,
+      `ReportFormat::GraphMl`, CLI `--format dot|graphml`). Le graphe relie
+      uniquement ce qui est réellement observable dans les findings actuels :
+      endpoint → paramètre (`has_parameter`, depuis la query string de
+      l'endpoint stocké ou d'un finding `endpoint`/`parameter` qui matche
+      sans ambiguïté un endpoint par méthode+URL), composant (fichier/script
+      source, via `provenance.location`) → endpoint (`reveals`) et composant →
+      paramètre (`mentions_parameter`), plus endpoint → paramètre
+      (`probed_parameter`) quand une sonde active (`Idor`/`Vulnerability`)
+      porte un nom de paramètre. **Non fait** : aucun lien route client ↔
+      endpoint (le modèle actuel n'a pas de finding "route" relié
+      explicitement ou implicitement à une URL d'API — ce serait une
+      corrélation inventée) ni endpoint ↔ technologie : les findings
+      `Technology` portent bien une provenance (fichier/URL où la stack a été
+      détectée), mais ce n'est pas câblé dans `relation_graph` — relier un
+      composant qui "reveals" un
+      endpoint au même composant qui "uses" une techno donnerait une
+      transitivité endpoint→techno trop indirecte pour être présentée comme
+      une relation observée plutôt que déduite ; laissé pour une itération
+      future plutôt que fait à moitié. Pas d'intégration Neo4j live (hors scope,
+      différente classe de fonctionnalité) ; DOT/GraphML suffisent comme
+      "format exploitable" au sens de la roadmap. La redaction (`--redact`)
+      s'applique au graphe comme aux autres formats (labels masqués via le
+      même `SessionReport::redacted()`). Tests unitaires couvrant les
+      relations attendues, l'absence de relations non prouvées, l'échappement
+      DOT/XML et le déterminisme de sortie.
+      `crates/webrev-report/src/graph.rs`, `crates/webrev-report/src/format.rs`,
+      `crates/webrev-cli/src/cli.rs`
+- [x] **Score de confiance par endpoint** (2026-10-20) — `EndpointConfidence`
+      (`inferred` < `static` < `observed`) distingue "vu en trafic live" >
+      "vu en JS statique/HTML/manifest" > "deviné par normalisation de
+      pattern/template". `Endpoint::merge_from` conserve la meilleure preuve
+      (et sa source) quand plusieurs findings normalisent vers la même route,
+      quel que soit l'ordre d'écriture — une route déjà `observed` n'est
+      jamais rétrogradée par un hit statique ou inféré arrivant ensuite.
+      Persisté par endpoint dans `webrev-storage`, compté dans
+      `Summary::endpoints_by_evidence_tier`, exposé dans le rapport JSON
+      (`Endpoint::confidence`), la ligne "Endpoint evidence" du résumé CLI,
+      l'export GraphML/DOT et l'onglet Endpoints du TUI.
+      `crates/webrev-core/src/model/endpoint.rs`, `crates/webrev-core/src/model/normalize.rs`,
+      `crates/webrev-storage/src/backends/memory.rs`, `crates/webrev-report/src/summary.rs`,
+      `crates/webrev-cli/src/commands/output.rs`, `crates/webrev-tui/src/app/updates.rs`
 - [ ] **Fingerprint cross-cibles** — comparer la stack/API de plusieurs
       domaines scannés pour repérer la réutilisation d'infra dans un même
       engagement multi-cibles.

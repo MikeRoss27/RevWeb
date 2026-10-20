@@ -112,6 +112,23 @@ impl EndpointConfidence {
             Self::Observed => 100,
         }
     }
+
+    /// Short stable slug for CLI/TUI labels and CSV/JSON exports, mirroring
+    /// `Confidence::slug` (finding-level) and `EndpointScope::slug`.
+    #[must_use]
+    pub const fn slug(self) -> &'static str {
+        match self {
+            Self::Inferred => "inferred",
+            Self::Static => "static",
+            Self::Observed => "observed",
+        }
+    }
+}
+
+impl fmt::Display for EndpointConfidence {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(self.slug())
+    }
 }
 
 impl Source {
@@ -251,5 +268,71 @@ mod tests {
         endpoint.merge_from(&Endpoint::new("/api", Method::Get, Source::Browser));
         assert_eq!(endpoint.confidence, EndpointConfidence::Observed);
         assert_eq!(endpoint.source, Source::Browser);
+    }
+
+    /// Once an endpoint has been seen on the wire, later findings from a
+    /// weaker source (static JS, or a normalized/inferred template) must not
+    /// downgrade it: the best evidence seen so far always wins.
+    #[test]
+    fn live_evidence_is_not_downgraded_by_weaker_static_evidence() {
+        let mut endpoint = Endpoint::new("/api", Method::Get, Source::Browser);
+        endpoint.merge_from(&Endpoint::new("/api", Method::Get, Source::JsAst));
+        assert_eq!(endpoint.confidence, EndpointConfidence::Observed);
+        assert_eq!(endpoint.source, Source::Browser);
+
+        endpoint.merge_from(
+            &Endpoint::new("/api/{id}", Method::Get, Source::JsRegex).with_inferred_pattern(),
+        );
+        assert_eq!(endpoint.confidence, EndpointConfidence::Observed);
+        assert_eq!(endpoint.source, Source::Browser);
+    }
+
+    /// An endpoint that only ever came from normalization/pattern-guessing
+    /// (no direct live or static hit) keeps the lowest evidence tier.
+    #[test]
+    fn normalization_only_endpoint_keeps_lowest_tier() {
+        let endpoint =
+            Endpoint::new("/users/{id}", Method::Get, Source::JsRegex).with_inferred_pattern();
+        assert_eq!(endpoint.confidence, EndpointConfidence::Inferred);
+        assert_eq!(endpoint.confidence.score(), 30);
+        assert_eq!(endpoint.confidence.slug(), "inferred");
+
+        let mut merged = endpoint.clone();
+        merged.merge_from(
+            &Endpoint::new("/users/{id}", Method::Get, Source::Html).with_inferred_pattern(),
+        );
+        assert_eq!(merged.confidence, EndpointConfidence::Inferred);
+    }
+
+    /// Evidence tiers order from weakest to strongest: a route only ever
+    /// inferred by normalization < one found literally in static JS/HTML <
+    /// one actually observed on the wire.
+    #[test]
+    fn evidence_tiers_are_ordered_inferred_lt_static_lt_observed() {
+        assert!(EndpointConfidence::Inferred < EndpointConfidence::Static);
+        assert!(EndpointConfidence::Static < EndpointConfidence::Observed);
+        assert!(EndpointConfidence::Inferred < EndpointConfidence::Observed);
+
+        let mut tiers = [
+            EndpointConfidence::Observed,
+            EndpointConfidence::Inferred,
+            EndpointConfidence::Static,
+        ];
+        tiers.sort();
+        assert_eq!(
+            tiers,
+            [
+                EndpointConfidence::Inferred,
+                EndpointConfidence::Static,
+                EndpointConfidence::Observed,
+            ]
+        );
+    }
+
+    #[test]
+    fn slug_round_trips_for_display() {
+        assert_eq!(EndpointConfidence::Inferred.to_string(), "inferred");
+        assert_eq!(EndpointConfidence::Static.to_string(), "static");
+        assert_eq!(EndpointConfidence::Observed.to_string(), "observed");
     }
 }

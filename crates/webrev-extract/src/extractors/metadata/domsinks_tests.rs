@@ -281,6 +281,35 @@ fn sanitizer_breaks_html_taint_and_transformations_are_traced() {
 }
 
 #[test]
+fn entity_encoding_replace_chain_breaks_html_taint() {
+    // Mirrors `sak3y/snippet_179`: a hand-rolled entity-encoding chain that
+    // escapes both `<` and `>` (plus `&`) genuinely neutralizes XSS.
+    let safe = run(
+        r"s.innerHTML = location.hash.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');",
+    );
+    assert!(
+        safe.is_empty(),
+        "complete entity-encoding chain should not create an XSS lead: {safe:?}"
+    );
+}
+
+#[test]
+fn partial_entity_encoding_replace_chain_still_traces() {
+    // Only `&` is escaped; `<`/`>` still reach innerHTML, so this must still
+    // be flagged — proves the chain recognition isn't overly permissive.
+    let found = run(r"s.innerHTML = location.hash.replace(/&/g, '&amp;');");
+    assert!(find_value(&found, "DOM XSS:").is_some(), "{found:?}");
+}
+
+#[test]
+fn unrelated_single_replace_call_does_not_break_taint() {
+    // A single `.replace()` call that isn't an entity-encoding escape is an
+    // ordinary string transformation; taint must still propagate to the sink.
+    let found = run(r"s.innerHTML = location.search.replace('a', 'b');");
+    assert!(find_value(&found, "DOM XSS:").is_some(), "{found:?}");
+}
+
+#[test]
 fn detects_wasm() {
     let js = r#"fetch("/app.wasm"); WebAssembly.instantiateStreaming(resp);"#;
     let found = run(js);

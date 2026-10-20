@@ -60,6 +60,21 @@ fn render(report: &SessionReport) -> String {
         report.endpoints.len(),
         leads.len()
     );
+    let tier = |slug: &str| {
+        report
+            .summary
+            .endpoints_by_evidence_tier
+            .get(slug)
+            .copied()
+            .unwrap_or(0)
+    };
+    let _ = writeln!(
+        out,
+        "Endpoint evidence  observed {}  static {}  inferred {}",
+        tier("observed"),
+        tier("static"),
+        tier("inferred")
+    );
     let count = |severity| leads.iter().filter(|f| f.severity() == severity).count();
     let _ = writeln!(
         out,
