@@ -1,6 +1,7 @@
 // crates/webrev-cli/src/cli.rs
 //! Command-line surface (clap derive + `WEBREV_` environment variables).
 
+use crate::progress::ProgressArg;
 use clap::builder::styling::{Color, RgbColor, Style, Styles};
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use std::path::PathBuf;
@@ -88,6 +89,13 @@ pub struct Cli {
     /// When to use color: `auto` honours NO_COLOR, CLICOLOR(_FORCE) and TTY detection.
     #[arg(long, global = true, value_enum, default_value_t = ColorArg::Auto, value_name = "WHEN")]
     pub color: ColorArg,
+    /// Suppress progress and status lines on stderr (data on stdout is unaffected).
+    #[arg(short, long, global = true)]
+    pub quiet: bool,
+    /// Progress display on stderr: `auto` draws one in-place line on a terminal and
+    /// plain lines elsewhere; `json` emits one JSON object per line.
+    #[arg(long, global = true, value_enum, default_value_t = ProgressArg::Auto, value_name = "MODE")]
+    pub progress: ProgressArg,
 }
 
 /// `--color` values.

@@ -3,6 +3,7 @@
 
 use super::{build_mission, write_session_report};
 use crate::cli::ScanArgs;
+use crate::progress::{note, Progress};
 use std::time::Duration;
 use tokio_util::sync::CancellationToken;
 use webrev_browser::{run_dynamic_with_report, BrowserPool, BrowserProfile, InteractionPolicy};
@@ -13,7 +14,7 @@ pub async fn run(args: ScanArgs) -> anyhow::Result<()> {
     let (mission, opsec) = build_mission(&args)?;
     let storage = InMemoryStorage::new();
     storage.create_session(&mission).await?;
-    eprintln!("mission '{}' — dynamic scan", mission.name);
+    note!("mission '{}' — dynamic scan", mission.name);
     let total = run_pass_with_policy(
         &opsec,
         &mission,
@@ -23,7 +24,7 @@ pub async fn run(args: ScanArgs) -> anyhow::Result<()> {
         &storage,
     )
     .await?;
-    eprintln!("dynamic findings stored: {total}");
+    note!("dynamic findings stored: {total}");
     write_session_report(&mission, &storage, &args.report, args.redact).await?;
     Ok(())
 }
@@ -68,14 +69,15 @@ pub(super) async fn run_pass_with_policy(
         .with_scope(mission.scope.clone())
         .with_interaction_policy(policy);
     let pool = BrowserPool::new(1);
+    let progress = Progress::start("dynamic");
     let result: webrev_core::Result<usize> = async {
         let mut total = 0usize;
         for seed in &mission.seeds {
             if !mission.scope.allows(seed) {
-                eprintln!("skip out-of-scope: {}", webrev_core::redact_url(seed));
+                note!("skip out-of-scope: {}", webrev_core::redact_url(seed));
                 continue;
             }
-            eprintln!("dynamic: {}", webrev_core::redact_url(seed));
+            progress.stage(&webrev_core::redact_url(seed));
             let report = run_dynamic_with_report(
                 &pool,
                 &profile,
@@ -110,6 +112,7 @@ pub(super) async fn run_pass_with_policy(
         Ok(total)
     }
     .await;
+    progress.finish().await;
     // Close even when navigation or recording a finding fails.
     pool.shutdown().await;
     result

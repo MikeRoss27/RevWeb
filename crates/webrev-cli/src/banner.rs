@@ -4,7 +4,7 @@
 //! The art and palette live in [`webrev_tui::brand`]; this module only maps
 //! each [`Tone`] onto ANSI escapes. Printed to **stderr** (so it never
 //! pollutes a `report` piped on stdout), only when stderr is a terminal, and
-//! honouring `NO_COLOR`. Suppressed with the global `--no-banner` flag.
+//! never under `NO_COLOR`/`--color never`. Suppressed with the global `--no-banner` flag.
 
 use std::io::{IsTerminal, Write};
 use webrev_tui::brand::{self, Rgb, Tone};
@@ -62,6 +62,10 @@ pub fn print(suppressed: bool) {
         return;
     }
     let mode = color::mode(true);
+    // NO_COLOR / --color never / TERM=dumb: stay silent rather than print art.
+    if !mode.enabled() {
+        return;
+    }
     let _ = writeln!(
         err,
         "\n{}",

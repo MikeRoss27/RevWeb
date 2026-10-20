@@ -20,6 +20,7 @@ use webrev_tui::TuiOptions;
 /// One line on stderr when a raw report lands on disk: it holds whatever the
 /// scan captured, credentials included, so it is confidential until masked.
 fn warn_if_raw(redact: bool) {
+    // A security warning: never muted by --quiet.
     if !redact {
         eprintln!(
             "warning: the report is raw and holds captured credentials; keep it private or re-export with --redact before sharing"
@@ -42,7 +43,7 @@ async fn write_session_report(
     } else {
         output::show(&report)?;
         std::fs::write(path, report.export_json(redact)?)?;
-        eprintln!("report written to {}", path.display());
+        crate::progress::note!("report written to {}", path.display());
         warn_if_raw(redact);
     }
     Ok(())

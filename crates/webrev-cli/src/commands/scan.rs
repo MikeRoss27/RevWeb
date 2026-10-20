@@ -5,6 +5,7 @@
 
 use super::build_mission;
 use crate::cli::{Format, ScanAllArgs};
+use crate::progress::{note, Progress};
 use std::sync::Arc;
 use tokio_util::sync::CancellationToken;
 use webrev_core::{Confidence, Severity};
@@ -29,7 +30,7 @@ pub async fn run(args: ScanAllArgs) -> anyhow::Result<()> {
     let mission = Arc::new(mission);
     let opsec = Arc::new(opsec);
     let cancel = CancellationToken::new();
-    eprintln!(
+    note!(
         "mission '{}' — scan (static{}{})",
         mission.name,
         if dynamic { " + dynamic" } else { "" },
@@ -44,15 +45,19 @@ pub async fn run(args: ScanAllArgs) -> anyhow::Result<()> {
         Arc::clone(&storage),
         cancel.clone(),
     );
-    let summary = PipelineBuilder::new()
+    let builder = PipelineBuilder::new()
         .add_stage(Arc::new(FetchStage::new()))
         .add_stage(Arc::new(StaticExtractStage::new()))
-        .add_stage(Arc::new(StoreStage::new()))
-        .run(ctx, Vec::new())
-        .await?;
-    eprintln!(
+        .add_stage(Arc::new(StoreStage::new()));
+    let mut progress = Progress::start("static");
+    progress.watch(builder.subscribe());
+    let summary = builder.run(ctx, Vec::new()).await;
+    progress.finish().await;
+    let summary = summary?;
+    note!(
         "static:  {} findings stored, {} stage errors",
-        summary.findings_emitted, summary.errors
+        summary.findings_emitted,
+        summary.errors
     );
 
     // --- optional dynamic pass (same session) -----------------------------
@@ -66,12 +71,12 @@ pub async fn run(args: ScanAllArgs) -> anyhow::Result<()> {
             storage.as_ref(),
         )
         .await?;
-        eprintln!("dynamic: {dyn_total} findings stored");
+        note!("dynamic: {dyn_total} findings stored");
     }
 
     // --- optional active pass (same session, over discovered endpoints) --
     if active {
-        eprintln!("active scanning sends abnormal traffic: authorized targets only.");
+        note!("active scanning sends abnormal traffic: authorized targets only.");
         let captured = storage.findings_by_session(mission.id).await?;
         let endpoints = webrev_pipeline::active_targets(&mission, &captured);
         let findings =
@@ -79,7 +84,7 @@ pub async fn run(args: ScanAllArgs) -> anyhow::Result<()> {
         for finding in &findings {
             storage.insert_finding(finding).await?;
         }
-        eprintln!("active:  {} findings stored", findings.len());
+        note!("active:  {} findings stored", findings.len());
     }
 
     // --- end-of-scan report -----------------------------------------------
@@ -88,7 +93,7 @@ pub async fn run(args: ScanAllArgs) -> anyhow::Result<()> {
     let report = SessionReport::build((*mission).clone(), findings, endpoints);
     if no_report {
         super::output::show(&report)?;
-        eprintln!("done. in-memory session discarded; no report written.");
+        note!("done. in-memory session discarded; no report written.");
         return Ok(());
     }
     if scan.report != std::path::Path::new("-") {
@@ -108,15 +113,15 @@ pub async fn run(args: ScanAllArgs) -> anyhow::Result<()> {
         return Ok(());
     }
     std::fs::write(&scan.report, &rendered)?;
-    eprintln!("report written to {}", scan.report.display());
+    note!("report written to {}", scan.report.display());
     super::warn_if_raw(scan.redact);
     if format == Format::Json {
-        eprintln!(
+        note!(
             "done. convert this report with: webrev report --input \"{}\" --format <FORMAT>",
             scan.report.display()
         );
     } else {
-        eprintln!("done. in-memory session discarded.");
+        note!("done. in-memory session discarded.");
     }
     Ok(())
 }

@@ -6,6 +6,7 @@
 
 use super::{build_mission, write_session_report};
 use crate::cli::ScanArgs;
+use crate::progress::{note, Progress};
 use std::sync::Arc;
 use tokio_util::sync::CancellationToken;
 use webrev_core::{Endpoint, Finding, Method, Mission, OpsecConfig, Source};
@@ -16,8 +17,8 @@ pub async fn run(args: ScanArgs) -> anyhow::Result<()> {
     let (mission, opsec) = build_mission(&args)?;
     let storage: Arc<dyn Storage> = Arc::new(InMemoryStorage::new());
     storage.create_session(&mission).await?;
-    eprintln!("mission '{}' — active scan", mission.name);
-    eprintln!("active scanning sends abnormal traffic: authorized targets only.");
+    note!("mission '{}' — active scan", mission.name);
+    note!("active scanning sends abnormal traffic: authorized targets only.");
 
     let endpoints: Vec<Endpoint> = mission
         .seeds
@@ -32,7 +33,7 @@ pub async fn run(args: ScanArgs) -> anyhow::Result<()> {
         storage.insert_finding(finding).await?;
     }
 
-    eprintln!("active findings stored: {}", findings.len());
+    note!("active findings stored: {}", findings.len());
     write_session_report(&mission, storage.as_ref(), &args.report, args.redact).await?;
     Ok(())
 }
@@ -43,6 +44,8 @@ pub(super) async fn run_pass(
     endpoints: &[Endpoint],
     cancel: CancellationToken,
 ) -> anyhow::Result<Vec<Finding>> {
+    let progress = Progress::start("active");
+    progress.stage(&format!("probing {} endpoints", endpoints.len()));
     let scan = run_active_scan(opsec, &mission.scope, mission.id, endpoints, cancel.clone());
     tokio::pin!(scan);
     let result = tokio::select! {
@@ -55,5 +58,6 @@ pub(super) async fn run_pass(
             scan.await
         }
     };
+    progress.finish().await;
     Ok(result?)
 }

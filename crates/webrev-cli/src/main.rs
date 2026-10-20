@@ -12,6 +12,8 @@ mod banner;
 mod cli;
 mod commands;
 mod logging;
+mod progress;
+mod term;
 
 use clap::Parser;
 use cli::Command;
@@ -25,18 +27,28 @@ async fn main() -> anyhow::Result<()> {
         || args.first().is_some_and(|a| a == "help")
         || args.iter().any(|a| a == "-h" || a == "--help");
     if asks_for_help {
-        banner::print(args.iter().any(|a| a == "--no-banner"));
+        banner::print(
+            args.iter()
+                .any(|a| a == "--no-banner" || a == "-q" || a == "--quiet"),
+        );
     }
 
     let parsed = cli::Cli::parse();
     webrev_tui::color::init(parsed.color.into());
-    // Brand the active, non-interactive scans; keep `report` silent so its
-    // stdout stays pipe-clean, and let the TUI show its own branded header.
+    progress::init(parsed.progress, parsed.quiet);
+    // Brand every non-interactive command that works on a target; keep
+    // `report` silent so its stdout stays pipe-clean, and let the TUI show its
+    // own branded header. The banner itself skips non-TTY stderr and --quiet.
     if matches!(
         parsed.command,
-        Command::Scan(_) | Command::Static(_) | Command::Dynamic(_)
+        Command::Scan(_)
+            | Command::Static(_)
+            | Command::Dynamic(_)
+            | Command::Active(_)
+            | Command::Bola(_)
+            | Command::Compare(_)
     ) {
-        banner::print(parsed.no_banner);
+        banner::print(parsed.no_banner || parsed.quiet);
     }
     // The TUI owns the terminal, so only initialise stderr logging for the
     // non-interactive subcommands.
