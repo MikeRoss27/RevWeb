@@ -185,6 +185,34 @@ autres cas pwnfunction encore ratés passent tous par `DOMPurify.sanitize`
 d'objet, pas une injection DOM. Détails dans
 `benchmarks/external-corpus/v1/README.md` et les résultats rejoués.
 
+**Correction (2026-10-19, encodage d'entités manuel reconnu comme
+assainisseur) :** le faux positif `sak3y/snippet_179` ci-dessus est corrigé.
+`classify_call()` reconnaît désormais une chaîne de `.replace(pattern,
+entité)` (littéral d'un caractère ou regex `/…/g` d'un caractère) comme
+cassant la taint, mais seulement quand la chaîne couvre à la fois `<` → `&lt;`
+et `>` → `&gt;` — les deux caractères qui permettent réellement l'injection de
+balises ; `&`/`"`/`'` seuls sont reconnus comme des liens de la chaîne mais
+n'en suffisent pas à casser la taint. Un seul `.replace()` isolé, sans rapport
+avec un échappement HTML, continue de propager la taint (règle générique de
+préservation des méthodes de chaîne, inchangée). Le repli regex
+(`sanitizer_wraps_sink` dans `domsinks.rs`) a dû être étendu en miroir : sans
+ça, une instruction que la passe AST juge déjà assainie (donc sans trace)
+déclenchait encore le lead « unverified source » de bas niveau, en
+contradiction avec son propre verdict — même logique que le cas
+`DOMPurify.sanitize` déjà présent. Trois tests ajoutés dans
+`domsinks_tests.rs` : la chaîne complète (`sak3y/snippet_179`) ne produit plus
+de lead ; une chaîne partielle (seul `&` échappé) continue de tracer ; un
+`.replace()` isolé et sans rapport continue de tracer. Rerun du corpus externe
+v1 : précision sur `sak3y` 98,5 % → 100 % (0 FP), rappel sak3y inchangé à
+52 % (65/124) puisque ce cas était déjà un vrai négatif pour la taint, pas un
+cas raté différemment. Aucune régression observée sur les autres sources
+(`ghsa`, `pwnfunction`, `domdig`, `npm`) ni sur la suite statique/synthétique.
+Portée volontairement restreinte : seules les paires littérales reconnues
+(un caractère, correspondance exacte à l'entité canonique) comptent ; une
+regex multi-caractères (`/[&<>]/g`), une fonction de remplacement, ou un
+encodage via une bibliothèque autre que `DOMPurify` restent non reconnus et
+sont un faux positif potentiel documenté, pas corrigé ici.
+
 La suite synthétique existante a été exécutée : cinq checks, chacun TP=2,
 FP=0, FN=0, TN=2. Elle reste une suite de régression, pas une estimation de
 qualité.

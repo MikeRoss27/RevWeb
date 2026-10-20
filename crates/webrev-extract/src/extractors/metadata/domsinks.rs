@@ -162,11 +162,82 @@ fn should_run_taint_ast(
 }
 
 fn sanitizer_wraps_sink(body: &str, start: usize) -> bool {
-    let statement_start = body[..start].rfind([';', '\n']).map_or(0, |i| i + 1);
-    let statement_end = body[start..]
-        .find([';', '\n'])
-        .map_or(body.len(), |i| start + i);
-    body[statement_start..statement_end].contains("DOMPurify.sanitize(")
+    let (statement_start, statement_end) = statement_bounds(body, start);
+    let statement = &body[statement_start..statement_end];
+    statement.contains("DOMPurify.sanitize(") || entity_encoding_chain_wraps_sink(statement)
+}
+
+/// The byte range of the statement containing byte offset `pos`: back to the
+/// nearest unquoted `;`/`\n` (or the start of `body`), forward to the next
+/// one (or the end). Quote-aware (single, double, backtick, with `\`
+/// escaping) in a single left-to-right scan, because a naive quote-blind
+/// scan mistakes the literal `;` inside an HTML entity like `&amp;` for a
+/// statement separator and truncates the statement mid-string.
+fn statement_bounds(body: &str, pos: usize) -> (usize, usize) {
+    let bytes = body.as_bytes();
+    let is_boundary = |c: u8| c == b';' || c == b'\n';
+    let is_quote = |c: u8| c == b'\'' || c == b'"' || c == b'`';
+    let mut quote: Option<u8> = None;
+    let mut start_bound = 0usize;
+    let mut i = 0usize;
+    while i < pos.min(bytes.len()) {
+        let c = bytes[i];
+        match quote {
+            Some(q) => {
+                if c == b'\\' {
+                    i += 2;
+                    continue;
+                }
+                if c == q {
+                    quote = None;
+                }
+            }
+            None => {
+                if is_boundary(c) {
+                    start_bound = i + 1;
+                } else if is_quote(c) {
+                    quote = Some(c);
+                }
+            }
+        }
+        i += 1;
+    }
+    let mut end_bound = bytes.len();
+    while i < bytes.len() {
+        let c = bytes[i];
+        match quote {
+            Some(q) => {
+                if c == b'\\' {
+                    i += 2;
+                    continue;
+                }
+                if c == q {
+                    quote = None;
+                }
+            }
+            None => {
+                if is_boundary(c) {
+                    end_bound = i;
+                    break;
+                } else if is_quote(c) {
+                    quote = Some(c);
+                }
+            }
+        }
+        i += 1;
+    }
+    (start_bound, end_bound)
+}
+
+/// Textual mirror of the AST-level entity-encoding `.replace()` chain
+/// recognition (`taint::REQUIRED_ESCAPED`): when the AST pass already proved
+/// a statement's `<`/`>` are entity-encoded (so it recorded no trace at all),
+/// this fallback must not still surface a Low "unverified source" lead for
+/// the same statement -- that would contradict the AST pass's own verdict,
+/// exactly like the existing `DOMPurify.sanitize(` check above.
+fn entity_encoding_chain_wraps_sink(statement: &str) -> bool {
+    let lower = statement.to_ascii_lowercase();
+    lower.contains(".replace(") && lower.contains("&lt;") && lower.contains("&gt;")
 }
 
 /// Traced `source -> sink` flows and the byte-range spans they cover.

@@ -22,6 +22,68 @@ use webrev_core::Confidence;
 /// variable or a concatenation), which drives `High` vs `Medium` confidence.
 pub(super) type Taint = (String, bool);
 
+/// The two HTML metacharacters that actually enable tag/attribute injection.
+/// A hand-rolled entity-encoding `.replace()` chain is only treated as
+/// taint-breaking once it covers *both* of these — escaping `&` alone (or
+/// quotes alone) still lets `<script>` through, so it must not clear taint.
+const REQUIRED_ESCAPED: [char; 2] = ['<', '>'];
+
+/// If `pattern` is a one-character literal or a single-flag-`g` one-character
+/// regex matching an HTML metacharacter, and `replacement` is the matching
+/// HTML entity, return that character. Used to recognise one link of a
+/// `s.replace(/</g, '&lt;').replace(/>/g, '&gt;')`-style sanitizing chain
+/// without mistaking an arbitrary, unrelated `.replace()` call for one.
+fn replace_escapes_char(args: &[ExprOrSpread]) -> Option<char> {
+    let [pattern, replacement] = args else {
+        return None;
+    };
+    if pattern.spread.is_some() || replacement.spread.is_some() {
+        return None;
+    }
+    let target = match &*pattern.expr {
+        Expr::Lit(Lit::Str(s)) => single_char(&s.value.to_string_lossy()),
+        Expr::Lit(Lit::Regex(r)) if r.flags.as_ref().contains('g') => {
+            single_char_regex_source(r.exp.as_ref())
+        }
+        _ => None,
+    }?;
+    if !"&<>\"'".contains(target) {
+        return None;
+    }
+    let Expr::Lit(Lit::Str(replacement)) = &*replacement.expr else {
+        return None;
+    };
+    let entities: &[&str] = match target {
+        '&' => &["&amp;"],
+        '<' => &["&lt;"],
+        '>' => &["&gt;"],
+        '"' => &["&quot;"],
+        '\'' => &["&#39;", "&apos;"],
+        _ => return None,
+    };
+    let replacement = replacement.value.to_string_lossy();
+    entities
+        .iter()
+        .any(|entity| replacement.eq_ignore_ascii_case(entity))
+        .then_some(target)
+}
+
+/// A string that is exactly one character.
+fn single_char(value: &str) -> Option<char> {
+    let mut chars = value.chars();
+    let only = chars.next()?;
+    chars.next().is_none().then_some(only)
+}
+
+/// A regex source that matches exactly one (optionally backslash-escaped)
+/// character, e.g. `&`, `<` or `\<`.
+fn single_char_regex_source(source: &str) -> Option<char> {
+    match source.chars().collect::<Vec<_>>().as_slice() {
+        [c] | ['\\', c] => Some(*c),
+        _ => None,
+    }
+}
+
 /// Intra-procedural taint tracker. Scopes are a stack of
 /// `variable name -> taint origin`; `message` handler parameters are seeded as
 /// tainted on scope entry.
@@ -185,6 +247,33 @@ impl TaintVisitor {
         };
         match &**callee {
             Expr::Member(m) if member_expr_path(m).as_deref() == Some("DOMPurify.sanitize") => None,
+            // `tainted.replace(pattern, entity)`, possibly chained: break taint
+            // only once the chain covers both `<` and `>` (see
+            // `REQUIRED_ESCAPED`); an unrecognised or incomplete chain falls
+            // back to the generic taint-preserving method-call rule below so
+            // a lone unrelated `.replace()` call still propagates taint.
+            Expr::Member(m)
+                if matches!(
+                    member_prop_name(m).as_deref(),
+                    Some("replace" | "replaceAll")
+                ) =>
+            {
+                let transformation = member_prop_name(m).unwrap_or_else(|| "method".into());
+                match replace_escapes_char(&call.args) {
+                    Some(ch) => {
+                        let mut escaped = BTreeSet::from([ch]);
+                        let base = self.replace_chain_base(&m.obj, &mut escaped)?;
+                        if REQUIRED_ESCAPED.iter().all(|c| escaped.contains(c)) {
+                            None
+                        } else {
+                            Some((format!("{} -> {transformation}", base.0), false))
+                        }
+                    }
+                    None => self
+                        .classify(&m.obj)
+                        .map(|(origin, _)| (format!("{origin} -> {transformation}"), false)),
+                }
+            }
             // `namespace.exported(...)` for a namespace import.
             Expr::Member(m)
                 if member_expr_path(m)
@@ -236,6 +325,31 @@ impl TaintVisitor {
         args.iter()
             .filter(|a| a.spread.is_none())
             .find_map(|a| self.classify(&a.expr))
+    }
+
+    /// Walk further down a `.replace()` chain, recording each additional
+    /// escaped character into `escaped`, until a non-escaping link or the
+    /// tainted base value is reached.
+    fn replace_chain_base(&self, expr: &Expr, escaped: &mut BTreeSet<char>) -> Option<Taint> {
+        if let Expr::Paren(p) = expr {
+            return self.replace_chain_base(&p.expr, escaped);
+        }
+        if let Expr::Call(call) = expr {
+            if let Callee::Expr(callee) = &call.callee {
+                if let Expr::Member(m) = &**callee {
+                    if matches!(
+                        member_prop_name(m).as_deref(),
+                        Some("replace" | "replaceAll")
+                    ) {
+                        if let Some(ch) = replace_escapes_char(&call.args) {
+                            escaped.insert(ch);
+                            return self.replace_chain_base(&m.obj, escaped);
+                        }
+                    }
+                }
+            }
+        }
+        self.classify(expr)
     }
 
     /// Record a traced `source -> sink` flow and the span it covers.
