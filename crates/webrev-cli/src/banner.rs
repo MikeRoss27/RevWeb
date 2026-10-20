@@ -8,6 +8,7 @@
 
 use std::io::{IsTerminal, Write};
 use webrev_tui::brand::{self, Rgb, Tone};
+use webrev_tui::color::{self, ColorMode};
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
@@ -17,13 +18,6 @@ pub const TAGLINE: &str = brand::TAGLINE;
 const RESET: &str = "\x1b[0m";
 const BOLD: &str = "\x1b[1m";
 const DIM: &str = "\x1b[2m";
-
-/// Does the terminal advertise 24-bit color? Otherwise fall back to the
-/// closest xterm-256 entries (orange ≈ 202, cream ≈ 230).
-fn truecolor() -> bool {
-    std::env::var("COLORTERM")
-        .is_ok_and(|v| v.eq_ignore_ascii_case("truecolor") || v.eq_ignore_ascii_case("24bit"))
-}
 
 fn fg(rgb: Rgb, xterm256: u8, truecolor: bool) -> String {
     if truecolor {
@@ -67,8 +61,12 @@ pub fn print(suppressed: bool) {
     if suppressed || !err.is_terminal() {
         return;
     }
-    let color = std::env::var_os("NO_COLOR").is_none();
-    let _ = writeln!(err, "\n{}", render(color, truecolor()));
+    let mode = color::mode(true);
+    let _ = writeln!(
+        err,
+        "\n{}",
+        render(mode.enabled(), mode == ColorMode::Truecolor)
+    );
 }
 
 #[cfg(test)]

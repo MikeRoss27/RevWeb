@@ -29,6 +29,7 @@ async fn main() -> anyhow::Result<()> {
     }
 
     let parsed = cli::Cli::parse();
+    webrev_tui::color::init(parsed.color.into());
     // Brand the active, non-interactive scans; keep `report` silent so its
     // stdout stays pipe-clean, and let the TUI show its own branded header.
     if matches!(

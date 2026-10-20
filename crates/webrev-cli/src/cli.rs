@@ -85,6 +85,27 @@ pub struct Cli {
     /// Suppress the startup banner.
     #[arg(long, global = true)]
     pub no_banner: bool,
+    /// When to use color: `auto` honours NO_COLOR, CLICOLOR(_FORCE) and TTY detection.
+    #[arg(long, global = true, value_enum, default_value_t = ColorArg::Auto, value_name = "WHEN")]
+    pub color: ColorArg,
+}
+
+/// `--color` values.
+#[derive(Clone, Copy, ValueEnum)]
+pub enum ColorArg {
+    Auto,
+    Always,
+    Never,
+}
+
+impl From<ColorArg> for webrev_tui::color::ColorChoice {
+    fn from(arg: ColorArg) -> Self {
+        match arg {
+            ColorArg::Auto => Self::Auto,
+            ColorArg::Always => Self::Always,
+            ColorArg::Never => Self::Never,
+        }
+    }
 }
 
 #[derive(Subcommand)]

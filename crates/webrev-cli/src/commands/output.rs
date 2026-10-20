@@ -11,15 +11,17 @@ use webrev_core::{
     model::triage::terminal_text, redact_url, Finding, FindingKind, FindingStatus, Severity,
 };
 use webrev_report::SessionReport;
+use webrev_tui::color::{self, ColorMode};
 
 const SURFACE_LIMIT: usize = 8;
 
 pub(super) fn show(report: &SessionReport) -> anyhow::Result<()> {
     let body = render(report);
-    if !std::io::stdout().is_terminal() || std::env::var_os("NO_COLOR").is_some() {
+    let mode = color::mode(std::io::stdout().is_terminal());
+    if !mode.enabled() {
         return super::report::write_stdout(&body);
     }
-    super::report::write_stdout(&colorize(&body))
+    super::report::write_stdout(&colorize(&body, mode))
 }
 
 // The scan summary reads in display order and is easier to audit as one flow.
@@ -212,20 +214,33 @@ fn write_finding(out: &mut String, index: usize, finding: &Finding) {
     }
 }
 
-fn colorize(body: &str) -> String {
+/// SGR prefix: bold + foreground, truecolor or the nearest xterm-256 entry.
+fn sgr(mode: ColorMode, rgb: (u8, u8, u8), xterm256: u8) -> String {
+    if mode == ColorMode::Truecolor {
+        format!("\x1b[1;38;2;{};{};{}m", rgb.0, rgb.1, rgb.2)
+    } else {
+        format!("\x1b[1;38;5;{xterm256}m")
+    }
+}
+
+fn colorize(body: &str, mode: ColorMode) -> String {
+    let orange = sgr(mode, (229, 101, 63), 202);
+    let sand = sgr(mode, (240, 181, 99), 215);
+    let cream = sgr(mode, (250, 244, 232), 230);
+    let stone = sgr(mode, (163, 154, 146), 246);
     let mut out = String::new();
     for line in body.lines() {
         let color = if line.contains("[CRIT]") || line.contains("[HIGH]") {
-            "\x1b[1;38;2;229;101;63m"
+            &orange
         } else if line.contains("[MED]") {
-            "\x1b[1;38;2;240;181;99m"
+            &sand
         } else if line.starts_with("SCAN COMPLETE") || line.starts_with("VULNERABILITIES") {
-            "\x1b[1;38;2;250;244;232m"
+            &cream
         } else if line.starts_with("TECHNOLOGIES")
             || line.starts_with("ATTACK SURFACE")
             || line.starts_with("COVERAGE")
         {
-            "\x1b[1;38;2;163;154;146m"
+            &stone
         } else {
             ""
         };
