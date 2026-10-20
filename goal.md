@@ -107,12 +107,36 @@ dans le nom d'hôte), et l'affichage de la TUI à l'écran et le proxy en amont 
 sont pas audités. Le critère reste décoché : secrets courts sous un nom de clé
 quelconque, secrets dans le nom d'hôte, affichage de la TUI et proxy en amont
 restent non traités (voir `docs/security.md`, « Suivi : rapports exportés »).
-**Suivi (2026-10-20, secret coupé par la troncature d'un extrait de sonde) :**
-ce trou était réel, pas théorique — confirmé par une reproduction avant
-correctif. Un JWT placé sous un nom de paramètre que `Sanitizer` ne reconnaît
-par aucun motif nommé (`?v=<jwt>`, ni « token », ni « key », ni « session »…)
-n'est reconnu comme secret que par sa structure à trois segments ; coupé en
-deux par la troncature à 256 caractères de `ProbeResponse::observation`
+**Suivi (2026-10-20, quatre trous sur cinq fermés) :** secrets courts sous un
+nom de clé quelconque — `SecretExtractor::scan_body`, passe 1c
+(`crates/webrev-extract/src/extractors/secrets/mod.rs`) : une valeur
+assignée (`:`/`=` simple, pas `==`/`===`) à une clé sans ambiguïté
+(`password`, `sid`, `bearer`, …) est signalée même trop courte pour
+l'entropie, sauf littéral booléen/`null` ou placeholder. Secrets dans le nom
+d'hôte — `scan_hostname` fait tourner les mêmes motifs connus sur
+`Url::host_str()`, plus un repli entropie limité à des labels de 20 à 63
+caractères (évite les hash de build/CDN courts). Affichage de la TUI à
+l'écran — `skip_out_of_scope_message`/`dynamic_error_message`
+(`crates/webrev-tui/src/runtime/controller.rs`) passent désormais par
+`redact_url`, comme l'équivalent CLI. Proxy en amont — audit effectué sur
+deux chemins distincts : `egress_proxy::parse_upstream`
+(`crates/webrev-browser/`, proxy du navigateur dynamique) rejetait déjà une
+URL avec identifiants embarqués mais sans aucun test (deux tests ajoutés) ;
+le flag `--proxy` du scan statique (chemin reqwest séparé, CLI) a été
+exercé pour la première fois avec un vrai identifiant sous `RUST_LOG=trace`
+(`crates/webrev-cli/tests/proxy_redaction.rs`) — ni stdout/stderr ni le
+rapport écrit ne contiennent le mot de passe en clair ou l'en-tête
+`Proxy-Authorization` encodé en base64. Reste décoché, hors périmètre de ce
+correctif : un secret coupé par la troncature à 256 caractères d'un extrait
+de sonde (`webrev-pipeline/src/active/bola_diff.rs::body_excerpt`) — un
+problème distinct (troncature d'une preuve active, pas détection de
+secret) qui demande sa propre analyse.
+**Suivi (2026-10-20, cinquième et dernier trou fermé) :** ce trou était réel,
+pas théorique — confirmé par une reproduction avant correctif. Un JWT placé
+sous un nom de paramètre que `Sanitizer` ne reconnaît par aucun motif nommé
+(`?v=<jwt>`, ni « token », ni « key », ni « session »…) n'est reconnu comme
+secret que par sa structure à trois segments ; coupé en deux par la
+troncature à 256 caractères de `ProbeResponse::observation`
 (`active/transport.rs`), 65 caractères de son en-tête et de ses revendications
 en clair (`"role":"admin"`, `"sub":"1234567890"`) survivaient à
 `Sanitizer::scrub`, donc à `--redact`. Même mécanisme pour l'extrait de preuve
@@ -123,10 +147,11 @@ secret est gardé entier ou absent, jamais tronqué en deux ; au-delà de cette
 borne (un extrait dominé par un seul bloc opaque, plus probablement une donnée
 qu'un secret), la coupe naïve d'origine s'applique comme avant. Détails,
 reproduction et compromis dans `docs/security.md`, « Suivi : secret coupé par
-la troncature de l'extrait de sonde ». Ce point précis du critère est donc
-traité ; les autres trous cités plus haut (secrets courts sous un nom
-quelconque, secrets dans le nom d'hôte, TUI, proxy en amont) restent ouverts et
-le critère global reste décoché.
+la troncature de l'extrait de sonde ». **Les cinq trous identifiés sont
+désormais fermés.** Le critère « preuves sensibles protégées » peut être
+considéré comme satisfait pour les heuristiques `--redact` connues à ce jour ;
+voir `docs/security.md` pour le détail de chaque correctif et les limites
+restantes non encore identifiées.
 
 ## Étape 5 — Benchmarks et non-régression
 
@@ -203,6 +228,62 @@ autres cas pwnfunction encore ratés passent tous par `DOMPurify.sanitize`
 (bypass volontaire du CTF) sauf un (`bourne`), qui est une confusion de clé
 d'objet, pas une injection DOM. Détails dans
 `benchmarks/external-corpus/v1/README.md` et les résultats rejoués.
+
+**Correction (2026-10-19, encodage d'entités manuel reconnu comme
+assainisseur) :** le faux positif `sak3y/snippet_179` ci-dessus est corrigé.
+`classify_call()` reconnaît désormais une chaîne de `.replace(pattern,
+entité)` (littéral d'un caractère ou regex `/…/g` d'un caractère) comme
+cassant la taint, mais seulement quand la chaîne couvre à la fois `<` → `&lt;`
+et `>` → `&gt;` — les deux caractères qui permettent réellement l'injection de
+balises ; `&`/`"`/`'` seuls sont reconnus comme des liens de la chaîne mais
+n'en suffisent pas à casser la taint. Un seul `.replace()` isolé, sans rapport
+avec un échappement HTML, continue de propager la taint (règle générique de
+préservation des méthodes de chaîne, inchangée). Le repli regex
+(`sanitizer_wraps_sink` dans `domsinks.rs`) a dû être étendu en miroir : sans
+ça, une instruction que la passe AST juge déjà assainie (donc sans trace)
+déclenchait encore le lead « unverified source » de bas niveau, en
+contradiction avec son propre verdict — même logique que le cas
+`DOMPurify.sanitize` déjà présent. Trois tests ajoutés dans
+`domsinks_tests.rs` : la chaîne complète (`sak3y/snippet_179`) ne produit plus
+de lead ; une chaîne partielle (seul `&` échappé) continue de tracer ; un
+`.replace()` isolé et sans rapport continue de tracer. Rerun du corpus externe
+v1 : précision sur `sak3y` 98,5 % → 100 % (0 FP), rappel sak3y inchangé à
+52 % (65/124) puisque ce cas était déjà un vrai négatif pour la taint, pas un
+cas raté différemment. Aucune régression observée sur les autres sources
+(`ghsa`, `pwnfunction`, `domdig`, `npm`) ni sur la suite statique/synthétique.
+Portée volontairement restreinte : seules les paires littérales reconnues
+(un caractère, correspondance exacte à l'entité canonique) comptent ; une
+regex multi-caractères (`/[&<>]/g`), une fonction de remplacement, ou un
+encodage via une bibliothèque autre que `DOMPurify` restent non reconnus et
+sont un faux positif potentiel documenté, pas corrigé ici.
+
+**Correction (2026-10-20, liaison inter-fichiers pour `postMessage`,
+rappel GHSA inchangé) :** la majorité des cas GHSA ratés avaient été
+attribués par hypothèse à des flux `postMessage` inter-fichiers hors de la
+portée intra-fichier existante. `modules.rs` (nouveau sous-module
+`handlers.rs`) lie maintenant `window.addEventListener('message',
+imported)` / `addEventListener('message', imported)` à travers les
+fichiers quand `imported` est un identifiant importé (nommé ou par défaut,
+un seul saut, pas via un barrel de ré-export) d'une déclaration `function`
+de premier niveau d'un autre module : le premier paramètre de cette
+déclaration est semé comme `event.data` et son corps analysé exactement
+comme un handler `message` du même fichier. Six tests dédiés
+(`tests_handlers.rs`) confirment le cas lié et les limites volontaires
+(membre de namespace, registre calculé, barrel de ré-export, handler
+d'expression plutôt que de déclaration — tous non liés). **Rappel GHSA
+inchangé : 6,7 % (1/15).** Lecture des 14 cas GHSA toujours ratés dans le
+cache local du corpus (`benchmarks/external-corpus/v1/cache/ghsa/`) :
+l'hypothèse ne tient pas. Les CVE réels enregistrent et distribuent les
+messages `postMessage` via des méthodes d'objet et des tables de dispatch
+par type de message (`api.source.postMessage(...)`, un gestionnaire
+affecté dynamiquement à `api.xxxHandler`), pas via une simple fonction
+`function` de premier niveau importée puis passée directement à
+`addEventListener`. Ce motif plus riche (fermetures, méthodes, dispatch
+par type) reste explicitement hors de portée (voir
+`docs/extractors.md`). La fonctionnalité livrée ici est correcte et
+testée sur son périmètre déclaré ; elle ne corrige simplement pas la
+cause réelle des misses GHSA de ce corpus. Aucune régression sur les
+autres sources (`sak3y`, `pwnfunction`, `domdig`, `npm`).
 
 La suite synthétique existante a été exécutée : cinq checks, chacun TP=2,
 FP=0, FN=0, TN=2. Elle reste une suite de régression, pas une estimation de

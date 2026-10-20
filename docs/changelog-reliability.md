@@ -771,3 +771,120 @@ par défaut » ci-dessous décrivent l'état avant ce changement.
 - Tests : deux tests positifs et un test de concaténation/fallback ajoutés
   dans `domsinks_tests.rs`. Suite complète du workspace, `clippy`
   `--all-targets -- -D warnings` et `fmt --check` passent.
+
+## 2026-10-19 — encodage d'entités manuel reconnu comme assainisseur
+
+- Constat : le faux positif `sak3y/snippet_179` (ci-dessus) encode `&`, `<`
+  et `>` à la main via une chaîne de `.replace(/…/g, '&…;')` avant
+  `innerHTML` — un assainissement réel, daté mais correct, que le détecteur
+  ne reconnaissait pas puisque seul `DOMPurify.sanitize` cassait la taint.
+- Changement : `classify_call()`
+  (`crates/webrev-extract/src/extractors/metadata/domsinks/taint.rs`)
+  reconnaît une chaîne de `.replace(pattern, entité)` — motif littéral d'un
+  caractère ou regex `/…/g` d'un caractère, entité correspondant au
+  caractère canonique — comme cassant la taint, mais seulement quand la
+  chaîne couvre à la fois `<` → `&lt;` et `>` → `&gt;` : ce sont les deux
+  caractères qui permettent réellement l'injection de balises. Échapper
+  seulement `&`, `"` ou `'` est reconnu comme un lien de la chaîne mais ne
+  suffit pas à casser la taint ; un `.replace()` isolé et sans rapport avec
+  un échappement HTML continue de propager la taint via la règle générique
+  de préservation des méthodes de chaîne, inchangée. Le repli regex
+  (`sanitizer_wraps_sink` dans `domsinks.rs`) a été étendu avec le même
+  motif textuel : sans ça, une instruction que la passe AST juge déjà
+  assainie (donc sans trace enregistrée) déclenchait quand même le lead
+  « unverified source » de bas niveau, en contradiction avec son propre
+  verdict.
+- Tests : trois tests ajoutés dans `domsinks_tests.rs` — la chaîne complète
+  (`sak3y/snippet_179`) ne produit plus de lead ; une chaîne partielle (seul
+  `&` échappé) continue de tracer une trouvaille ; un `.replace()` isolé et
+  sans rapport continue également de tracer. Suite complète du workspace,
+  `clippy --all-targets -- -D warnings` et `fmt --check` passent.
+- Rerun du corpus externe v1 : précision sur `sak3y` 98,5 % → 100 % (0 FP) ;
+  rappel sak3y inchangé à 52 % (65/124), ce cas étant déjà un vrai négatif
+  pour la taint, pas une autre sorte de cas raté. Aucun changement sur
+  `ghsa`, `pwnfunction`, `domdig` ou `npm`.
+- Compromis : portée volontairement restreinte aux paires motif/entité
+  littérales d'un seul caractère avec correspondance exacte à l'entité
+  canonique. Une classe de caractères multi-caractères (`/[&<>]/g`), une
+  fonction de remplacement, ou un encodage via une bibliothèque autre que
+  `DOMPurify` et différente d'une chaîne `.replace()` directe sur la valeur
+  tainted restent non reconnus et sont un faux positif potentiel documenté,
+  pas corrigé ici.
+
+## 2026-10-20 — quatre des cinq trous de redaction de l'étape 4 fermés
+
+- Constat : `goal.md` listait cinq trous non couverts par les heuristiques
+  de `--redact` : secrets courts sous un nom de clé quelconque, secrets dans
+  le nom d'hôte, secret coupé par la troncature à 256 caractères d'un
+  extrait de sonde, affichage de la TUI à l'écran non audité, proxy en amont
+  non audité.
+- Changement : `SecretExtractor` (`crates/webrev-extract/src/extractors/
+  secrets/mod.rs`) gagne une passe 1c (`short_named`, séparateur
+  `:`/`=` simple uniquement — une comparaison `==`/`===` reste gérée par le
+  seuil 16 caractères de la passe 1b) pour les valeurs courtes sous un nom
+  de clé sans ambiguïté, et une passe 3 (`scan_hostname`) qui fait tourner
+  les motifs connus plus un repli entropie (labels 20..=63 caractères) sur
+  `Url::host_str()`. `webrev-tui/src/runtime/controller.rs` fait désormais
+  passer ses lignes de statut (`skip_out_of_scope_message`,
+  `dynamic_error_message`) par `redact_url`, comme le CLI. Audit du proxy en
+  amont sur deux chemins distincts : `egress_proxy::parse_upstream` (proxy
+  du navigateur dynamique) rejetait déjà une URL avec identifiants
+  embarqués, mais ce comportement n'avait aucun test ; le flag `--proxy` du
+  scan statique (chemin reqwest séparé) a été exercé pour la première fois
+  avec un vrai identifiant sous `RUST_LOG=trace`
+  (`crates/webrev-cli/tests/proxy_redaction.rs`) — ni stdout/stderr ni le
+  rapport écrit ne contiennent le mot de passe en clair ou l'en-tête
+  `Proxy-Authorization` encodé en base64.
+- Tests : `short_secrets_under_a_credential_name_are_flagged`,
+  `short_secret_literals_and_comparisons_are_still_ignored`,
+  `secrets_embedded_in_a_hostname_are_detected`,
+  `ordinary_hostnames_are_not_flagged` (secrets),
+  `skip_message_redacts_userinfo_and_token`,
+  `dynamic_error_message_redacts_the_seed` (TUI),
+  `upstream_proxy_url_rejects_embedded_credentials`,
+  `upstream_proxy_url_accepts_a_plain_http_host` (proxy du navigateur),
+  `proxy_credentials_never_reach_stdout_stderr_or_the_report_under_trace_logging`
+  (proxy du scan statique). Suite complète du workspace et
+  `clippy --all-targets -- -D warnings` passent.
+- Compromis : le cinquième trou (secret coupé par la troncature à 256
+  caractères d'un extrait de sonde active, `webrev-pipeline/src/active/
+  bola_diff.rs::body_excerpt`) n'est pas traité ici — c'est un problème de
+  troncature de preuve active, distinct de la détection de secret, qui
+  mérite sa propre analyse plutôt qu'un correctif improvisé en marge de
+  celui-ci. Le critère de `goal.md` reste décoché pour ce seul point.
+
+## 2026-10-20 — liaison inter-fichiers `postMessage` : rappel GHSA inchangé
+
+- Constat : les cas GHSA encore ratés (ci-dessus) avaient été attribués par
+  hypothèse à des flux `postMessage` passant d'un fichier à l'autre, hors de
+  la portée intra-fichier existante.
+- Changement : `modules.rs`
+  (`crates/webrev-extract/src/extractors/metadata/domsinks/`) gagne un
+  sous-module `handlers.rs` qui lie `window.addEventListener('message',
+  imported)` / `addEventListener('message', imported)` à travers les
+  fichiers, quand `imported` est un identifiant importé (nommé ou par
+  défaut, un seul saut — pas via un barrel de ré-export) d'une déclaration
+  `function` de premier niveau d'un autre module. Le premier paramètre de
+  cette déclaration est semé comme `event.data`, puis son corps analysé
+  exactement comme un handler `message` du même fichier le serait.
+- Tests : six tests dans `modules/tests_handlers.rs` — le cas lié
+  (import nommé et import par défaut), et les limites volontaires qui
+  restent non suivies : membre de namespace, registre calculé, handler
+  atteint seulement via un barrel de ré-export, handler lié à une
+  expression de fonction/flèche plutôt qu'à une déclaration `function`.
+- Rerun du corpus externe v1 : **rappel GHSA inchangé, 6,7 % (1/15)**.
+  Lecture des 14 cas GHSA toujours ratés dans le cache local du corpus
+  (`benchmarks/external-corpus/v1/cache/ghsa/`) : l'hypothèse ne tient pas
+  pour ce corpus — les CVE réels distribuent les messages `postMessage` via
+  des méthodes d'objet et des tables de dispatch par type de message
+  (`api.source.postMessage(...)`, un handler affecté dynamiquement à
+  `api.xxxHandler`), pas via une simple déclaration `function` de premier
+  niveau importée puis passée directement à `addEventListener`. Ce motif
+  plus riche (fermetures, méthodes, dispatch par type) reste explicitement
+  hors de portée. Aucun changement sur `sak3y`, `pwnfunction`, `domdig` ou
+  `npm`, et aucune régression sur les tests de liaison inter-modules
+  existants (`modules/tests_links.rs`).
+- Compromis : la fonctionnalité livrée est correcte et testée sur son
+  périmètre déclaré ; elle ne corrige simplement pas la cause réelle des
+  cas ratés de ce corpus. Documenté plutôt que masqué, conformément au
+  principe du projet de ne pas gonfler artificiellement les métriques.

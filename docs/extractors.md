@@ -44,7 +44,7 @@ Listed by descending priority (higher runs first):
 | `manifest` | 45 | JSON | W3C web app manifests (`start_url`/`scope`/`id`) and build-tool asset manifests (webpack `asset-manifest.json`, Vite `manifest.json`) — surfaces every emitted chunk path, including ones no page links to directly. |
 | `buckets` | 44 | HTML + JS | Exposed cloud storage URLs — AWS S3 (virtual-host, path-style, regional), Google Cloud Storage, Azure Blob → endpoint findings. |
 | `jwt` | 43 | HTML + JS | JWTs (base64url-decoded header/payload, flags `alg:none` and `alg:HS*`), `Bearer` tokens, and token-ish storage assignments → secret findings with plaintext. |
-| `dom-sinks` | 42 | JS | Client-side XSS via lightweight intra-procedural taint: traces tainted sources (`location.*`, `document.cookie`, `window.name`, postMessage `event.data`, and `new URL(...)`/`new URLSearchParams(...)` parsed from any of those — so `new URL(location).searchParams.get(...)` stays tainted through later property access or method calls) into sinks (`innerHTML`, `eval`, `document.write`, `insertAdjacentHTML`, `new Function`, `dangerouslySetInnerHTML`, `location` nav), reporting `source -> sink` at high/medium confidence. Taint survives string concatenation (`+`) and the `||`/`??`/`&&` fallback idioms (`param || "default"`) on either operand; only `DOMPurify.sanitize(...)` is recognized as breaking it — a hand-written entity-encoding `.replace()` chain is not, which is a known source of false positives (see `docs/benchmark-methodology.md`). Untraced sinks, `.wasm` references and origin-less postMessage receivers stay low-confidence leads. Cross-file linking (explicit ES-module specifiers only) follows named/default imports, `ns.name` members of `import * as ns`, and `export {..} from` / `export * from` re-exports (`export *` skips `default`; a name from two different stars is ambiguous and dropped). A single file follows a tainted argument or return value through calls to its own top-level `function` declarations. Not tracked: classic non-module scripts across files, closures (arrow/function expressions, methods), computed namespace members (`ns[x]`), `export * as ns from`, nested or block-level function declarations; see `docs/benchmark-methodology.md`. |
+| `dom-sinks` | 42 | JS | Client-side XSS via lightweight intra-procedural taint: traces tainted sources (`location.*`, `document.cookie`, `window.name`, postMessage `event.data`, and `new URL(...)`/`new URLSearchParams(...)` parsed from any of those — so `new URL(location).searchParams.get(...)` stays tainted through later property access or method calls) into sinks (`innerHTML`, `eval`, `document.write`, `insertAdjacentHTML`, `new Function`, `dangerouslySetInnerHTML`, `location` nav), reporting `source -> sink` at high/medium confidence. Taint survives string concatenation (`+`) and the `||`/`??`/`&&` fallback idioms (`param || "default"`) on either operand; `DOMPurify.sanitize(...)` breaks it, as does a `.replace(pattern, entity)` chain of literal, single-character pattern/entity pairs once it covers both `<` → `&lt;` and `>` → `&gt;` (escaping only `&`/`"`/`'` does not break it, and a single unrelated `.replace()` call never does) — a multi-character regex class, a replacer function, or encoding via a helper other than a direct `.replace()` chain is not recognized and remains a known source of false positives (see `docs/benchmark-methodology.md`). Untraced sinks, `.wasm` references and origin-less postMessage receivers stay low-confidence leads. Cross-file linking (explicit ES-module specifiers only) follows named/default imports, `ns.name` members of `import * as ns`, and `export {..} from` / `export * from` re-exports (`export *` skips `default`; a name from two different stars is ambiguous and dropped). A single file follows a tainted argument or return value through calls to its own top-level `function` declarations. `window.addEventListener('message', imported)` / `addEventListener('message', imported)` also crosses files when `imported` is a plain identifier imported (named or default, one hop — not through a re-export barrel) from another module's top-level `function` declaration: that declaration's first parameter is seeded as `event.data` and its body analyzed exactly as a same-file `message` handler (2026-10-19). Not tracked: classic non-module scripts across files, closures (arrow/function expressions, methods), computed namespace members (`ns[x]`) including a computed `addEventListener('message', table[key])` registration, a namespace-member handler (`addEventListener('message', ns.handler)`), a handler reached only through a re-export barrel, a handler bound to a `const`/arrow or function *expression* rather than a `function` declaration, `export * as ns from`, nested or block-level function declarations, and `onmessage = imported` (only the `addEventListener` registration form is linked across files so far); see `docs/benchmark-methodology.md`. |
 | `csp` | 41 | HTML + headers | Passive Content-Security-Policy / security-header **policy** analysis (response headers + `<meta http-equiv>`): `unsafe-inline`/`unsafe-eval`/wildcards, missing `object-src`/`base-uri`, absent CSP, weak Referrer-/Permissions-Policy. Distinct from the active header check. |
 | `ghost` | 40 | JS | "Ghost endpoints" — endpoints/targets inside a client-side access or feature gate (`if (user.isAdmin)`, `if (flags.beta)`, role checks); joins them to the surface plus a note naming the condition that hid them. |
 | `wasm` | 39 | WASM | Recovers the host↔module boundary from a fetched `.wasm` binary: import/export section entries (low-confidence `config` findings) and endpoint-shaped strings found in data segments (low-confidence `endpoint` findings). No execution, disassembly or decompilation — section metadata and literal strings only. |
@@ -72,6 +72,32 @@ Endpoints are normalized into route templates before being written to the
 
 Raw findings keep their original URL; only the endpoints side-table is
 normalized. See `webrev_core::normalize_url`.
+
+### Evidence tier (endpoint-level confidence)
+
+Each `Finding` already carries its own per-extractor `Confidence`
+(low/medium/high) as described above, but that is a *signal* confidence
+("is this really an endpoint/secret/etc."), not a statement about how the
+route itself was discovered. The `endpoints` side-table instead tracks an
+`EndpointConfidence` (`crates/webrev-core/src/model/endpoint.rs`): the best
+evidence tier among every finding that normalized into that route, ranked
+
+1. `observed` — seen in live dynamic-browser network traffic (`Source::Browser`
+   or `Source::Active`): an actual request was made and answered.
+2. `static` — parsed directly from JS/HTML/manifests/source maps
+   (`Source::JsAst`, `JsRegex`, `Html`, `SourceMap`, `Manifest`): it exists
+   literally in code, but may be dead, conditional, or unreachable.
+3. `inferred` — produced only by collapsing concrete instances into a route
+   template (`Endpoint::with_inferred_pattern`) or otherwise guessed, with no
+   direct textual match.
+
+`Endpoint::merge_from` keeps the strongest tier (and its source) whenever two
+findings normalize to the same method+route, regardless of write order — a
+route already `observed` on the wire is never downgraded by a later, weaker
+static or inferred hit. The tier is persisted per endpoint (`webrev-storage`),
+tallied in `Summary::endpoints_by_evidence_tier`, and surfaced in the JSON
+report (`Endpoint::confidence`), the CLI scan summary ("Endpoint evidence"
+line), the GraphML/DOT export, and the TUI Endpoints tab.
 
 ## Secret handling
 

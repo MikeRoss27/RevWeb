@@ -1,5 +1,5 @@
 {
- "detector_commit": "ca1fc0dac8541a9d647f4076ac95f888ce089bd3",
+ "detector_commit": "3787a4342fc96766ac60b961c33e04f23284b53d",
  "mode": "static registry (ExtractorRegistry::with_defaults), per file, release build",
  "cases": 331,
  "by_source": {

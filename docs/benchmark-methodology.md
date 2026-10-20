@@ -488,6 +488,57 @@ Of the four pwnfunction cases still missed, three route through
 `DOMPurify.sanitize` by design (the challenge is a sanitizer-bypass puzzle)
 and one (`bourne`) is an object-key confusion bug, not a DOM XSS flow.
 
+**Follow-up (2026-10-19): entity-encoding `.replace()` chains now recognized.**
+`classify_call()` breaks taint on a `.replace(pattern, entity)` chain
+(single-character literal or single-character `/…/g` regex pattern, entity
+literal matching the canonical HTML entity) once the chain covers *both*
+`<` → `&lt;` and `>` → `&gt;` — the two characters that actually enable tag
+injection; a chain escaping only `&`/`"`/`'` is tracked but does not clear
+taint, and a single unrelated `.replace()` call still propagates it exactly
+as before. The regex fallback's `sanitizer_wraps_sink` check was extended
+with the same textual pattern so it doesn't contradict the AST pass's
+verdict with a stray "unverified source" lead. Rerun of the external corpus
+v1: `sak3y` precision 98.5% → 100% (the `snippet_179` false positive is
+gone); recall is unchanged (52%, 65/124) since that case was already a true
+negative for taint, not a different miss. No change on `ghsa`, `pwnfunction`,
+`domdig` or `npm`, and no regression in the static/synthetic suites.
+Deliberately narrow: only literal, one-character pattern/entity pairs are
+recognized; a multi-character class (`/[&<>]/g`), a replacer function, or
+hand-rolled encoding via a helper other than a direct `.replace()` chain on
+the tainted value are not recognized and remain a documented possible false
+positive, not something this fix claims to cover.
+
+### Cross-file `postMessage` handler linking: GHSA recall unchanged (2026-10-20)
+
+The remaining GHSA misses above were attributed, by hypothesis, to
+multi-file `postMessage` flows outside the detector's intra-file scope.
+`modules.rs` gained a narrow cross-file link for exactly that shape:
+`window.addEventListener('message', imported)` /
+`addEventListener('message', imported)`, where `imported` is a plain
+identifier imported (named or default, one hop — not through a re-export
+barrel) from another module's top-level `function` declaration. That
+declaration's first parameter is seeded as `event.data` and its body
+analyzed exactly as a same-file `message` handler would be. Six dedicated
+tests (`modules/tests_handlers.rs`) cover the linked case and the
+deliberate boundaries: a namespace-member handler, a computed
+registration, a handler reached only through a re-export barrel, and a
+handler bound to an arrow/function *expression* rather than a `function`
+declaration all stay untracked, as before.
+
+**Rerun: GHSA recall unchanged, 6.7% (1/15).** Reading the 14 still-missed
+GHSA cases in the local corpus cache (`benchmarks/external-corpus/v1/cache/ghsa/`)
+shows the hypothesis doesn't hold for this corpus: the real CVEs dispatch
+`postMessage` traffic through object methods and message-type dispatch
+tables (e.g. `api.source.postMessage(...)`, a handler assigned dynamically
+onto `api.xxxHandler`), not a plain top-level `function` declaration
+imported and passed directly to `addEventListener`. That richer shape
+(closures, methods, dispatch-by-message-type) remains explicitly out of
+scope — see `docs/extractors.md`. The feature shipped here is correct and
+tested against its stated scope; it simply does not address the actual
+root cause of this corpus's GHSA misses. No change on `sak3y`,
+`pwnfunction`, `domdig` or `npm`, and no regression in the existing
+cross-module link tests (`modules/tests_links.rs`).
+
 ### Native paired performance measurement (2026-10-17)
 
 The final integrated candidate in

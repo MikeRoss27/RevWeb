@@ -41,6 +41,16 @@ const SECRET_KEYWORDS: &[&str] = &[
     "key", "secret", "token", "password", "passwd", "auth", "cred", "bearer",
 ];
 
+/// Literal values that are never a secret, whatever key name they sit under
+/// (`password: true`, `"token": null`). Mirrors the same exclusion in
+/// `webrev_core::Sanitizer::scrub`'s `credential_values` pass.
+const LITERAL_VALUES: &[&str] = &["true", "false", "null", "none", "undefined"];
+
+/// Is `value` a boolean/null-ish literal rather than an actual credential?
+pub(super) fn is_boolean_or_null_literal(value: &str) -> bool {
+    LITERAL_VALUES.iter().any(|l| value.eq_ignore_ascii_case(l))
+}
+
 /// Shannon entropy in bits per character.
 pub(super) fn shannon_entropy(s: &str) -> f64 {
     if s.is_empty() {
