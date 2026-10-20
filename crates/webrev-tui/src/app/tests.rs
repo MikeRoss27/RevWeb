@@ -234,3 +234,13 @@ fn follow_tail_tracks_newest_then_releases_on_scroll_up() {
     app.scroll_to_bottom();
     assert_eq!(app.list_state.selected(), Some(2));
 }
+
+#[test]
+fn tick_only_requests_a_redraw_while_something_animates() {
+    let mut app = app();
+    let now = std::time::Instant::now();
+    assert!(!app.tick(now), "an idle UI must not repaint on every tick");
+    app.scanning = true;
+    assert!(app.tick(now));
+    assert_eq!(app.tick_count, 1);
+}

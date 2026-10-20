@@ -47,6 +47,8 @@ pub struct App {
     scope: Scope,
     /// When true, the selection sticks to the newest item as entries arrive.
     follow: bool,
+    /// Animation frame counter, advanced by [`App::tick`] while a scan runs.
+    pub tick_count: u64,
 }
 
 impl App {
@@ -75,6 +77,7 @@ impl App {
             endpoint_data: Vec::new(),
             scope,
             follow: true,
+            tick_count: 0,
         }
     }
 }

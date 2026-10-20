@@ -15,12 +15,20 @@ use crossterm::event::{Event, EventStream, KeyEventKind};
 use futures::StreamExt;
 use input::{handle_action, handle_filter_key};
 use ratatui::DefaultTerminal;
-use std::{path::PathBuf, sync::Arc};
-use tokio::sync::mpsc;
+use std::{
+    path::PathBuf,
+    sync::Arc,
+    time::{Duration, Instant},
+};
+use tokio::{sync::mpsc, time::MissedTickBehavior};
 use tokio_util::sync::CancellationToken;
 use webrev_core::MissionProfile;
 use webrev_extract::ExtractorRegistry;
 use webrev_storage::{InMemoryStorage, Storage};
+
+/// Animation/expiry cadence. Redraws happen on this tick only when something
+/// animated changed, so an idle UI stays idle.
+const TICK: Duration = Duration::from_millis(100);
 
 /// Everything the TUI needs to run.
 pub struct TuiOptions {
@@ -69,11 +77,22 @@ async fn event_loop(
     controller.start_static(ui_tx.clone());
     app.apply(UiEvent::Status("auto static scan started".to_owned()));
 
+    let mut tick = tokio::time::interval(TICK);
+    tick.set_missed_tick_behavior(MissedTickBehavior::Skip);
+    let mut redraw = true;
+
     loop {
-        terminal.draw(|frame| ui::render(frame, &mut app))?;
+        if redraw {
+            terminal.draw(|frame| ui::render(frame, &mut app))?;
+            redraw = false;
+        }
 
         tokio::select! {
-            Some(event) = ui_rx.recv() => app.apply(event),
+            Some(event) = ui_rx.recv() => {
+                app.apply(event);
+                redraw = true;
+            }
+            _ = tick.tick() => redraw |= app.tick(Instant::now()),
             maybe = term_events.next() => match maybe {
                 Some(Ok(Event::Key(key))) if key.kind == KeyEventKind::Press => {
                     if app.filtering {
@@ -81,9 +100,15 @@ async fn event_loop(
                     } else {
                         handle_action(map_key(key), &mut app, &controller, &ui_tx).await;
                     }
+                    redraw = true;
                 }
-                // Resize and other events just trigger a redraw next iteration.
-                Some(Ok(_)) => {}
+                // The terminal was resized or regained focus: repaint at once.
+                Some(Ok(Event::Resize(..) | Event::FocusGained)) => redraw = true,
+                // Mouse capture is not enabled yet, key releases/repeats carry no
+                // action, focus loss and bracketed paste need no repaint.
+                Some(Ok(
+                    Event::Mouse(_) | Event::FocusLost | Event::Paste(_) | Event::Key(_),
+                )) => {}
                 Some(Err(_)) | None => break,
             },
             else => break,

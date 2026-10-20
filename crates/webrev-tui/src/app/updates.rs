@@ -1,6 +1,7 @@
 //! Apply scan events and build the visible finding/log records.
 
 use super::{App, UiEvent};
+use std::time::Instant;
 use webrev_core::{EndpointScope, Finding, FindingKind};
 
 const MAX_LOGS: usize = 1000;
@@ -11,6 +12,17 @@ impl App {
             .push(webrev_core::model::triage::terminal_text(line));
         if self.logs.len() > MAX_LOGS {
             self.logs.remove(0);
+        }
+    }
+
+    /// Advance time-driven state. Returns `true` when the next frame differs
+    /// from the last one (an animation moved), so the caller can skip idle redraws.
+    pub fn tick(&mut self, _now: Instant) -> bool {
+        if self.scanning {
+            self.tick_count = self.tick_count.wrapping_add(1);
+            true
+        } else {
+            false
         }
     }
 
