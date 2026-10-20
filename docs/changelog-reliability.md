@@ -738,6 +738,45 @@ par défaut » ci-dessous décrivent l'état avant ce changement.
   dans `domsinks_tests.rs`. Suite complète du workspace, `clippy`
   `--all-targets -- -D warnings` et `fmt --check` passent.
 
+## 2026-10-19 — encodage d'entités manuel reconnu comme assainisseur
+
+- Constat : le faux positif `sak3y/snippet_179` (ci-dessus) encode `&`, `<`
+  et `>` à la main via une chaîne de `.replace(/…/g, '&…;')` avant
+  `innerHTML` — un assainissement réel, daté mais correct, que le détecteur
+  ne reconnaissait pas puisque seul `DOMPurify.sanitize` cassait la taint.
+- Changement : `classify_call()`
+  (`crates/webrev-extract/src/extractors/metadata/domsinks/taint.rs`)
+  reconnaît une chaîne de `.replace(pattern, entité)` — motif littéral d'un
+  caractère ou regex `/…/g` d'un caractère, entité correspondant au
+  caractère canonique — comme cassant la taint, mais seulement quand la
+  chaîne couvre à la fois `<` → `&lt;` et `>` → `&gt;` : ce sont les deux
+  caractères qui permettent réellement l'injection de balises. Échapper
+  seulement `&`, `"` ou `'` est reconnu comme un lien de la chaîne mais ne
+  suffit pas à casser la taint ; un `.replace()` isolé et sans rapport avec
+  un échappement HTML continue de propager la taint via la règle générique
+  de préservation des méthodes de chaîne, inchangée. Le repli regex
+  (`sanitizer_wraps_sink` dans `domsinks.rs`) a été étendu avec le même
+  motif textuel : sans ça, une instruction que la passe AST juge déjà
+  assainie (donc sans trace enregistrée) déclenchait quand même le lead
+  « unverified source » de bas niveau, en contradiction avec son propre
+  verdict.
+- Tests : trois tests ajoutés dans `domsinks_tests.rs` — la chaîne complète
+  (`sak3y/snippet_179`) ne produit plus de lead ; une chaîne partielle (seul
+  `&` échappé) continue de tracer une trouvaille ; un `.replace()` isolé et
+  sans rapport continue également de tracer. Suite complète du workspace,
+  `clippy --all-targets -- -D warnings` et `fmt --check` passent.
+- Rerun du corpus externe v1 : précision sur `sak3y` 98,5 % → 100 % (0 FP) ;
+  rappel sak3y inchangé à 52 % (65/124), ce cas étant déjà un vrai négatif
+  pour la taint, pas une autre sorte de cas raté. Aucun changement sur
+  `ghsa`, `pwnfunction`, `domdig` ou `npm`.
+- Compromis : portée volontairement restreinte aux paires motif/entité
+  littérales d'un seul caractère avec correspondance exacte à l'entité
+  canonique. Une classe de caractères multi-caractères (`/[&<>]/g`), une
+  fonction de remplacement, ou un encodage via une bibliothèque autre que
+  `DOMPurify` et différente d'une chaîne `.replace()` directe sur la valeur
+  tainted restent non reconnus et sont un faux positif potentiel documenté,
+  pas corrigé ici.
+
 ## 2026-10-20 — quatre des cinq trous de redaction de l'étape 4 fermés
 
 - Constat : `goal.md` listait cinq trous non couverts par les heuristiques
