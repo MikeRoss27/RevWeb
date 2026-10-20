@@ -49,13 +49,78 @@ impl ProbeResponse {
             content_type: self.content_type(),
             body_bytes: self.bytes.len(),
             // Stored raw: the excerpt is the proof of the probe. Masking happens
-            // on export (`--redact`), which scrubs the whole excerpt before any
-            // further truncation.
-            excerpt: excerpt.chars().take(256).collect(),
+            // on export (`--redact`), which scrubs the whole excerpt. The cut
+            // point is chosen so it never splits a token-shaped run (see
+            // `safe_char_cut`): `--redact`'s patterns match a secret by its
+            // whole shape (a JWT's three dot-separated parts, a 16+ char
+            // high-entropy run, ...) and a value sliced in half can fall
+            // outside every pattern, letting a live credential fragment (or a
+            // JWT's readable claims) through unmasked.
+            excerpt: safe_char_prefix(excerpt, EXCERPT_LIMIT),
             body: String::new(),
             body_truncated: false,
         }
     }
+}
+
+/// Largest excerpt kept per observation, in characters.
+const EXCERPT_LIMIT: usize = 256;
+
+/// Characters that make up every secret shape `Sanitizer` recognises: the
+/// base64url/hex alphabet plus the separators used by JWTs, vendor-prefixed
+/// tokens and `key=value` assignments (`.`, `-`, `_`, `+`, `/`, `=`, `%`,
+/// `~`). A run of these is treated as one token for truncation purposes.
+fn is_token_char(c: char) -> bool {
+    c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.' | '~' | '+' | '/' | '=' | '%')
+}
+
+/// Shortest run worth protecting. Below this, a value is too short to be
+/// flagged as a secret by `Sanitizer` anyway (its shortest unnamed-token
+/// heuristic requires 16 characters), so there is nothing a mid-run cut could
+/// hide that redaction would otherwise have caught.
+const MIN_PROTECTED_RUN: usize = 12;
+
+/// Bound on how much a cut point may retreat to avoid splitting a run. Well
+/// past the length of every token `Sanitizer` recognises by structure alone
+/// (a JWT with a handful of claims runs well under this), so a real secret
+/// is always dropped whole; past this bound the kept text is almost
+/// certainly one long opaque blob (base64 image data, a minified file, ...)
+/// rather than a secret, and retreating further would cost more of the
+/// excerpt than it protects.
+const MAX_RETREAT: usize = 200;
+
+/// A prefix of at most `limit` characters that never ends partway through a
+/// run of [`is_token_char`] characters long enough to be secret-shaped
+/// ([`MIN_PROTECTED_RUN`] or more already included). When the naive cut at
+/// `limit` would split such a run, the cut retreats to the run's start
+/// instead, up to [`MAX_RETREAT`] characters back; past that bound the excerpt
+/// would shrink too much to stay useful, so the naive cut is kept and the
+/// (necessarily partial, and very likely harmless) remainder is left to
+/// `Sanitizer`, as before.
+fn safe_char_prefix(text: &str, limit: usize) -> String {
+    let mut chars = text.char_indices();
+    let Some((cut_byte, _)) = chars.by_ref().nth(limit) else {
+        // Fewer than `limit` characters: nothing is cut.
+        return text.to_owned();
+    };
+    let first_excluded = text[cut_byte..].chars().next();
+    let kept = &text[..cut_byte];
+    let last_included = kept.chars().next_back();
+    let splitting_a_run = matches!((last_included, first_excluded), (Some(a), Some(b)) if is_token_char(a) && is_token_char(b));
+    if !splitting_a_run {
+        return kept.to_owned();
+    }
+    let run_start = kept
+        .char_indices()
+        .rev()
+        .take_while(|&(_, c)| is_token_char(c))
+        .last()
+        .map_or(0, |(i, _)| i);
+    let run_chars = kept[run_start..].chars().count();
+    if !(MIN_PROTECTED_RUN..=MAX_RETREAT).contains(&run_chars) {
+        return kept.to_owned();
+    }
+    kept[..run_start].to_owned()
 }
 
 impl<'a> ProbeClient<'a> {
@@ -318,6 +383,73 @@ mod tests {
 
         let long = "x".repeat(1000);
         assert_eq!(response.observation("probe", &long).excerpt.len(), 256);
+    }
+
+    /// Regression for the gap tracked in `goal.md` (Étape 4, "secret coupé
+    /// par la troncature à 256 caractères d'un extrait de sonde"): a
+    /// credential-shaped value that straddles the excerpt limit used to be
+    /// stored as a readable half-value, and `Sanitizer::scrub` (used by
+    /// `--redact`) can need the whole shape of a token to recognise it (a
+    /// JWT's three dot-separated parts, in this case), so the fragment slid
+    /// through unmasked. The fix must drop such a run whole instead of
+    /// slicing it, for every cut point that actually lands inside it.
+    #[test]
+    fn a_token_straddling_the_excerpt_limit_is_dropped_whole_not_split() {
+        let jwt = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwicm9sZSI6ImFkbWluIn0.c2lnbmF0dXJlYmxvYmJsb2JibG9iYmxvYmJsb2I";
+        let sanitizer = webrev_core::Sanitizer::with_default_patterns();
+        let response = ProbeResponse {
+            url: "https://x.test/r".into(),
+            status: reqwest::StatusCode::OK,
+            headers: reqwest::header::HeaderMap::new(),
+            bytes: Vec::new(),
+            authenticated: false,
+        };
+        let mut covered_a_straddling_cut = false;
+        for pad_len in 100..220 {
+            let pad = "a".repeat(pad_len);
+            // "v" is not a name any of Sanitizer's key-name patterns
+            // recognise, so only the JWT's own three-part structure could
+            // have caught it -- exactly what a mid-token cut breaks.
+            let body = format!(r#"{{"pad":"{pad}","link":"https://x.test/r?v={jwt}"}}"#);
+            let naive: String = body.chars().take(EXCERPT_LIMIT).collect();
+            let naive_ends_mid_jwt = (1..jwt.len()).any(|n| naive.ends_with(&jwt[..n]));
+            if !naive_ends_mid_jwt {
+                continue;
+            }
+            covered_a_straddling_cut = true;
+            let observation = response.observation("probe", &body);
+            let scrubbed = sanitizer.scrub(&observation.excerpt);
+            let leaked = (MIN_PROTECTED_RUN..jwt.len()).find(|&n| scrubbed.contains(&jwt[..n]));
+            assert!(
+                leaked.is_none(),
+                "pad_len={pad_len} leaked {:?} in {scrubbed:?}",
+                leaked.map(|n| &jwt[..n])
+            );
+        }
+        assert!(
+            covered_a_straddling_cut,
+            "no pad length landed the naive cut inside the JWT; test is not exercising the bug"
+        );
+    }
+
+    /// An ordinary excerpt that happens to end exactly on a short,
+    /// non-secret run of word characters is unaffected: nothing retreats
+    /// just because the boundary falls inside a run of letters.
+    #[test]
+    fn a_short_ordinary_run_at_the_boundary_is_not_retreated() {
+        let response = ProbeResponse {
+            url: "https://t.test/a".into(),
+            status: reqwest::StatusCode::OK,
+            headers: reqwest::header::HeaderMap::new(),
+            bytes: Vec::new(),
+            authenticated: false,
+        };
+        // 250 filler characters then a 10-character word straddling the
+        // 256-character limit: too short to be secret-shaped, so the cut
+        // stays at the naive boundary.
+        let body = format!(r#"{}"readability""#, "x".repeat(250));
+        let observation = response.observation("probe", &body);
+        assert_eq!(observation.excerpt.chars().count(), 256);
     }
 
     #[tokio::test]

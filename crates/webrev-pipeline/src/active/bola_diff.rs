@@ -11,8 +11,54 @@ const MAX_DIFF_LINES: usize = 20;
 const MAX_FIELDS: usize = 2000;
 const VALUE_WIDTH: usize = 80;
 
+/// Characters that make up every secret shape `Sanitizer` recognises (see
+/// `transport::is_token_char`, which this mirrors at the byte level: every
+/// token character here is single-byte ASCII, so slicing on bytes is exact).
+fn is_token_byte(b: u8) -> bool {
+    b.is_ascii_alphanumeric() || matches!(b, b'-' | b'_' | b'.' | b'~' | b'+' | b'/' | b'=' | b'%')
+}
+
+/// Shortest run worth protecting against a mid-token cut; below this a value
+/// is too short for `Sanitizer`'s unnamed-token heuristic to flag anyway.
+const MIN_PROTECTED_RUN: usize = 12;
+
+/// Bound on how far a cut may retreat to avoid splitting a run. Well past
+/// the length of every token `Sanitizer` recognises by structure alone (see
+/// `transport::MAX_RETREAT`), so a real secret is always dropped whole, but
+/// bounded so one huge opaque blob (base64 image data, ...) cannot collapse
+/// the whole excerpt.
+const MAX_RETREAT: usize = 256;
+
+/// Drop a trailing partial token from `text` when the byte right after it in
+/// the original response (`next_byte`) shows the run continues past the cut.
+/// Without this, a secret that straddles [`BODY_LIMIT`] is stored as a
+/// half-value: `Sanitizer`'s patterns match a whole shape (a JWT's three
+/// dot-separated parts, a 16+ character high-entropy run, ...), so the
+/// fragment can slip past every one of them, unlike a secret kept whole or
+/// dropped whole.
+fn trim_split_token(text: &str, next_byte: Option<u8>) -> String {
+    let continues = next_byte.is_some_and(is_token_byte);
+    let ends_in_token = text.as_bytes().last().copied().is_some_and(is_token_byte);
+    if !continues || !ends_in_token {
+        return text.to_owned();
+    }
+    let bytes = text.as_bytes();
+    let mut start = bytes.len();
+    while start > 0 && is_token_byte(bytes[start - 1]) {
+        start -= 1;
+    }
+    let run_len = bytes.len() - start;
+    if !(MIN_PROTECTED_RUN..=MAX_RETREAT).contains(&run_len) {
+        return text.to_owned();
+    }
+    text[..start].to_owned()
+}
+
 /// UTF-8-safe prefix of at most [`BODY_LIMIT`] bytes, and whether the response
-/// was longer. A multi-byte character cut by the limit is dropped, not mangled.
+/// was longer. A multi-byte character cut by the limit is dropped, not
+/// mangled; a secret-shaped run cut by the limit is dropped too (see
+/// [`trim_split_token`]), so `--redact` always sees a whole value or none of
+/// it, never an unrecognisable half that could slip past its patterns.
 pub(super) fn body_excerpt(bytes: &[u8]) -> (String, bool) {
     let limit = bytes.len().min(BODY_LIMIT);
     let head = &bytes[..limit];
@@ -23,6 +69,11 @@ pub(super) fn body_excerpt(bytes: &[u8]) -> (String, bool) {
             String::from_utf8_lossy(&head[..error.valid_up_to()]).into_owned()
         }
         Err(_) => String::from_utf8_lossy(head).into_owned(),
+    };
+    let text = if truncated {
+        trim_split_token(&text, bytes.get(limit).copied())
+    } else {
+        text
     };
     (text, truncated)
 }
@@ -142,6 +193,64 @@ mod tests {
         let (text, truncated) = body_excerpt(&vec![b'x'; BODY_LIMIT + 500]);
         assert_eq!(text.len(), BODY_LIMIT);
         assert!(truncated);
+    }
+
+    /// Regression for the gap tracked in `goal.md` (Étape 4, "secret coupé
+    /// par la troncature à 256 caractères d'un extrait de sonde"; the proof
+    /// body here shares the same truncate-then-redact structure, just at
+    /// `BODY_LIMIT` instead of the probe excerpt's 256-character limit — see
+    /// `transport::a_token_straddling_the_excerpt_limit_is_dropped_whole_not_split`
+    /// for the actual 256-character case). A credential-shaped run split by
+    /// the limit can lose the shape `Sanitizer::scrub` (used by `--redact`)
+    /// matches on, letting a fragment of it (here, a JWT's readable claims)
+    /// through unmasked. The fix must drop such a run whole, for every cut
+    /// point that actually lands inside it.
+    #[test]
+    fn a_secret_straddling_the_limit_is_dropped_whole_not_split() {
+        let jwt = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwicm9sZSI6ImFkbWluIn0.c2lnbmF0dXJlYmxvYmJsb2JibG9iYmxvYmJsb2I";
+        let sanitizer = webrev_core::Sanitizer::with_default_patterns();
+        let mut covered_a_straddling_cut = false;
+        for pad_len in (BODY_LIMIT - 150)..(BODY_LIMIT - 20) {
+            let pad = "a".repeat(pad_len);
+            // "v" is not a name any of Sanitizer's key-name patterns
+            // recognise, so only the JWT's own three-part structure could
+            // have caught it -- exactly what a mid-token cut breaks.
+            let body =
+                format!(r#"{{"pad":"{pad}","link":"https://x.test/r?v={jwt}"}}"#).into_bytes();
+            if body.len() < BODY_LIMIT {
+                continue;
+            }
+            let naive_head = String::from_utf8_lossy(&body[..BODY_LIMIT]).into_owned();
+            let naive_ends_mid_jwt = (1..jwt.len()).any(|n| naive_head.ends_with(&jwt[..n]));
+            if !naive_ends_mid_jwt {
+                continue;
+            }
+            covered_a_straddling_cut = true;
+            let (text, truncated) = body_excerpt(&body);
+            assert!(truncated);
+            let scrubbed = sanitizer.scrub(&text);
+            let leaked = (MIN_PROTECTED_RUN..jwt.len()).find(|&n| scrubbed.contains(&jwt[..n]));
+            assert!(
+                leaked.is_none(),
+                "pad_len={pad_len} leaked {:?} in {scrubbed:?}",
+                leaked.map(|n| &jwt[..n])
+            );
+        }
+        assert!(
+            covered_a_straddling_cut,
+            "no pad length landed the naive cut inside the JWT; test is not exercising the bug"
+        );
+    }
+
+    /// A short, non-secret run of word characters straddling the limit is
+    /// unaffected: nothing retreats just because the boundary falls inside a
+    /// run of letters.
+    #[test]
+    fn a_short_ordinary_run_at_the_boundary_is_not_retreated() {
+        let body = format!(r#"{}"readability""#, "x".repeat(BODY_LIMIT - 6)).into_bytes();
+        let (text, truncated) = body_excerpt(&body);
+        assert!(truncated);
+        assert_eq!(text.len(), BODY_LIMIT);
     }
 
     #[test]
