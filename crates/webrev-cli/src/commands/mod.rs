@@ -331,6 +331,11 @@ pub async fn dispatch(cli: Cli) -> anyhow::Result<()> {
         Command::Compare(args) => compare::run(args),
         Command::Bola(args) => bola::run(args).await,
         Command::WsReplay(args) => ws_replay::run(args).await,
+        Command::Completions { shell } => {
+            use clap::CommandFactory;
+            clap_complete::generate(shell, &mut Cli::command(), "webrev", &mut std::io::stdout());
+            Ok(())
+        }
         Command::Tui(args) => {
             if args.observation_only {
                 return Err(usage(

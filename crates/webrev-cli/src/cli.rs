@@ -77,24 +77,24 @@ EXAMPLES:
                   and technology fingerprints; inspect HTTP/WebSocket traffic; probe access \
                   controls, CORS, redirects and injection signals.\n\nUse only against targets \
                   you are explicitly authorized to test.",
-    after_help = EXAMPLES,
+    after_help = "Run `webrev <COMMAND> --help` for examples, `webrev completions <SHELL>` for tab completion.",
     after_long_help = EXAMPLES
 )]
 pub struct Cli {
     #[command(subcommand)]
     pub command: Command,
     /// Suppress the startup banner.
-    #[arg(long, global = true)]
+    #[arg(long, global = true, help_heading = "Global options")]
     pub no_banner: bool,
     /// When to use color: `auto` honours NO_COLOR, CLICOLOR(_FORCE) and TTY detection.
-    #[arg(long, global = true, value_enum, default_value_t = ColorArg::Auto, value_name = "WHEN")]
+    #[arg(long, global = true, help_heading = "Global options", value_enum, default_value_t = ColorArg::Auto, value_name = "WHEN")]
     pub color: ColorArg,
     /// Suppress progress and status lines on stderr (data on stdout is unaffected).
-    #[arg(short, long, global = true)]
+    #[arg(short, long, global = true, help_heading = "Global options")]
     pub quiet: bool,
     /// Progress display on stderr: `auto` draws one in-place line on a terminal and
     /// plain lines elsewhere; `json` emits one JSON object per line.
-    #[arg(long, global = true, value_enum, default_value_t = ProgressArg::Auto, value_name = "MODE")]
+    #[arg(long, global = true, help_heading = "Global options", value_enum, default_value_t = ProgressArg::Auto, value_name = "MODE")]
     pub progress: ProgressArg,
 }
 
@@ -119,29 +119,73 @@ impl From<ColorArg> for webrev_tui::color::ColorChoice {
 #[derive(Subcommand)]
 pub enum Command {
     /// Analyze and test an application: static, optionally + dynamic/active, then report.
+    #[command(after_long_help = "\
+EXAMPLES:
+  webrev scan --seed https://app.example.com/
+  webrev scan --seed https://app.example.com/ --dynamic --active --fail-on high
+  subfinder -d example.com | httpx | webrev scan --report -
+  webrev scan --seed https://app.example.com/ --all --progress json 2>progress.jsonl
+
+EXIT STATUS:
+  0 ok   1 runtime error   2 usage error   3 --fail-on threshold reached")]
     Scan(ScanAllArgs),
     /// Static analysis: fetch seeds + their scripts and extract endpoints.
+    #[command(after_long_help = "\
+EXAMPLES:
+  webrev static --seed https://app.example.com/ --max-pages 100
+  webrev static --seed https://app.example.com/ --report - | jq '.findings | length'")]
     Static(ScanArgs),
     /// Dynamic analysis: drive headless Chromium and capture live calls.
+    #[command(after_long_help = "\
+EXAMPLES:
+  webrev dynamic --seed https://app.example.com/ --duration-secs 15
+  webrev dynamic --seed https://app.example.com/ --observation-only")]
     Dynamic(ScanArgs),
     /// Active analysis: lightweight, opt-in vulnerability probing (security
     /// headers, CORS, cookie flags, sensitive-file exposure, open redirect,
     /// parameter fuzzing, IDOR-lite) against discovered endpoints. Sends
     /// abnormal traffic — authorized targets only.
+    #[command(after_long_help = "\
+EXAMPLES:
+  webrev active --seed https://app.example.com/ --max-active-requests 100
+  webrev scan --seed https://app.example.com/ --active   # probe everything discovered")]
     Active(ScanArgs),
     /// Launch the interactive terminal UI.
+    #[command(after_long_help = "\
+EXAMPLES:
+  webrev tui --seed https://app.example.com/")]
     Tui(ScanArgs),
     /// Convert or filter an existing JSON report.
+    #[command(after_long_help = "\
+EXAMPLES:
+  webrev report --format text
+  webrev report --format urls-exact | ffuf -u FUZZ -w -
+  webrev report --min-severity high --format jsonl | jq .")]
     Report(ReportArgs),
     /// Compare stack, API, and secret fingerprints across target reports to
     /// spot infrastructure reuse in a multi-target engagement.
+    #[command(after_long_help = "\
+EXAMPLES:
+  webrev compare --input a.json --input b.json --output diff.json")]
     Compare(CompareArgs),
     /// Compare object access across two captured test accounts.
+    #[command(after_long_help = "\
+EXAMPLES:
+  webrev bola --seed https://app.example.com/ --a-auth a.json --b-auth b.json")]
     Bola(BolaArgs),
     /// Replay or mutate a captured WebSocket frame (reproducibility check,
     /// or a cross-account IDOR-style comparison with --b-auth). Opens live
     /// connections to the captured socket URL — authorized targets only.
     WsReplay(WsReplayArgs),
+    /// Print a shell completion script (bash, zsh, fish, elvish, powershell).
+    #[command(after_long_help = "\
+EXAMPLES:
+  webrev completions bash > ~/.local/share/bash-completion/completions/webrev
+  webrev completions zsh > ~/.zfunc/_webrev")]
+    Completions {
+        /// Shell to generate the script for.
+        shell: clap_complete::Shell,
+    },
 }
 
 /// Arguments for the one-shot `scan` command: the shared scan options plus a
@@ -170,6 +214,8 @@ pub struct ScanAllArgs {
 }
 
 /// Arguments shared by the scanning subcommands.
+// Justification: each bool is an independent CLI switch, not a state machine.
+#[allow(clippy::struct_excessive_bools)]
 #[derive(Args)]
 pub struct ScanArgs {
     /// Seed URL to analyze (repeatable). When omitted, seeds are read from

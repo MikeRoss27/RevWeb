@@ -8,6 +8,7 @@
 //! * `none`  - nothing. `--quiet` forces this and mutes [`note!`] too.
 
 use clap::ValueEnum;
+use std::fmt::Write as _;
 use std::io::{IsTerminal, Write};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, OnceLock};
@@ -47,10 +48,9 @@ pub fn resolve(arg: ProgressArg, quiet: bool, stderr_tty: bool, dumb: bool) -> M
     }
     match arg {
         ProgressArg::None => Mode::Off,
-        ProgressArg::Plain => Mode::Plain,
         ProgressArg::Json => Mode::Json,
         ProgressArg::Auto if stderr_tty && !dumb => Mode::Live,
-        ProgressArg::Auto => Mode::Plain,
+        ProgressArg::Plain | ProgressArg::Auto => Mode::Plain,
     }
 }
 
@@ -117,7 +117,7 @@ impl Inner {
     }
 
     /// Emit an event in `plain` / `json` mode (no-op otherwise).
-    fn emit(&self, event: &str, stage: &str, message: &str, extra: serde_json::Value) {
+    fn emit(&self, event: &str, stage: &str, message: &str, extra: &serde_json::Value) {
         match self.mode {
             Mode::Plain => {
                 let sep = if message.is_empty() { "" } else { ": " };
@@ -154,14 +154,14 @@ impl Inner {
                     st.stage.clone_from(stage);
                     st.processed = 0;
                 }
-                self.emit("stage_started", stage, "started", serde_json::json!({}));
+                self.emit("stage_started", stage, "started", &serde_json::json!({}));
             }
             PipelineEvent::StageCompleted { stage, emitted } => {
                 self.emit(
                     "stage_completed",
                     stage,
                     &format!("done, {emitted} items out"),
-                    serde_json::json!({ "emitted": emitted }),
+                    &serde_json::json!({ "emitted": emitted }),
                 );
             }
             PipelineEvent::Progress { stage, processed } => {
@@ -181,7 +181,7 @@ impl Inner {
                         "progress",
                         stage,
                         &format!("{processed} processed"),
-                        serde_json::json!({ "processed": processed }),
+                        &serde_json::json!({ "processed": processed }),
                     );
                 }
             }
@@ -190,7 +190,7 @@ impl Inner {
                 self.state().errors += 1;
                 // Messages can embed target-controlled text.
                 let message = terminal_text(message);
-                self.emit("error", stage, &message, serde_json::json!({}));
+                self.emit("error", stage, &message, &serde_json::json!({}));
             }
             PipelineEvent::SecretDetected { .. } => {}
         }
@@ -213,16 +213,17 @@ impl Inner {
             line.push_str(" · ");
         }
         if st.processed > 0 {
-            line.push_str(&format!("{} processed · ", st.processed));
+            let _ = write!(line, "{} processed · ", st.processed);
         }
-        line.push_str(&format!(
+        let _ = write!(
+            line,
             "{} findings · {}:{:02}",
             st.findings,
             secs / 60,
             secs % 60
-        ));
+        );
         if st.errors > 0 {
-            line.push_str(&format!(" · {} errors", st.errors));
+            let _ = write!(line, " · {} errors", st.errors);
         }
         drop(st);
         let width = crate::term::width_of(std::io::stderr()).unwrap_or(80);
@@ -313,7 +314,7 @@ impl Progress {
             st.processed = 0;
         }
         self.inner
-            .emit("stage_started", name, "started", serde_json::json!({}));
+            .emit("stage_started", name, "started", &serde_json::json!({}));
     }
 
     /// Stop drawing and leave the cursor on a clean line.
@@ -333,7 +334,7 @@ impl Progress {
             "finished",
             "",
             "",
-            serde_json::json!({ "findings": findings, "errors": errors }),
+            &serde_json::json!({ "findings": findings, "errors": errors }),
         );
     }
 }

@@ -21,6 +21,8 @@ pub async fn run(args: ScanAllArgs) -> anyhow::Result<()> {
     super::check_fail_on(&report, fail_on)
 }
 
+// The one-shot flow reads best as a single top-to-bottom sequence.
+#[allow(clippy::too_many_lines)]
 async fn run_scan(args: ScanAllArgs) -> anyhow::Result<SessionReport> {
     let ScanAllArgs {
         scan,
