@@ -60,22 +60,27 @@ pub(super) fn render_footer(frame: &mut Frame, area: Rect, app: &App) {
             Span::from("  (Enter apply · Esc clear)").dim(),
         ])
     } else {
-        let indicator = if app.scanning {
-            Span::from(" ● scanning ")
-                .fg(PRIMARY)
-                .add_modifier(Modifier::BOLD)
+        let status = webrev_core::model::triage::terminal_text(&app.status);
+        if app.scanning {
+            Line::from(vec![
+                Span::from(format!(" {} ", app.spinner()))
+                    .fg(PRIMARY)
+                    .add_modifier(Modifier::BOLD),
+                Span::from(app.progress_line()).fg(PRIMARY),
+                Span::from("  "),
+                Span::from(status).dim(),
+            ])
         } else {
-            Span::from(" ○ ready ")
-                .fg(ACCENT)
-                .add_modifier(Modifier::BOLD)
-        };
-        Line::from(vec![
-            indicator,
-            Span::from(webrev_core::model::triage::terminal_text(&app.status)),
-        ])
+            Line::from(vec![
+                Span::from(" ○ ready ")
+                    .fg(ACCENT)
+                    .add_modifier(Modifier::BOLD),
+                Span::from(status),
+            ])
+        }
     };
     let help = Line::from(
-        "? keys · Tab views · / filter · Enter detail · s/d/a scans · r report · q quit",
+        "? keys · Tab views · / filter · Enter detail · s/d/a scans · r report · Esc back · q quit",
     )
     .dim();
     let footer = Paragraph::new(vec![top, help]).block(Block::bordered().title(" status "));

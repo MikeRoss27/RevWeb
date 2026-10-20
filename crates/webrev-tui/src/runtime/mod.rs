@@ -13,7 +13,7 @@ use crate::{
 use controller::Controller;
 use crossterm::event::{Event, EventStream, KeyEventKind};
 use futures::StreamExt;
-use input::{handle_action, handle_filter_key};
+use input::{handle_action, handle_confirm_key, handle_filter_key};
 use ratatui::DefaultTerminal;
 use std::{
     path::PathBuf,
@@ -73,7 +73,7 @@ async fn event_loop(
     let mut term_events = EventStream::new();
 
     // Kick off a static scan immediately so the UI is useful on open.
-    app.scanning = true;
+    app.begin_scan();
     controller.start_static(ui_tx.clone());
     app.apply(UiEvent::Status("auto static scan started".to_owned()));
 
@@ -95,10 +95,12 @@ async fn event_loop(
             _ = tick.tick() => redraw |= app.tick(Instant::now()),
             maybe = term_events.next() => match maybe {
                 Some(Ok(Event::Key(key))) if key.kind == KeyEventKind::Press => {
-                    if app.filtering {
+                    if app.confirm_quit {
+                        handle_confirm_key(key, &mut app, &controller, &ui_tx);
+                    } else if app.filtering {
                         handle_filter_key(key, &mut app);
                     } else {
-                        handle_action(map_key(key), &mut app, &controller, &ui_tx).await;
+                        handle_action(map_key(key), &mut app, &controller, &ui_tx);
                     }
                     redraw = true;
                 }
@@ -119,5 +121,6 @@ async fn event_loop(
         }
     }
 
+    controller.cancel.cancel();
     Ok(())
 }

@@ -244,3 +244,100 @@ fn tick_only_requests_a_redraw_while_something_animates() {
     assert!(app.tick(now));
     assert_eq!(app.tick_count, 1);
 }
+
+#[test]
+fn quit_is_immediate_only_when_nothing_would_be_lost() {
+    let mut idle = app();
+    idle.request_quit();
+    assert!(idle.should_quit && !idle.confirm_quit);
+
+    let mut scanning = app();
+    scanning.begin_scan();
+    scanning.request_quit();
+    assert!(scanning.confirm_quit && !scanning.should_quit);
+
+    let mut unexported = app();
+    unexported.apply(endpoint_event());
+    assert!(unexported.dirty);
+    unexported.request_quit();
+    assert!(unexported.confirm_quit && !unexported.should_quit);
+}
+
+#[test]
+fn esc_closes_layers_before_it_asks_to_quit() {
+    let mut app = app();
+    app.apply(endpoint_event());
+    app.show_help = true;
+    app.show_detail = true;
+    app.filter = "x".into();
+    app.back();
+    assert!(!app.show_help && app.show_detail);
+    app.back();
+    assert!(!app.show_detail && app.filter == "x");
+    app.back();
+    assert!(app.filter.is_empty() && !app.confirm_quit);
+    app.back();
+    assert!(app.confirm_quit);
+}
+
+#[test]
+fn export_clears_dirty_and_a_clash_asks_before_overwriting() {
+    let mut app = app();
+    app.apply(endpoint_event());
+    app.apply(UiEvent::Exported(crate::app::ExportOutcome::Exists(
+        "r.json".into(),
+    )));
+    assert!(app.dirty && app.overwrite_pending);
+    assert!(app
+        .toast
+        .as_ref()
+        .is_some_and(|t| t.text.contains("overwrite")));
+    app.quit_after_export = true;
+    app.apply(UiEvent::Exported(crate::app::ExportOutcome::Written(
+        "ok".into(),
+    )));
+    assert!(!app.dirty && app.report_written && app.should_quit);
+}
+
+#[test]
+fn progress_events_feed_the_footer_line_and_scan_end_clears_it() {
+    let mut app = app();
+    app.apply(UiEvent::Pipeline(PipelineEvent::StageStarted {
+        stage: "fetch".into(),
+    }));
+    app.apply(UiEvent::Pipeline(PipelineEvent::Progress {
+        stage: "fetch".into(),
+        processed: 42,
+    }));
+    assert!(app.scanning);
+    assert_eq!(app.progress_line(), "fetch · 42 processed · 0s");
+    assert!(!app.logs.iter().any(|l| l.contains("progress")));
+    app.apply(UiEvent::ScanFinished("static scan done".into()));
+    assert!(app.progress.is_none() && !app.scanning);
+    assert_eq!(app.scans_completed, 1);
+    assert!(app.toast.is_some());
+}
+
+#[test]
+fn toast_expires_and_lag_is_surfaced() {
+    let mut app = app();
+    app.apply(UiEvent::Lagged(7));
+    assert!(app
+        .toast
+        .as_ref()
+        .is_some_and(|t| t.text.contains("7 pipeline events dropped")));
+    let later = std::time::Instant::now() + std::time::Duration::from_secs(4);
+    assert!(app.tick(later));
+    assert!(app.toast.is_none());
+}
+
+#[test]
+fn spinner_falls_back_to_ascii() {
+    let mut app = app();
+    app.spinner_ascii = true;
+    assert_eq!(app.spinner(), "|");
+    app.tick_count = 1;
+    assert_eq!(app.spinner(), "/");
+    app.spinner_ascii = false;
+    assert_eq!(app.spinner(), "⠙");
+}
