@@ -103,8 +103,7 @@ a été reformulé en conséquence ; voir `docs/security.md`, « Suivi : rapport
 bruts par défaut ». **Il reste décoché** : journaux, erreurs, `Debug` et
 `--redact` sont couverts par des tests, mais les heuristiques de `--redact` ont
 des trous documentés (secrets courts sous un nom de clé quelconque, secrets
-dans le nom d'hôte, secret coupé par la troncature à 256 caractères d'un
-extrait de sonde), et l'affichage de la TUI à l'écran et le proxy en amont ne
+dans le nom d'hôte), et l'affichage de la TUI à l'écran et le proxy en amont ne
 sont pas audités. Le critère reste décoché : secrets courts sous un nom de clé
 quelconque, secrets dans le nom d'hôte, affichage de la TUI et proxy en amont
 restent non traités (voir `docs/security.md`, « Suivi : rapports exportés »).
@@ -132,6 +131,27 @@ correctif : un secret coupé par la troncature à 256 caractères d'un extrait
 de sonde (`webrev-pipeline/src/active/bola_diff.rs::body_excerpt`) — un
 problème distinct (troncature d'une preuve active, pas détection de
 secret) qui demande sa propre analyse.
+**Suivi (2026-10-20, cinquième et dernier trou fermé) :** ce trou était réel,
+pas théorique — confirmé par une reproduction avant correctif. Un JWT placé
+sous un nom de paramètre que `Sanitizer` ne reconnaît par aucun motif nommé
+(`?v=<jwt>`, ni « token », ni « key », ni « session »…) n'est reconnu comme
+secret que par sa structure à trois segments ; coupé en deux par la
+troncature à 256 caractères de `ProbeResponse::observation`
+(`active/transport.rs`), 65 caractères de son en-tête et de ses revendications
+en clair (`"role":"admin"`, `"sub":"1234567890"`) survivaient à
+`Sanitizer::scrub`, donc à `--redact`. Même mécanisme pour l'extrait de preuve
+`bola` (`active/bola_diff.rs::body_excerpt`, coupe à 4 KiO). **Corrigé** : la
+coupe recule désormais au début de toute suite de caractères de forme jeton
+(12 à 200/256 caractères selon la limite) plutôt que de la traverser, donc un
+secret est gardé entier ou absent, jamais tronqué en deux ; au-delà de cette
+borne (un extrait dominé par un seul bloc opaque, plus probablement une donnée
+qu'un secret), la coupe naïve d'origine s'applique comme avant. Détails,
+reproduction et compromis dans `docs/security.md`, « Suivi : secret coupé par
+la troncature de l'extrait de sonde ». **Les cinq trous identifiés sont
+désormais fermés.** Le critère « preuves sensibles protégées » peut être
+considéré comme satisfait pour les heuristiques `--redact` connues à ce jour ;
+voir `docs/security.md` pour le détail de chaque correctif et les limites
+restantes non encore identifiées.
 
 ## Étape 5 — Benchmarks et non-régression
 

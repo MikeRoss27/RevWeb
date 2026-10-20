@@ -499,9 +499,9 @@ Ce qui change :
 - Les extraits et URL de preuve des sondes actives sont stockés **bruts** dans
   le rapport (troncature à 256 caractères conservée) ; `ProbeResponse::observation`
   ne masque plus au stockage. Le masquage se fait à l'export, avec `--redact`,
-  sur l'extrait tronqué : un secret coupé en deux par la troncature ne garde
-  que son début, que le masquage par forme ne reconnaît pas toujours. Pour un
-  rapport destiné à être partagé, c'est un reste à connaître.
+  sur l'extrait tronqué. *(Corrigé le 2026-10-20 : la coupe ne tombe plus au
+  milieu d'un secret, voir « Suivi : secret coupé par la troncature de
+  l'extrait de sonde » plus bas.)*
 - Chaque scan qui écrit un rapport brut dans un fichier (`scan`, `static`,
   `dynamic`, `active`, `report --output`, `bola --output`) affiche une ligne
   d'avertissement sur stderr ; la TUI l'ajoute à son message de statut. Écrire
@@ -525,6 +525,51 @@ ticket, pas de pièce jointe sans `--redact`. `--redact` retire des moyens de se
 connecter, pas la liste des objets touchés, et son heuristique a des trous (voir
 les suivis précédents). Le texte en clair des secrets détectés reste exporté
 dans les deux modes, car c'est l'objet du finding.
+
+### Suivi : secret coupé par la troncature de l'extrait de sonde (2026-10-20)
+
+**Constat.** Le trou documenté ci-dessus ("un secret coupé en deux par la
+troncature ne garde que son début, que le masquage par forme ne reconnaît pas
+toujours") était réel, confirmé par une reproduction avant correctif : avec un
+JWT placé sous un nom de paramètre (`?v=`) qu'aucun motif nommé de `Sanitizer`
+ne reconnaît (`session`, `token`, `key`… absents), seule la structure à trois
+segments du JWT pouvait le faire reconnaître comme secret. Pour un `pad_len`
+qui plaçait la coupe à 256 caractères (`ProbeResponse::observation`,
+`active/transport.rs`) au milieu de ce JWT, 65 caractères de son en-tête et de
+ses revendications (`"role":"admin"`, `"sub":"1234567890"`) restaient en clair
+après `Sanitizer::scrub` : la forme à trois segments était rompue, et aucun
+autre motif ne s'appliquait. Même mécanisme, même limite, pour l'extrait de
+preuve `bola` (`active/bola_diff.rs::body_excerpt`, coupe à 4 KiO).
+
+**Correctif.** `ProbeResponse::observation` et `body_excerpt` ne coupent plus
+au milieu d'une suite de caractères de forme jeton (alphanumérique ASCII plus
+`-_.~+/=%`, l'alphabet de tout secret reconnu par `Sanitizer`) : quand la coupe
+naïve tomberait à l'intérieur d'une telle suite longue d'au moins 12 caractères
+(en dessous, `Sanitizer` ne la reconnaîtrait pas non plus, coupée ou non) et
+d'au plus 200 caractères pour l'extrait de sonde ou 256 pour `body_excerpt`,
+elle recule au début de la suite : un secret est désormais toujours gardé en
+entier ou absent, jamais tronqué en deux. Au-delà de cette borne — un extrait
+dominé par un seul bloc opaque (image en base64, fichier minifié…), plus
+probablement une donnée qu'un secret — la coupe naïve d'origine s'applique,
+comme avant.
+
+**Tests.** `active/transport.rs` :
+`a_token_straddling_the_excerpt_limit_is_dropped_whole_not_split` (balaie les
+longueurs de remplissage faisant tomber la coupe dans le JWT, vérifie qu'aucun
+fragment de 12 caractères ou plus n'y survit après `scrub`) et
+`a_short_ordinary_run_at_the_boundary_is_not_retreated` (un mot ordinaire de
+sous la barre des 12 caractères ne déclenche aucun recul). Mêmes deux tests
+dans `active/bola_diff.rs`, à l'échelle de `BODY_LIMIT`. Les tests existants
+(coupe UTF-8 sûre, longue suite factice coupée au plafond) restent inchangés.
+
+**Compromis.** Heuristique de forme, pas de détection de secrets : pas de
+dépendance nouvelle vers les motifs de `webrev-extract`, juste l'alphabet déjà
+implicite dans `Sanitizer` (`webrev-core`, déjà une dépendance du pipeline). En
+dessous de 12 caractères inclus, un fragment trop court pour que `Sanitizer`
+l'aurait reconnu de toute façon peut rester coupé — sans perte réelle. Une
+suite ordinaire de 12 à 200/256 caractères pile à la frontière de coupe (un
+identifiant inhabituellement long, par exemple) est elle aussi reculée par
+excès de prudence, au prix de quelques caractères d'extrait.
 
 ### Suivi : test d'egress instable (2026-10-18)
 

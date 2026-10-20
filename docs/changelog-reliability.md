@@ -1,5 +1,39 @@
 # Changelog — reliability work
 
+## 2026-10-20 — secret coupé par la troncature d'un extrait de sonde
+
+- Constat : `goal.md` documentait un trou de `--redact` jamais vérifié —
+  "secret coupé par la troncature à 256 caractères d'un extrait de sonde".
+  Reproduction avant correctif : un JWT sous un nom de paramètre que
+  `Sanitizer` ne reconnaît par aucun motif nommé (`?v=<jwt>`) n'est détecté que
+  par sa structure à trois segments ; coupé en deux par la troncature à 256
+  caractères de `ProbeResponse::observation` (`active/transport.rs`),
+  65 caractères de ses revendications en clair (`"role":"admin"`,
+  `"sub":"1234567890"`) survivaient à `Sanitizer::scrub`. Même mécanisme pour
+  l'extrait de preuve `bola` (`active/bola_diff.rs::body_excerpt`, coupe à
+  4 KiO).
+- Changement : `ProbeResponse::observation` et `body_excerpt` ne coupent plus
+  au milieu d'une suite de caractères de forme jeton (alphanumérique ASCII
+  plus `-_.~+/=%`) ; quand la coupe naïve tomberait à l'intérieur d'une telle
+  suite d'au moins 12 caractères (en dessous, `Sanitizer` ne la reconnaîtrait
+  pas non plus) et d'au plus 200 (sonde) ou 256 (`bola`) caractères, elle
+  recule au début de la suite. Au-delà de cette borne, la coupe naïve d'origine
+  s'applique, comme avant.
+- Tests : `active/transport.rs`
+  (`a_token_straddling_the_excerpt_limit_is_dropped_whole_not_split`,
+  `a_short_ordinary_run_at_the_boundary_is_not_retreated`) et les deux mêmes à
+  l'échelle de `BODY_LIMIT` dans `active/bola_diff.rs`. Les tests existants des
+  deux fichiers (coupe UTF-8 sûre, longue suite factice coupée au plafond)
+  restent inchangés.
+- Compromis : heuristique de forme (l'alphabet déjà implicite dans
+  `Sanitizer`, `webrev-core`), pas de détection de secrets — pas de nouvelle
+  dépendance vers `webrev-extract`. Une suite ordinaire de 12 à 200/256
+  caractères pile à la frontière de coupe est reculée par excès de prudence,
+  au prix de quelques caractères d'extrait ; au-delà, un extrait dominé par un
+  seul bloc opaque garde son comportement d'avant (coupe naïve). Détails dans
+  `docs/security.md`, « Suivi : secret coupé par la troncature de l'extrait de
+  sonde ».
+
 ## 2026-10-19
 
 - Added `--format urls-exact` and `--format requests` to `report` and `scan`.
