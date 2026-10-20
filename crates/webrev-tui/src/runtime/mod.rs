@@ -124,3 +124,9 @@ async fn event_loop(
     controller.cancel.cancel();
     Ok(())
 }
+
+/// Test hook: drive the filter-line key handler from other modules' tests.
+#[cfg(test)]
+pub(crate) fn handle_filter_key_for_tests(key: crossterm::event::KeyEvent, app: &mut App) {
+    handle_filter_key(key, app);
+}

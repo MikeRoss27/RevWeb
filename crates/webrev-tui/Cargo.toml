@@ -34,3 +34,4 @@ clap.workspace = true
 
 [dev-dependencies]
 reqwest.workspace = true
+insta = "1"

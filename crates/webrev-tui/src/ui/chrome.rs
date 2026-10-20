@@ -80,7 +80,7 @@ pub(super) fn render_footer(frame: &mut Frame, area: Rect, app: &App) {
         }
     };
     let help = Line::from(
-        "? keys · Tab views · / filter · Enter detail · s/d/a scans · r report · Esc back · q quit",
+        "? keys · Tab views · / filter · Enter detail · s/d/a scans · r report · q quit",
     )
     .dim();
     let footer = Paragraph::new(vec![top, help]).block(Block::bordered().title(" status "));
