@@ -1,4 +1,4 @@
-use super::{parse_request, read_head, ScopedEgressProxy};
+use super::{parse_request, parse_upstream, read_head, ScopedEgressProxy};
 use std::net::SocketAddr;
 use std::time::Duration;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -35,6 +35,26 @@ async fn exchange(proxy: SocketAddr, request: &str) -> Vec<u8> {
         .unwrap()
         .unwrap();
     response
+}
+
+#[test]
+fn upstream_proxy_url_rejects_embedded_credentials() {
+    // A proxy URL configured as `http://user:pass@host:port/` would leak the
+    // credential into logs, process args and config files wherever the
+    // upstream string is handled; `parse_upstream` must refuse it outright
+    // rather than silently stripping or forwarding it.
+    for url in [
+        "http://user:pass@proxy.example:8080/",
+        "http://user@proxy.example:8080/",
+        "http://:pass@proxy.example:8080/",
+    ] {
+        assert!(parse_upstream(url).is_err(), "{url} must be rejected");
+    }
+}
+
+#[test]
+fn upstream_proxy_url_accepts_a_plain_http_host() {
+    assert!(parse_upstream("http://proxy.example:8080/").is_ok());
 }
 
 #[tokio::test]

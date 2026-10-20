@@ -186,6 +186,75 @@ fn hardcoded_credential_comparison_is_detected() {
 }
 
 #[test]
+fn short_secrets_under_a_credential_name_are_flagged() {
+    // The user-facing motivating case: a short, low-entropy literal is still
+    // a secret when the key name is unambiguous.
+    for (js, expected) in [
+        (r#"const password = "abc";"#, "abc"),
+        (r#"{"sid": "4242"}"#, "4242"),
+        (r"api_key: '7f3a'", "7f3a"),
+    ] {
+        let found = run(js);
+        assert_eq!(found.len(), 1, "{js}");
+        assert_eq!(found[0].plaintext.as_deref(), Some(expected), "{js}");
+        assert_eq!(found[0].confidence, Confidence::Medium, "{js}");
+    }
+}
+
+#[test]
+fn short_secret_literals_and_comparisons_are_still_ignored() {
+    for js in [
+        // Boolean/null literals under a credential name are not secrets.
+        r#"{"password": true}"#,
+        r#"{"token": null}"#,
+        "password = undefined;",
+        // A short dictionary word compared with `===` is still excluded:
+        // only a plain assignment (`:`/`=`) gets the short-value floor.
+        "if (password === 'short') {}",
+        // Placeholder markers still apply to short values too.
+        r#"token = "dummy";"#,
+    ] {
+        assert!(run(js).is_empty(), "{js}");
+    }
+}
+
+#[test]
+fn secrets_embedded_in_a_hostname_are_detected() {
+    let input = ExtractInput::new(
+        SessionId::new(),
+        Some("https://ghp_A1b2C3d4E5A1b2C3d4E5A1b2C3d4E5A1b2C3d4.tunnel.example.test/x".into()),
+        ContentKind::JavaScript,
+        String::new(),
+    );
+    let found = SecretExtractor::with_random_key().extract(&input);
+    assert!(
+        found.iter().any(|f| f
+            .plaintext
+            .as_deref()
+            .is_some_and(|p| p.starts_with("ghp_"))),
+        "{found:?}"
+    );
+}
+
+#[test]
+fn ordinary_hostnames_are_not_flagged() {
+    for url in [
+        "https://www.example.com/app.js",
+        "https://cdn.example.com/static/main.js",
+        "https://api-gateway.example.com/v1/users",
+    ] {
+        let input = ExtractInput::new(
+            SessionId::new(),
+            Some(url.into()),
+            ContentKind::JavaScript,
+            String::new(),
+        );
+        let found = SecretExtractor::with_random_key().extract(&input);
+        assert!(found.is_empty(), "{url}: {found:?}");
+    }
+}
+
+#[test]
 fn credential_comparisons_against_non_secrets_are_ignored() {
     for js in [
         // Variables, empty and short literals, UI constants and placeholders.

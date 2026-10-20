@@ -4,7 +4,7 @@ use std::{path::PathBuf, sync::Arc, time::Duration};
 use tokio::sync::{broadcast, mpsc::UnboundedSender};
 use tokio_util::sync::CancellationToken;
 use webrev_browser::{run_dynamic, BrowserPool, BrowserProfile};
-use webrev_core::{Mission, OpsecConfig};
+use webrev_core::{redact_url, Mission, OpsecConfig};
 use webrev_extract::ExtractorRegistry;
 use webrev_pipeline::{
     stages::{FetchStage, StaticExtractStage, StoreStage},
@@ -14,6 +14,23 @@ use webrev_report::SessionReport;
 use webrev_storage::Storage;
 
 const DYNAMIC_DWELL: Duration = Duration::from_secs(8);
+
+/// Status line for a seed skipped because it is out of scope. Mirrors
+/// `webrev dynamic`'s `eprintln!("skip out-of-scope: {}", redact_url(seed))`:
+/// the seed may carry userinfo or a query-string token, and the TUI status
+/// bar is an on-screen display, not a report, so it gets the same treatment
+/// as everything else that stays masked regardless of `--redact`.
+fn skip_out_of_scope_message(seed: &str) -> String {
+    format!("dynamic: skip out-of-scope {}", redact_url(seed))
+}
+
+/// Status line for a dynamic-capture error on `seed`. The seed is redacted
+/// for the same reason as [`skip_out_of_scope_message`]; the error itself is
+/// `webrev_core::Error`, whose `Display` already redacts embedded URLs at the
+/// construction site.
+fn dynamic_error_message(seed: &str, err: &webrev_core::WebrevError) -> String {
+    format!("dynamic error on {}: {err}", redact_url(seed))
+}
 
 /// Shared handles used to launch scans and export reports.
 pub(super) struct Controller {
@@ -95,9 +112,7 @@ impl Controller {
             let mut total = 0usize;
             for seed in &mission.seeds {
                 if !mission.scope.allows(seed) {
-                    let _ = ui_tx.send(UiEvent::Status(format!(
-                        "dynamic: skip out-of-scope {seed}"
-                    )));
+                    let _ = ui_tx.send(UiEvent::Status(skip_out_of_scope_message(seed)));
                     continue;
                 }
                 match run_dynamic(
@@ -120,8 +135,7 @@ impl Controller {
                         total += findings.len();
                     }
                     Err(e) => {
-                        let _ =
-                            ui_tx.send(UiEvent::Status(format!("dynamic error on {seed}: {e}")));
+                        let _ = ui_tx.send(UiEvent::Status(dynamic_error_message(seed, &e)));
                     }
                 }
             }
@@ -141,5 +155,34 @@ impl Controller {
         let report = SessionReport::build((*self.mission).clone(), findings, endpoints);
         std::fs::write(&self.report_path, report.export_json(self.redact_report)?)?;
         Ok(self.report_path.clone())
+    }
+}
+
+#[cfg(test)]
+mod redaction_tests {
+    use super::*;
+    use webrev_core::WebrevError;
+
+    // The TUI status bar is an on-screen display, not an exported report:
+    // per docs/security.md, seeds and tokens here stay masked regardless of
+    // `--redact`, the same as the CLI's `eprintln!("skip out-of-scope: {}",
+    // redact_url(seed))` / `eprintln!("dynamic: {}", redact_url(seed))`.
+
+    #[test]
+    fn skip_message_redacts_userinfo_and_token() {
+        let seed = "https://user:hunter2@app.example.com/start?token=abcdEFGH12345678";
+        let message = skip_out_of_scope_message(seed);
+        assert!(!message.contains("hunter2"), "got: {message}");
+        assert!(!message.contains("abcdEFGH12345678"), "got: {message}");
+        assert!(message.contains("[REDACTED]"), "got: {message}");
+    }
+
+    #[test]
+    fn dynamic_error_message_redacts_the_seed() {
+        let seed = "https://admin:s3cr3t-pass@app.example.com/";
+        let err = WebrevError::Browser("navigation timed out".into());
+        let message = dynamic_error_message(seed, &err);
+        assert!(!message.contains("s3cr3t-pass"), "got: {message}");
+        assert!(message.contains("navigation timed out"), "got: {message}");
     }
 }
