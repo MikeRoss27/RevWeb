@@ -54,6 +54,11 @@ pub enum FindingKind {
     Idor,
     /// Actual active-probe coverage, including failed and skipped work.
     ScanCoverage,
+    /// A GraphQL schema recovered via a live introspection probe (query
+    /// and mutation field names, type count). Distinct from
+    /// [`FindingKind::GraphQl`], which is a client-side operation name
+    /// extracted statically, never fetched over the network.
+    GraphQlSchema,
 }
 
 impl FindingKind {
@@ -76,6 +81,7 @@ impl FindingKind {
             Self::Vulnerability => "vulnerability",
             Self::Idor => "idor",
             Self::ScanCoverage => "scan_coverage",
+            Self::GraphQlSchema => "graphql_schema",
         }
     }
 }
@@ -350,7 +356,11 @@ impl Finding {
             // static signal; do not inflate severity from extractor confidence.
             FindingKind::Secret | FindingKind::Idor => Severity::High,
             FindingKind::Endpoint => endpoint_severity(self.url.as_deref().unwrap_or(&self.value)),
-            FindingKind::GraphQl | FindingKind::SourceMap => Severity::Medium,
+            // A recovered schema is exposure, not an evaluated weakness: the
+            // same priority as the static shipped-introspection-query signal.
+            FindingKind::GraphQl | FindingKind::SourceMap | FindingKind::GraphQlSchema => {
+                Severity::Medium
+            }
             FindingKind::Form | FindingKind::Route | FindingKind::WebSocketFrame => Severity::Low,
             FindingKind::Parameter
             | FindingKind::Link

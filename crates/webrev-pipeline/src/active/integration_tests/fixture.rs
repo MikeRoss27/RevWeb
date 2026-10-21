@@ -84,6 +84,27 @@ impl Fixture {
                 if bytes.is_empty() {
                     continue;
                 }
+                // The loop above stops at the end of the headers; a POST
+                // body that did not arrive in the same read (a separate
+                // write/packet for headers vs. body) is read in full here,
+                // so a handler that inspects the body never sees a partial
+                // one depending on how the client happened to flush it.
+                if let Some(content_length) = header_content_length(&bytes) {
+                    let header_end = bytes
+                        .windows(4)
+                        .position(|w| w == b"\r\n\r\n")
+                        .map_or(0, |i| i + 4);
+                    let want = header_end + content_length;
+                    while bytes.len() < want && bytes.len() < 16384 {
+                        let Ok(n) = socket.read(&mut chunk) else {
+                            break;
+                        };
+                        if n == 0 {
+                            break;
+                        }
+                        bytes.extend_from_slice(&chunk[..n.min(want - bytes.len())]);
+                    }
+                }
                 let request = String::from_utf8_lossy(&bytes).into_owned();
                 captured.lock().unwrap().push(request.clone());
                 let reply = handler(&request);
@@ -123,6 +144,21 @@ impl Drop for Fixture {
         self.stop.store(true, Ordering::Relaxed);
         self.worker.take().unwrap().join().unwrap();
     }
+}
+
+/// Parse the `Content-Length` header out of the raw request bytes read so
+/// far, if any. Case-insensitive, as HTTP header names are.
+fn header_content_length(bytes: &[u8]) -> Option<usize> {
+    let text = String::from_utf8_lossy(bytes);
+    text.lines()
+        .take_while(|line| !line.is_empty())
+        .find_map(|line| {
+            let (name, value) = line.split_once(':')?;
+            name.trim()
+                .eq_ignore_ascii_case("content-length")
+                .then(|| value.trim().parse().ok())
+                .flatten()
+        })
 }
 
 pub(super) fn path(request: &str) -> &str {

@@ -284,6 +284,132 @@ async fn graphql_introspection_detected_over_get() {
 }
 
 #[tokio::test]
+async fn graphql_full_schema_recovered_over_get() {
+    let fixture = Fixture::new(|request| {
+        if path(request).contains("queryType") {
+            Reply::json(
+                r#"{"data":{"__schema":{
+                    "queryType":{"name":"Query"},
+                    "mutationType":{"name":"Mutation"},
+                    "subscriptionType":null,
+                    "types":[
+                        {"kind":"OBJECT","name":"Query","fields":[{"name":"user"},{"name":"users"}]},
+                        {"kind":"OBJECT","name":"Mutation","fields":[{"name":"deleteUser"}]}
+                    ]
+                }}}"#,
+            )
+        } else if path(request).contains("__schema") {
+            // The minimal legacy signal probe.
+            Reply::json(r#"{"data":{"__schema":{"types":[{"name":"Query"}]}}}"#)
+        } else {
+            Reply::json(r#"{"errors":["missing query"]}"#)
+        }
+    });
+    let findings = scan(&fixture, &["/graphql"], &config()).await;
+    let schema = findings
+        .iter()
+        .find(|f| f.kind == webrev_core::FindingKind::GraphQlSchema)
+        .expect("recovered schema finding");
+    assert!(schema.value.contains("\"deleteUser\""));
+    assert!(schema.value.contains("\"user\""));
+    assert!(schema.value.contains("\"users\""));
+    assert!(schema.url.as_deref().unwrap().starts_with(&fixture.origin));
+    // Only ever a GET was needed; no POST request reached the fixture.
+    assert!(fixture
+        .requests
+        .lock()
+        .unwrap()
+        .iter()
+        .all(|r| !r.starts_with("POST")));
+}
+
+#[tokio::test]
+async fn graphql_schema_falls_back_to_post_when_get_introspection_is_blocked() {
+    let fixture = Fixture::new(|request| {
+        if request.starts_with("POST") && request.contains("IntrospectionQuery") {
+            Reply::json(
+                r#"{"data":{"__schema":{
+                    "queryType":{"name":"Query"},
+                    "mutationType":null,
+                    "subscriptionType":null,
+                    "types":[{"kind":"OBJECT","name":"Query","fields":[{"name":"ping"}]}]
+                }}}"#,
+            )
+        } else {
+            // GET introspection (both the minimal signal and the full
+            // query) is refused: only POST is accepted by this server.
+            let mut reply = Reply::json(r#"{"errors":["GET not supported"]}"#);
+            reply.status = 400;
+            reply
+        }
+    });
+    let findings = scan(&fixture, &["/graphql"], &config()).await;
+    let schema = findings
+        .iter()
+        .find(|f| f.kind == webrev_core::FindingKind::GraphQlSchema)
+        .expect("schema recovered via the POST fallback");
+    assert!(schema.value.contains("\"ping\""));
+    // No GET-only vulnerability finding: the minimal GET signal was refused.
+    assert!(!has_value(&findings, "graphql introspection enabled"));
+    assert!(fixture
+        .requests
+        .lock()
+        .unwrap()
+        .iter()
+        .any(|r| r.starts_with("POST") && r.contains("IntrospectionQuery")));
+}
+
+#[tokio::test]
+async fn graphql_introspection_disabled_yields_no_finding_and_no_false_verdict() {
+    let fixture = Fixture::new(|_| {
+        Reply::json(r#"{"errors":[{"message":"GraphQL introspection is not allowed"}]}"#)
+    });
+    let findings = scan(&fixture, &["/graphql"], &config()).await;
+    assert!(!findings
+        .iter()
+        .any(|f| f.kind == webrev_core::FindingKind::GraphQlSchema));
+    assert!(!has_value(&findings, "graphql introspection enabled"));
+    // The check still ran (negative, not inconclusive): disabled
+    // introspection is a clean result, not a scan failure.
+    let coverage = findings
+        .iter()
+        .find_map(|f| f.coverage.as_ref())
+        .expect("coverage recorded");
+    let check = coverage
+        .checks
+        .get("graphql_introspection")
+        .expect("graphql_introspection check recorded");
+    assert_eq!(check.negative, 1);
+}
+
+#[tokio::test]
+async fn graphql_probe_never_leaves_the_configured_scope() {
+    // A GraphQL endpoint outside the mission scope must never be requested,
+    // over GET or POST, regardless of how strong the static signal was.
+    let fixture = Fixture::new(|_| Reply::html("must not be requested"));
+    let endpoints = vec![Endpoint::new(
+        format!("{}/graphql", fixture.origin),
+        Method::Get,
+        Source::Html,
+    )];
+    let opsec = config();
+    let out_of_scope = Scope::new(vec!["not-this-host.example".into()], vec![]);
+    let findings = run_active_scan(
+        &opsec,
+        &out_of_scope,
+        SessionId::new(),
+        &endpoints,
+        CancellationToken::new(),
+    )
+    .await
+    .unwrap();
+    assert!(!findings
+        .iter()
+        .any(|f| f.kind == webrev_core::FindingKind::GraphQlSchema));
+    assert!(fixture.requests.lock().unwrap().is_empty());
+}
+
+#[tokio::test]
 async fn subdomain_takeover_fingerprinted_at_the_origin_root() {
     let fixture = Fixture::new(|_| Reply::html("There isn't a GitHub Pages site here."));
     let findings = scan(&fixture, &["/"], &config()).await;

@@ -20,6 +20,7 @@ pub(super) struct ProbeClient<'a> {
 
 pub(super) struct ProbeResponse {
     pub url: String,
+    pub method: &'static str,
     pub status: reqwest::StatusCode,
     pub headers: reqwest::header::HeaderMap,
     pub bytes: Vec<u8>,
@@ -42,7 +43,7 @@ impl ProbeResponse {
     pub fn observation(&self, role: &str, excerpt: &str) -> ResponseObservation {
         ResponseObservation {
             role: role.into(),
-            method: "GET".into(),
+            method: self.method.into(),
             url: self.url.clone(),
             status: self.status.as_u16(),
             authenticated: self.authenticated,
@@ -224,38 +225,94 @@ impl<'a> ProbeClient<'a> {
     /// omits every mission header; URL query material is still part of the URL.
     pub async fn get(&self, url: &str, auth: bool, origin: Option<&str>) -> Option<ProbeResponse> {
         let headers = auth.then(|| self.opsec.auth.effective_headers());
-        self.get_with_headers(url, headers.as_deref(), origin).await
+        self.with_retry(url, headers.as_deref(), origin, None).await
     }
 
     /// Send a bounded GET under an explicitly supplied account. The same
     /// scope, DNS pinning, request budget and redirect policy apply.
     pub async fn get_as(&self, url: &str, account: &AuthConfig) -> Option<ProbeResponse> {
         let headers = account.effective_headers();
-        self.get_with_headers(url, Some(&headers), None).await
+        self.with_retry(url, Some(&headers), None, None).await
     }
 
-    async fn get_with_headers(
+    /// Send a single fixed, literal JSON POST body — the sole POST exception
+    /// in an otherwise GET-only probe client (see `docs/security.md`, "Probe
+    /// behavior"). `body` is typed `&'static str` on purpose: only a
+    /// compile-time constant can be passed, never a runtime value built from
+    /// a response or URL, so this can never become an arbitrary-body POST.
+    /// Its only caller sends the standard, read-only GraphQL introspection
+    /// query.
+    pub async fn post_literal(
+        &self,
+        url: &str,
+        auth: bool,
+        body: &'static str,
+    ) -> Option<ProbeResponse> {
+        let headers = auth.then(|| self.opsec.auth.effective_headers());
+        self.with_retry(url, headers.as_deref(), None, Some(body))
+            .await
+    }
+
+    async fn with_retry(
         &self,
         url: &str,
         headers: Option<&[(String, String)]>,
         origin: Option<&str>,
+        post_body: Option<&'static str>,
     ) -> Option<ProbeResponse> {
         let failures = self.coverage().transport_errors;
-        let response = self.get_once(url, headers, origin).await;
+        let response = self.send_once(url, headers, origin, post_body).await;
         // One explicitly counted retry for a transport failure. This goes
         // through the same budget, delay and cancellation gates; hidden
         // HTTP-client retries remain disabled. Failures stay in coverage.
         if response.is_none() && self.coverage().transport_errors > failures && !self.stopped() {
-            return self.get_once(url, headers, origin).await;
+            return self.send_once(url, headers, origin, post_body).await;
         }
         response
     }
 
-    async fn get_once(
+    /// Build the GET/POST request (method chosen by `post_body`), with the
+    /// rotated User-Agent, auth headers and spoofed `Origin` applied.
+    fn build_request(
+        &self,
+        url: &str,
+        index: usize,
+        headers: Option<&[(String, String)]>,
+        origin: Option<&str>,
+        post_body: Option<&'static str>,
+    ) -> Option<reqwest::RequestBuilder> {
+        let mut request = match post_body {
+            Some(body) => self
+                .client
+                .post(url)
+                .header(reqwest::header::CONTENT_TYPE, "application/json")
+                .body(body),
+            None => self.client.get(url),
+        };
+        if let Some(ua) = self
+            .opsec
+            .rotation
+            .user_agent_for(u32::try_from(index).unwrap_or(u32::MAX))
+        {
+            request = request.header("User-Agent", ua);
+        }
+        if let Some(headers) = headers {
+            request = apply_headers(request, headers);
+        }
+        if let Some(origin) = origin {
+            let mut origin_headers = reqwest::header::HeaderMap::new();
+            origin_headers.insert(reqwest::header::ORIGIN, origin.parse().ok()?);
+            request = request.headers(origin_headers);
+        }
+        Some(request)
+    }
+
+    async fn send_once(
         &self,
         url: &str,
         headers: Option<&[(String, String)]>,
         origin: Option<&str>,
+        post_body: Option<&'static str>,
     ) -> Option<ProbeResponse> {
         let parsed = reqwest::Url::parse(url).ok()?;
         if !matches!(parsed.scheme(), "http" | "https")
@@ -284,23 +341,8 @@ impl<'a> ProbeClient<'a> {
             () = self.cancel.cancelled() => return None,
             () = sleep_with_jitter(self.opsec, 0) => {},
         }
-        let index = reservation;
-        let mut request = self.client.get(url);
-        if let Some(ua) = self
-            .opsec
-            .rotation
-            .user_agent_for(u32::try_from(index).unwrap_or(u32::MAX))
-        {
-            request = request.header("User-Agent", ua);
-        }
-        if let Some(headers) = headers {
-            request = apply_headers(request, headers);
-        }
-        if let Some(origin) = origin {
-            let mut headers = reqwest::header::HeaderMap::new();
-            headers.insert(reqwest::header::ORIGIN, origin.parse().ok()?);
-            request = request.headers(headers);
-        }
+        let method: &'static str = if post_body.is_some() { "POST" } else { "GET" };
+        let request = self.build_request(url, reservation, headers, origin, post_body)?;
         self.update(|c| c.requests += 1);
         let response = tokio::select! {
             () = self.cancel.cancelled() => return None,
@@ -331,6 +373,19 @@ impl<'a> ProbeClient<'a> {
         });
         let status = response.status();
         let response_headers = response.headers().clone();
+        let bytes = self.read_bounded_body(&mut response).await?;
+        Some(ProbeResponse {
+            url: url.into(),
+            method,
+            status,
+            headers: response_headers,
+            bytes,
+            authenticated: headers.is_some_and(|headers| !headers.is_empty()),
+        })
+    }
+
+    /// Drain a response body, bounded by `max_body_bytes` and cancellation.
+    async fn read_bounded_body(&self, response: &mut reqwest::Response) -> Option<Vec<u8>> {
         let mut bytes = Vec::new();
         loop {
             let chunk = tokio::select! {
@@ -345,20 +400,13 @@ impl<'a> ProbeClient<'a> {
                     }
                     bytes.extend_from_slice(&chunk);
                 }
-                Ok(None) => break,
+                Ok(None) => return Some(bytes),
                 Err(_) => {
                     self.update(|c| c.transport_errors += 1);
                     return None;
                 }
             }
         }
-        Some(ProbeResponse {
-            url: url.into(),
-            status,
-            headers: response_headers,
-            bytes,
-            authenticated: headers.is_some_and(|headers| !headers.is_empty()),
-        })
     }
 }
 
@@ -370,6 +418,7 @@ mod tests {
     fn observation_keeps_url_and_excerpt_raw_but_truncated() {
         let response = ProbeResponse {
             url: "https://t.test/a?token=url-secret-value".into(),
+            method: "GET",
             status: reqwest::StatusCode::OK,
             headers: reqwest::header::HeaderMap::new(),
             bytes: Vec::new(),
@@ -399,6 +448,7 @@ mod tests {
         let sanitizer = webrev_core::Sanitizer::with_default_patterns();
         let response = ProbeResponse {
             url: "https://x.test/r".into(),
+            method: "GET",
             status: reqwest::StatusCode::OK,
             headers: reqwest::header::HeaderMap::new(),
             bytes: Vec::new(),
@@ -439,6 +489,7 @@ mod tests {
     fn a_short_ordinary_run_at_the_boundary_is_not_retreated() {
         let response = ProbeResponse {
             url: "https://t.test/a".into(),
+            method: "GET",
             status: reqwest::StatusCode::OK,
             headers: reqwest::header::HeaderMap::new(),
             bytes: Vec::new(),
