@@ -72,6 +72,92 @@
   coexister deux copies du protocole WebSocket dans l'arbre de dépendances.
   `cargo-deny` ne signale rien de nouveau (licence MIT).
 
+## 2026-10-20 — introspection GraphQL réelle et la dérogation GET-only qu'elle introduit
+
+- Constat : `docs/roadmap.md` §1 marquait l'introspection GraphQL live comme
+  non faite ("hors de portée d'un extracteur pur"). Implémentée dans
+  `active/graphql.rs` plutôt que dans un nouveau stage pipeline, pour
+  réutiliser le scope fail-closed, le budget de requêtes et la redaction déjà
+  en place dans `ProbeClient`.
+- Changement touchant la sécurité : `ProbeClient` (`active/transport.rs`)
+  n'envoyait jusqu'ici que des GET. La requête standard `IntrospectionQuery`
+  du spec GraphQL est une lecture pure de métadonnées de schéma, non une
+  mutation, donc envoyée en POST quand le GET ne suffit pas (certains
+  serveurs n'exposent l'introspection qu'en POST). Pour que cette seule
+  dérogation ne devienne jamais une porte vers un POST arbitraire,
+  `ProbeClient::post_literal` prend un `body: &'static str` : seule une
+  constante du code source peut être passée, jamais une valeur assemblée à
+  partir d'une réponse ou d'une URL. Documenté dans `docs/security.md`,
+  « Probe behavior ».
+- Nouveau `FindingKind::GraphQlSchema` : URL interrogée en provenance, liste
+  JSON des types/champs `Query`/`Mutation`/`Subscription` recouvrés en
+  `value` (masquée par `--redact` via le chemin JSON générique existant,
+  sans code de redaction dédié).
+- Limites documentées plutôt que masquées : seuls les noms de types/champs
+  sont recouvrés (pas les arguments/interfaces/directives) ; pas de
+  contournement des protections anti-introspection non standard (désactivation
+  par champ, bypass par alias, GraphQL par lots) — hors périmètre d'une sonde
+  GET/POST simple. Introspection désactivée, hors scope, erreur réseau ou
+  timeout produisent chacun une absence de finding (compté dans
+  `ScanCoverage`), jamais un faux verdict.
+- Tests : `active/graphql.rs` (schéma recouvré, JSON non-schéma, introspection
+  désactivée via `errors`, corps non-JSON, statut HTTP en échec, cohérence
+  GET/POST de la requête). `cargo test --workspace` et
+  `cargo clippy --workspace --all-targets -- -D warnings` passent sans
+  warning après le changement.
+
+## 2026-10-20 — fingerprint cross-cibles (réutilisation d'infra multi-cibles)
+
+- Roadmap §4 (`Corrélation / intelligence`) : implémentation du dernier item
+  non cuit. `webrev-storage` avait déjà, depuis le commit `e95b9ea`, un
+  `TargetFingerprint`/`compare_targets` comparant technologies détectées et
+  routes API normalisées entre cibles, branché sur `webrev compare`, mais
+  sans le signal le plus fort possible (secrets partagés) et sans qualifier
+  explicitement la force de la preuve — c'est ce qui restait non cuit.
+- Changement : `TargetFingerprint` porte désormais un troisième champ
+  `secrets` (plaintext des findings `FindingKind::Secret`, filtré au host de
+  la cible comme les technologies et les routes). `Finding::value` d'un
+  secret est un fingerprint HMAC *par run* (`SessionKey`), donc non comparable
+  entre deux scans séparés ; la comparaison porte sur `Finding::plaintext`,
+  que le projet conserve déjà comme livrable d'un secret y compris sous
+  `--redact`. `compare_targets` ressort maintenant, par paire de cibles, un
+  nouveau `CorrelationTier` (`weak`/`moderate`/`strong`) en plus du score
+  numérique existant :
+  - `strong` : au moins un secret identique (même valeur en clair) observé
+    des deux côtés — traité comme preuve quasi-certaine d'un backend, d'un
+    pipeline de build ou d'un identifiant réutilisé.
+  - `moderate` : au moins une route API partagée vue en confiance `static`
+    ou mieux des *deux* côtés (présente dans du JS/HTML réellement récupéré,
+    pas seulement déduite d'un template normalisé).
+  - `weak` : technologies/vendors communs seuls, ou routes partagées
+    seulement inférées — jamais présenté comme un signal fort, même quand
+    plusieurs technologies coïncident (poids plafonné à 10/100).
+  Le score numérique (0–100, pondération secrets > routes > technologies)
+  ne sert plus qu'à départager deux paires du même palier ; le palier est la
+  lecture honnête à afficher en premier.
+- CLI : `webrev compare` gagne `--format json|text` (JSON par défaut,
+  inchangé ; `text` affiche une ligne de triage par paire, palier en
+  majuscules en premier, puis secrets/routes/technologies partagés). Aucun
+  nouveau stockage : la commande lit des rapports JSON déjà écrits sur
+  disque par `scan`/`report`, cohérent avec le modèle de sessions en mémoire
+  du projet (`docs/security.md`).
+- Tests (`crates/webrev-storage/src/fingerprint.rs`,
+  `crates/webrev-cli/src/commands/compare.rs`) : cas positif clair (stack +
+  secret identiques → `strong`, score ≥ 70), cas négatif (rien en commun →
+  `compare_targets` ne renvoie aucune paire), cas ambigu (un seul framework
+  commun, sans route ni secret → `weak`, score < 20) ; plus les deux modes
+  de sortie CLI (`json`, `text`) et le cas "aucun signal" en texte.
+- `cargo fmt`, `cargo clippy --workspace --all-targets -- -D warnings` et
+  `cargo test --workspace` passent sans avertissement après ce changement.
+- **Non fait** (documenté dans `docs/roadmap.md` §4, pas masqué) : aucune
+  corrélation sur les certificats TLS ni sur les pages d'erreur
+  caractéristiques — ni l'un ni l'autre n'existe comme finding structuré
+  dans le modèle actuel, donc les ajouter ici reviendrait à inventer une
+  source de preuve plutôt qu'à corréler une preuve déjà observée. Une forme
+  de route identique sans preuve `static`/`observed` des deux côtés
+  (ex. pagination REST conventionnelle d'un framework répandu) reste
+  volontairement `weak`, pas `moderate`.
+
 ## 2026-10-20 — secret coupé par la troncature d'un extrait de sonde
 
 - Constat : `goal.md` documentait un trou de `--redact` jamais vérifié —

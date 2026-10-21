@@ -104,7 +104,8 @@ pub enum Command {
     Tui(ScanArgs),
     /// Convert or filter an existing JSON report.
     Report(ReportArgs),
-    /// Compare stack and API fingerprints across target reports.
+    /// Compare stack, API, and secret fingerprints across target reports to
+    /// spot infrastructure reuse in a multi-target engagement.
     Compare(CompareArgs),
     /// Compare object access across two captured test accounts.
     Bola(BolaArgs),
@@ -315,9 +316,22 @@ pub struct CompareArgs {
     /// JSON report to compare (repeat for each target).
     #[arg(long = "input", required = true, value_name = "PATH")]
     pub inputs: Vec<PathBuf>,
-    /// Write comparison JSON to a file instead of stdout.
+    /// Write the comparison to a file instead of stdout.
     #[arg(long)]
     pub output: Option<PathBuf>,
+    /// Output format: machine-readable JSON, or a short human triage line
+    /// per matched pair (tier first, since that is the honest summary).
+    #[arg(long, value_enum, default_value_t = CompareFormat::Json)]
+    pub format: CompareFormat,
+}
+
+/// Output serialization for `compare`.
+#[derive(Copy, Clone, Debug, PartialEq, Eq, ValueEnum)]
+pub enum CompareFormat {
+    /// Full `TargetMatch` list as pretty JSON (default).
+    Json,
+    /// One triage line per matched pair.
+    Text,
 }
 
 /// Read-only cross-account object access checks from two scan reports.

@@ -134,7 +134,8 @@ impl Stage for StoreStage {
                 | FindingKind::WebSocketReplay
                 | FindingKind::Vulnerability
                 | FindingKind::Idor
-                | FindingKind::ScanCoverage => {}
+                | FindingKind::ScanCoverage
+                | FindingKind::GraphQlSchema => {}
             }
 
             if !first_seen {

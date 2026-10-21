@@ -14,5 +14,5 @@ pub mod fingerprint;
 pub mod port;
 
 pub use backends::memory::InMemoryStorage;
-pub use fingerprint::{compare_targets, TargetFingerprint, TargetMatch};
+pub use fingerprint::{compare_targets, CorrelationTier, TargetFingerprint, TargetMatch};
 pub use port::Storage;

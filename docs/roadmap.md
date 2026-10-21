@@ -25,14 +25,44 @@ au fur et à mesure. Chaque item renvoie au(x) fichier(s) concerné(s).
       (jusque-là ignorés : ni `<script src>` ni `<a href>`), et l'extracteur
       `manifest` en tire `start_url`/`scope`/`id` comme findings `config`.
       `crates/webrev-pipeline/src/stages/fetch/mod.rs`
-- [x] **Introspection GraphQL — détection** — `graphql` signale désormais
+- [x] **Introspection GraphQL — détection (statique)** — `graphql` signale
       quand le client embarque une `IntrospectionQuery`/`__schema`, ce qui
       indique qu'une sonde manuelle sur `/graphql` vaut le coup.
-      **Non fait : l'introspection automatique réelle** (requête HTTP live)
-      est hors de portée d'un extracteur pur (contrat `Extractor`: pas d'I/O) ;
-      il faudrait un nouveau stage pipeline, comme `fetch.rs`. Reste ouvert si
-      utile plus tard.
       `crates/webrev-extract/src/extractors/endpoints/graphql.rs`
+- [x] **Introspection GraphQL — automatique réelle (2026-10-20)** — plutôt
+      qu'un nouveau stage pipeline, la sonde vit dans `active/graphql.rs`
+      (`webrev-pipeline`), au même niveau que les autres checks actifs :
+      c'est là que vivent déjà le scope fail-closed, le budget de requêtes,
+      le retry et la redaction, qu'un stage séparé aurait dû réimporter.
+      `is_graphql_endpoint` repère les endpoints `/graphql` (détectés
+      statiquement ou observés) et `check_graphql_introspection` tente,
+      pour chacun, la requête standard `IntrospectionQuery` du spec
+      GraphQL : d'abord en GET (comme le signal existant), puis en POST
+      uniquement si le GET ne répond pas avec un schéma. Le schéma recouvré
+      (types, champs de `Query`/`Mutation`/`Subscription`) devient un
+      nouveau `FindingKind::GraphQlSchema`, avec l'URL interrogée en
+      provenance et la liste des noms en JSON dans `value` (masqué comme
+      tout le reste par `--redact`, via le chemin JSON générique de
+      `redact.rs`). Introspection = lecture de métadonnées de schéma, jamais
+      une mutation ; c'est la seule dérogation documentée à la politique
+      « sondes GET uniquement » (`docs/security.md`, « Probe behavior ») :
+      `ProbeClient::post_literal` n'accepte qu'un `&'static str`, donc
+      seule une constante du code source — jamais une valeur construite à
+      l'exécution — peut partir en POST. Échec, timeout, hors scope ou
+      introspection désactivée côté serveur : aucun finding, compté comme
+      `graphql_introspection` négatif/non exécuté dans `ScanCoverage`,
+      jamais un faux verdict. **Limites documentées** : seuls les noms de
+      types/champs sont recouvrés (pas les arguments, interfaces,
+      directives ni les raisons de dépréciation) pour borner la taille de
+      la réponse ; pas de contournement des protections anti-introspection
+      non standard (désactivation partielle par champ, GraphQL par lots/
+      `multipart`, alias-based bypass) — hors périmètre d'une sonde GET/POST
+      simple. Tests unitaires : schéma recouvré avec succès, JSON sans
+      `__schema` reconnaissable, introspection désactivée (réponse
+      `errors`), corps non-JSON, statut HTTP en échec ; intégration via le
+      budget/scope déjà testés sur `active/mod.rs`.
+      `crates/webrev-pipeline/src/active/graphql.rs`,
+      `crates/webrev-pipeline/src/active/transport.rs`
 
 Nouveau au passage : `ContentKind::Json` et `Source::Manifest` (core),
 conservés dans les findings et les exports. Tests ajoutés pour
@@ -194,10 +224,50 @@ capacités déjà présentes.
       `crates/webrev-core/src/model/endpoint.rs`, `crates/webrev-core/src/model/normalize.rs`,
       `crates/webrev-storage/src/backends/memory.rs`, `crates/webrev-report/src/summary.rs`,
       `crates/webrev-cli/src/commands/output.rs`, `crates/webrev-tui/src/app/updates.rs`
-- [ ] **Fingerprint cross-cibles** — comparer la stack/API de plusieurs
-      domaines scannés pour repérer la réutilisation d'infra dans un même
-      engagement multi-cibles.
-      `crates/webrev-extract/src/extractors/metadata/tech/signatures/`, `crates/webrev-storage/src/*`
+- [x] **Fingerprint cross-cibles** (2026-10-20) — `TargetFingerprint::from_scan`
+      construit, par cible, un résumé déterministe à partir d'un `SessionReport`
+      déjà produit : technologies détectées (`FindingKind::Technology`), routes
+      API normalisées avec leur meilleure `EndpointConfidence`, et plaintext des
+      secrets détectés (`FindingKind::Secret`, filtré au host de la cible comme
+      les deux autres). `compare_targets` compare chaque paire de cibles et
+      ressort un `TargetMatch` par paire avec preuve partagée. Le signal n'est
+      **pas** présenté comme un score unique opaque : un `CorrelationTier`
+      explicite (`weak`/`moderate`/`strong`) qualifie d'abord la preuve, le
+      score numérique (0–100) ne sert qu'à départager deux paires du même
+      palier. Règle appliquée : un framework/vendor commun seul reste `weak`
+      (poids plafonné à 10/100, jamais assez pour sembler fort) ; une route API
+      partagée vue en `static` ou mieux des deux côtés (présente dans du
+      JS/HTML réellement récupéré, pas seulement déduite d'un template) monte
+      à `moderate` ; un secret identique (même valeur en clair) observé sur les
+      deux cibles est traité comme preuve quasi-certaine d'un backend, pipeline
+      de build ou identifiant partagé — `strong`, à lui seul. Les fingerprints
+      des secrets (`Finding::value`, HMAC par run via `SessionKey`) ne sont
+      **pas** comparables entre sessions séparées ; la comparaison porte donc
+      sur `Finding::plaintext` (la valeur détectée), que le projet traite déjà
+      comme le livrable d'un secret et conserve même sous `--redact`
+      (`docs/security.md`). Nouvelle commande CLI `webrev compare --input
+      report-a.json --input report-b.json [--format json|text] [--output
+      path]` : prend N rapports JSON déjà produits (`scan`/`report`), aucune
+      nouvelle persistance — cohérent avec les sessions en mémoire du projet.
+      Sortie JSON (array de `TargetMatch`) ou texte (une ligne de triage par
+      paire, palier en premier). Tests unitaires : cas positif clair (stack +
+      secret partagés → `strong`), cas négatif (rien en commun → aucune paire
+      renvoyée), cas ambigu (framework commun seul → `weak`, score < 20, jamais
+      présenté comme fort).
+      **Non fait** : aucune corrélation sur les certificats TLS ni sur les
+      erreurs caractéristiques (stack traces, pages d'erreur par défaut) — le
+      modèle actuel ne conserve ni empreinte de certificat ni contenu de page
+      d'erreur comme finding structuré ; les ajouter à ce module reviendrait à
+      inventer une source de preuve qui n'existe pas encore dans le pipeline,
+      plutôt qu'à corréler une preuve déjà observée. De même, deux cibles qui
+      exposent des chemins d'API *identiques en forme* (`GET /api/users/{id}`)
+      sans qu'aucun des deux côtés n'ait de preuve `static`/`observed` restent
+      `weak` : une forme de route par défaut d'un framework commun (pagination
+      REST conventionnelle, par exemple) n'est pas une preuve d'infra
+      partagée, et le seuil `moderate` l'exclut explicitement plutôt que de la
+      compter comme un signal plus fort qu'il ne l'est.
+      `crates/webrev-storage/src/fingerprint.rs`, `crates/webrev-cli/src/cli.rs`,
+      `crates/webrev-cli/src/commands/compare.rs`
 
 ## Notes
 

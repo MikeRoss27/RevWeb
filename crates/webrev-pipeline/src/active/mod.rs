@@ -262,7 +262,7 @@ async fn recon_checks(
         if budget.graphql < MAX_TARGETS_PER_CHECK && !client.stopped() {
             budget.graphql += 1;
             let found = check_graphql_introspection(client, url, session).await;
-            client.record_check("graphql_introspection", usize::from(found.is_some()));
+            client.record_check("graphql_introspection", found.len());
             findings.extend(found);
         } else if budget.graphql >= MAX_TARGETS_PER_CHECK {
             client.update(|c| c.target_limit_reached = true);
