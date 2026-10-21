@@ -10,6 +10,13 @@ use crate::model::session::SessionId;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+/// Cap on `Finding::provenances`: a `dedup_key()` that folds many distinct
+/// page locations into one finding (most visibly `Endpoint`, whose key
+/// ignores the referencing URL) must not grow a `Vec<Provenance>` without
+/// bound on a large crawl. The cap trims redundant location strings for an
+/// already-proven fact; it does not drop the finding or its evidence.
+const MAX_PROVENANCES_PER_FINDING: usize = 50;
+
 /// The category of a finding.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub enum FindingKind {
@@ -265,6 +272,9 @@ impl Finding {
     /// constitute proof of exploitability.
     pub fn merge_from(&mut self, other: Self) {
         for provenance in other.provenances.into_iter().chain([other.provenance]) {
+            if self.provenances.len() >= MAX_PROVENANCES_PER_FINDING {
+                break;
+            }
             if !self.provenances.contains(&provenance) {
                 self.provenances.push(provenance);
             }

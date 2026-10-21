@@ -250,3 +250,27 @@
         assert_eq!(original.status, FindingStatus::Suspicious);
         assert_eq!(original.provenances.len(), 1);
     }
+
+    #[test]
+    fn merge_from_caps_provenances_on_a_large_crawl() {
+        let mut target = Finding::new(
+            SessionId::new(),
+            FindingKind::Endpoint,
+            Some("https://x.test/api/common".into()),
+            "GET /api/common",
+            Confidence::High,
+            Provenance::new(Source::JsAst, Some("page-0.html".into())),
+        );
+        for i in 1..(MAX_PROVENANCES_PER_FINDING + 50) {
+            let other = Finding::new(
+                SessionId::new(),
+                FindingKind::Endpoint,
+                Some("https://x.test/api/common".into()),
+                "GET /api/common",
+                Confidence::High,
+                Provenance::new(Source::JsAst, Some(format!("page-{i}.html"))),
+            );
+            target.merge_from(other);
+        }
+        assert_eq!(target.provenances.len(), MAX_PROVENANCES_PER_FINDING);
+    }
