@@ -1,5 +1,77 @@
 # Changelog — reliability work
 
+## 2026-10-20 — replay / mutation de frames WebSocket (test actif)
+
+- Contexte : `docs/roadmap.md` §2 laissait explicitement ouvert « replay /
+  mutation des frames WebSocket » — la capture (`EventWebSocketFrameSent`/
+  `EventWebSocketFrameReceived` dans `crates/webrev-browser/src/dynamic.rs`)
+  conserve les échanges mais ne les rejoue pas.
+- Changement : nouveau module `crates/webrev-pipeline/src/active/ws_replay.rs`
+  (`run_ws_replay_scan`), sur le patron de `active/bola.rs`/`bola_diff.rs` :
+  (a) replay verbatim d'une frame `sent` capturée, avec les réponses reçues
+  comme preuve de reproductibilité (nouveau `FindingKind::WebSocketReplay`,
+  statut `Observed`, jamais un verdict de vulnérabilité) ; (b) avec un second
+  profil de compte, renvoi de la même frame (optionnellement mutée par une
+  substitution littérale `find`/`replace`) sous les deux comptes, et
+  `FindingKind::Idor` avec diff de champs (réutilise
+  `bola_diff::comparison`) seulement si la réponse est non vide et
+  byte-identique sous les deux comptes — jamais sur un simple statut HTTP ou
+  une URL acceptée (`goal.md` Étape 3).
+- Garde-fous : scope vérifié par hôte (`Scope::allows`) puis par adresse DNS
+  résolue (`Scope::allows_resolved_ip`) avant `TcpStream::connect` — ce
+  module ouvre sa propre socket WebSocket et ne passe donc pas par le
+  résolveur DNS épinglé de `reqwest` (`crate::dns`), d'où la duplication
+  volontaire du contrôle à ce point précis. Une frame tronquée à la capture
+  (`MAX_WS_PAYLOAD_CHARS`) est refusée, jamais rejouée à moitié
+  (`WsFrameCandidate::truncated`). Une frame (après mutation) dont le
+  payload contient un verbe d'action destructeur
+  (`destructive::payload_keyword`, même liste de mots que
+  `destructive_keyword` pour les URL) ou un champ JSON nommé comme un
+  montant (`amount`, `balance`, `price`, `total`, `quantity`, `sum`,
+  `credit`, `debit`, `payment`) avec une valeur numérique est refusée avant
+  tout envoi (`destructive_frame_keyword`). Budget : `MAX_WS_REPLAY_FRAMES`
+  (10 connexions live par run), plafonné en plus par `max_requests`. Un
+  proxy configuré (`opsec.egress.proxy`) fait échouer le scan explicitement
+  au lieu de connecter en direct en silence : ce module ne sait pas parler
+  `HTTP CONNECT`.
+- CLI : `webrev ws-replay` (`crates/webrev-cli/src/commands/ws_replay.rs`,
+  `crates/webrev-cli/src/cli.rs::WsReplayArgs`), même forme que `webrev
+  bola` (`--report`/`--seed` pour les frames capturées, `--auth`/`--b-auth`
+  pour les comptes, `--mutate-find`/`--mutate-replace` pour la substitution).
+  Trois petites fonctions de `commands/bola.rs` (`capture_account`,
+  `read_report`, `read_auth`) sont passées de privées à `pub(crate)` pour
+  être réutilisées plutôt que dupliquées. Pas branché sur `scan --active` ni
+  la touche `a` du TUI, pour la même raison que `bola` : ce test a besoin
+  d'un second profil de compte explicite que le flux `active` générique ne
+  porte pas.
+- Limites honnêtes, non masquées : l'injection de payloads XSS/SQLi dans un
+  champ de frame **n'est pas implémentée** — une frame WebSocket n'a ni
+  canal d'erreur SQL ni DOM observable depuis un client brut ;
+  `WsMutation` reste une substitution littérale générique sans
+  interprétation de la réponse. La capture ne distingue pas les frames
+  binaires des frames texte (CDP ne remonte qu'un `payload_data` déjà en
+  chaîne), donc toute frame est rejouée comme `Message::Text` — une frame
+  binaire d'origine serait rejouée sous sa forme texte/base64 captée, pas
+  reconstruite en binaire. La preuve de replay compare toujours une réponse
+  obtenue en direct après renvoi, jamais la réponse originale observée
+  pendant la capture (les frames `sent`/`received` capturées ne sont pas
+  appariées de façon fiable). Le signal cross-account peut être un faux
+  positif documenté dans sa propre justification (message public/broadcast,
+  écho non authentifié), comme pour `bola`.
+- Tests : `active/ws_replay.rs` (replay réussi avec preuve, frame refusée
+  pour contenu destructeur / hors scope / tronquée, budget de frames
+  dépassé, mutation qui change la réponse observée → pas de signal, requête
+  identique sous deux comptes → signal `Idor` avec diff, proxy configuré
+  refusé) et `commands/ws_replay.rs` (mode rapport sans trafic réseau quand
+  aucune frame n'est éligible). `cargo fmt`, `cargo clippy --workspace
+  --all-targets -- -D warnings` et `cargo test --workspace` passent sans
+  warning.
+- Dépendance ajoutée : `tokio-tungstenite` (feature
+  `rustls-tls-webpki-roots`), épinglée à la version de `tungstenite` déjà
+  résolue transitivement par `chromiumoxide` (CDP), donc sans faire
+  coexister deux copies du protocole WebSocket dans l'arbre de dépendances.
+  `cargo-deny` ne signale rien de nouveau (licence MIT).
+
 ## 2026-10-20 — secret coupé par la troncature d'un extrait de sonde
 
 - Constat : `goal.md` documentait un trou de `--redact` jamais vérifié —

@@ -102,7 +102,7 @@ pub async fn run(args: BolaArgs) -> anyhow::Result<()> {
     Ok(())
 }
 
-async fn capture_account(
+pub(crate) async fn capture_account(
     seeds: &[String],
     scope: &[String],
     opsec: &OpsecConfig,
@@ -163,7 +163,7 @@ fn without_masked_urls(candidates: Vec<BolaCandidate>) -> (Vec<BolaCandidate>, u
     (replayable, skipped)
 }
 
-fn read_report(path: &std::path::Path) -> anyhow::Result<SessionReport> {
+pub(crate) fn read_report(path: &std::path::Path) -> anyhow::Result<SessionReport> {
     let bytes =
         std::fs::read(path).with_context(|| format!("reading report {}", path.display()))?;
     let report: SessionReport = serde_json::from_slice(&bytes)
@@ -171,7 +171,7 @@ fn read_report(path: &std::path::Path) -> anyhow::Result<SessionReport> {
     Ok(report)
 }
 
-fn read_auth(path: &std::path::Path) -> anyhow::Result<AuthConfig> {
+pub(crate) fn read_auth(path: &std::path::Path) -> anyhow::Result<AuthConfig> {
     let bytes =
         std::fs::read(path).with_context(|| format!("reading auth file {}", path.display()))?;
     serde_json::from_slice(&bytes).with_context(|| format!("parsing auth file {}", path.display()))

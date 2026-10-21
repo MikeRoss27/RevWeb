@@ -10,6 +10,7 @@ mod output;
 mod report;
 mod scan;
 mod static_scan;
+mod ws_replay;
 
 use crate::cli::{Cli, Command, ScanArgs};
 use serde_json::Value;
@@ -246,6 +247,7 @@ pub async fn dispatch(cli: Cli) -> anyhow::Result<()> {
         Command::Report(args) => report::run(args),
         Command::Compare(args) => compare::run(args),
         Command::Bola(args) => bola::run(args).await,
+        Command::WsReplay(args) => ws_replay::run(args).await,
         Command::Tui(args) => {
             anyhow::ensure!(!args.observation_only,
                 "--observation-only is supported by dynamic and scan --dynamic; TUI browser exploration does not support this policy");

@@ -26,6 +26,10 @@ pub mod stage;
 pub mod stages;
 
 pub use active::{active_targets, bola_candidates, run_active_scan, run_bola_scan, BolaCandidate};
+pub use active::{
+    run_ws_replay_scan, ws_frame_candidates, WsDirection, WsFrameCandidate, WsMutation,
+    MAX_WS_REPLAY_FRAMES,
+};
 pub use engine::{PipelineBuilder, PipelineSummary};
 pub use events::PipelineEvent;
 pub use stage::{PipelineItem, Stage, StageContext};
