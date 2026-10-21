@@ -107,6 +107,10 @@ const MAX_CLICKS_PER_PASS: usize = 10;
 /// unboundedly or balloon storage with megabyte payloads.
 const MAX_WS_FRAMES: usize = 50;
 const MAX_WS_PAYLOAD_CHARS: usize = 500;
+/// Captured HAR requests are bounded the same way: a chatty page (long-polling,
+/// analytics beacons) over a long `--duration` dwell should not grow the
+/// pre-dedup request log unboundedly.
+const MAX_HAR_ENTRIES: usize = 2000;
 
 /// Scroll to the bottom (to trigger lazy loading) and report how many
 /// clickable elements are now on the page.
@@ -319,11 +323,13 @@ pub async fn run_dynamic_with_report(
                     .and_then(|v| serde_json::from_value(v).ok())
                     .unwrap_or_default();
                 if let Ok(mut har) = har_capture.lock() {
-                    har.push(HarEntry {
-                        method: req.method.clone(),
-                        url: req.url.clone(),
-                        headers,
-                    });
+                    if har.entries.len() < MAX_HAR_ENTRIES {
+                        har.push(HarEntry {
+                            method: req.method.clone(),
+                            url: req.url.clone(),
+                            headers,
+                        });
+                    }
                 }
             }
         });

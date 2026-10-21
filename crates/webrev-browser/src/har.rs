@@ -101,4 +101,20 @@ mod tests {
         assert_eq!(endpoints[0].source, Source::Browser);
         assert!(endpoints[0].url.contains("AKIAZ4XB7NMPQR2STUVW"));
     }
+
+    #[test]
+    fn push_does_not_cap_by_itself_caller_must_bound_it() {
+        // `Har::push` is intentionally unconditional; the dwell-loop collector
+        // in `dynamic.rs` is the one that enforces `MAX_HAR_ENTRIES` before
+        // calling push, mirroring the sibling WS-frame/click collectors.
+        let mut har = Har::new();
+        for i in 0..5 {
+            har.push(HarEntry {
+                method: "GET".to_owned(),
+                url: format!("https://api.test/v1/{i}"),
+                headers: BTreeMap::new(),
+            });
+        }
+        assert_eq!(har.entries.len(), 5);
+    }
 }
