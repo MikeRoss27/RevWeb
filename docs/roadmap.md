@@ -166,10 +166,50 @@ capacités déjà présentes.
       `crates/webrev-core/src/model/endpoint.rs`, `crates/webrev-core/src/model/normalize.rs`,
       `crates/webrev-storage/src/backends/memory.rs`, `crates/webrev-report/src/summary.rs`,
       `crates/webrev-cli/src/commands/output.rs`, `crates/webrev-tui/src/app/updates.rs`
-- [ ] **Fingerprint cross-cibles** — comparer la stack/API de plusieurs
-      domaines scannés pour repérer la réutilisation d'infra dans un même
-      engagement multi-cibles.
-      `crates/webrev-extract/src/extractors/metadata/tech/signatures/`, `crates/webrev-storage/src/*`
+- [x] **Fingerprint cross-cibles** (2026-10-20) — `TargetFingerprint::from_scan`
+      construit, par cible, un résumé déterministe à partir d'un `SessionReport`
+      déjà produit : technologies détectées (`FindingKind::Technology`), routes
+      API normalisées avec leur meilleure `EndpointConfidence`, et plaintext des
+      secrets détectés (`FindingKind::Secret`, filtré au host de la cible comme
+      les deux autres). `compare_targets` compare chaque paire de cibles et
+      ressort un `TargetMatch` par paire avec preuve partagée. Le signal n'est
+      **pas** présenté comme un score unique opaque : un `CorrelationTier`
+      explicite (`weak`/`moderate`/`strong`) qualifie d'abord la preuve, le
+      score numérique (0–100) ne sert qu'à départager deux paires du même
+      palier. Règle appliquée : un framework/vendor commun seul reste `weak`
+      (poids plafonné à 10/100, jamais assez pour sembler fort) ; une route API
+      partagée vue en `static` ou mieux des deux côtés (présente dans du
+      JS/HTML réellement récupéré, pas seulement déduite d'un template) monte
+      à `moderate` ; un secret identique (même valeur en clair) observé sur les
+      deux cibles est traité comme preuve quasi-certaine d'un backend, pipeline
+      de build ou identifiant partagé — `strong`, à lui seul. Les fingerprints
+      des secrets (`Finding::value`, HMAC par run via `SessionKey`) ne sont
+      **pas** comparables entre sessions séparées ; la comparaison porte donc
+      sur `Finding::plaintext` (la valeur détectée), que le projet traite déjà
+      comme le livrable d'un secret et conserve même sous `--redact`
+      (`docs/security.md`). Nouvelle commande CLI `webrev compare --input
+      report-a.json --input report-b.json [--format json|text] [--output
+      path]` : prend N rapports JSON déjà produits (`scan`/`report`), aucune
+      nouvelle persistance — cohérent avec les sessions en mémoire du projet.
+      Sortie JSON (array de `TargetMatch`) ou texte (une ligne de triage par
+      paire, palier en premier). Tests unitaires : cas positif clair (stack +
+      secret partagés → `strong`), cas négatif (rien en commun → aucune paire
+      renvoyée), cas ambigu (framework commun seul → `weak`, score < 20, jamais
+      présenté comme fort).
+      **Non fait** : aucune corrélation sur les certificats TLS ni sur les
+      erreurs caractéristiques (stack traces, pages d'erreur par défaut) — le
+      modèle actuel ne conserve ni empreinte de certificat ni contenu de page
+      d'erreur comme finding structuré ; les ajouter à ce module reviendrait à
+      inventer une source de preuve qui n'existe pas encore dans le pipeline,
+      plutôt qu'à corréler une preuve déjà observée. De même, deux cibles qui
+      exposent des chemins d'API *identiques en forme* (`GET /api/users/{id}`)
+      sans qu'aucun des deux côtés n'ait de preuve `static`/`observed` restent
+      `weak` : une forme de route par défaut d'un framework commun (pagination
+      REST conventionnelle, par exemple) n'est pas une preuve d'infra
+      partagée, et le seuil `moderate` l'exclut explicitement plutôt que de la
+      compter comme un signal plus fort qu'il ne l'est.
+      `crates/webrev-storage/src/fingerprint.rs`, `crates/webrev-cli/src/cli.rs`,
+      `crates/webrev-cli/src/commands/compare.rs`
 
 ## Notes
 

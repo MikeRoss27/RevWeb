@@ -34,6 +34,58 @@
   `cargo clippy --workspace --all-targets -- -D warnings` passent sans
   warning après le changement.
 
+## 2026-10-20 — fingerprint cross-cibles (réutilisation d'infra multi-cibles)
+
+- Roadmap §4 (`Corrélation / intelligence`) : implémentation du dernier item
+  non cuit. `webrev-storage` avait déjà, depuis le commit `e95b9ea`, un
+  `TargetFingerprint`/`compare_targets` comparant technologies détectées et
+  routes API normalisées entre cibles, branché sur `webrev compare`, mais
+  sans le signal le plus fort possible (secrets partagés) et sans qualifier
+  explicitement la force de la preuve — c'est ce qui restait non cuit.
+- Changement : `TargetFingerprint` porte désormais un troisième champ
+  `secrets` (plaintext des findings `FindingKind::Secret`, filtré au host de
+  la cible comme les technologies et les routes). `Finding::value` d'un
+  secret est un fingerprint HMAC *par run* (`SessionKey`), donc non comparable
+  entre deux scans séparés ; la comparaison porte sur `Finding::plaintext`,
+  que le projet conserve déjà comme livrable d'un secret y compris sous
+  `--redact`. `compare_targets` ressort maintenant, par paire de cibles, un
+  nouveau `CorrelationTier` (`weak`/`moderate`/`strong`) en plus du score
+  numérique existant :
+  - `strong` : au moins un secret identique (même valeur en clair) observé
+    des deux côtés — traité comme preuve quasi-certaine d'un backend, d'un
+    pipeline de build ou d'un identifiant réutilisé.
+  - `moderate` : au moins une route API partagée vue en confiance `static`
+    ou mieux des *deux* côtés (présente dans du JS/HTML réellement récupéré,
+    pas seulement déduite d'un template normalisé).
+  - `weak` : technologies/vendors communs seuls, ou routes partagées
+    seulement inférées — jamais présenté comme un signal fort, même quand
+    plusieurs technologies coïncident (poids plafonné à 10/100).
+  Le score numérique (0–100, pondération secrets > routes > technologies)
+  ne sert plus qu'à départager deux paires du même palier ; le palier est la
+  lecture honnête à afficher en premier.
+- CLI : `webrev compare` gagne `--format json|text` (JSON par défaut,
+  inchangé ; `text` affiche une ligne de triage par paire, palier en
+  majuscules en premier, puis secrets/routes/technologies partagés). Aucun
+  nouveau stockage : la commande lit des rapports JSON déjà écrits sur
+  disque par `scan`/`report`, cohérent avec le modèle de sessions en mémoire
+  du projet (`docs/security.md`).
+- Tests (`crates/webrev-storage/src/fingerprint.rs`,
+  `crates/webrev-cli/src/commands/compare.rs`) : cas positif clair (stack +
+  secret identiques → `strong`, score ≥ 70), cas négatif (rien en commun →
+  `compare_targets` ne renvoie aucune paire), cas ambigu (un seul framework
+  commun, sans route ni secret → `weak`, score < 20) ; plus les deux modes
+  de sortie CLI (`json`, `text`) et le cas "aucun signal" en texte.
+- `cargo fmt`, `cargo clippy --workspace --all-targets -- -D warnings` et
+  `cargo test --workspace` passent sans avertissement après ce changement.
+- **Non fait** (documenté dans `docs/roadmap.md` §4, pas masqué) : aucune
+  corrélation sur les certificats TLS ni sur les pages d'erreur
+  caractéristiques — ni l'un ni l'autre n'existe comme finding structuré
+  dans le modèle actuel, donc les ajouter ici reviendrait à inventer une
+  source de preuve plutôt qu'à corréler une preuve déjà observée. Une forme
+  de route identique sans preuve `static`/`observed` des deux côtés
+  (ex. pagination REST conventionnelle d'un framework répandu) reste
+  volontairement `weak`, pas `moderate`.
+
 ## 2026-10-20 — secret coupé par la troncature d'un extrait de sonde
 
 - Constat : `goal.md` documentait un trou de `--redact` jamais vérifié —
