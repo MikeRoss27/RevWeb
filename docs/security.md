@@ -102,9 +102,19 @@ the same web security toolkit.
 
 Probe behavior:
 
-- **GET-shaped probe requests.** Endpoints known to be `POST`/`PUT`/`DELETE`/`PATCH`
-  are skipped by the probe client. Browser interactions execute application
-  behavior independently of this restriction.
+- **GET-shaped probe requests, with one documented exception.** Endpoints
+  known to be `POST`/`PUT`/`DELETE`/`PATCH` are skipped by the probe client.
+  Browser interactions execute application behavior independently of this
+  restriction. The one exception is GraphQL introspection
+  (`crates/webrev-pipeline/src/active/graphql.rs`): introspection is defined
+  by the GraphQL specification as a read of schema metadata, so it cannot
+  mutate application state regardless of HTTP verb. When a GraphQL endpoint
+  does not answer the standard `IntrospectionQuery` over GET, the probe
+  client sends it once over POST via `ProbeClient::post_literal`, whose body
+  parameter is typed `&'static str` so only that one compile-time-fixed,
+  literal query can ever be sent — never a value built from a response, a
+  URL, or any other runtime input. The same scope check, request budget,
+  retry-once policy, and redirect refusal apply as to every GET probe.
 - **Destructive-looking URLs are refused.** Endpoints, BOLA candidates and
   crawled `<a href>` links whose path or query contains a whole-token
   state-changing word (logout, delete, remove, unsubscribe, pay, checkout,

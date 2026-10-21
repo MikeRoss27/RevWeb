@@ -25,14 +25,44 @@ au fur et à mesure. Chaque item renvoie au(x) fichier(s) concerné(s).
       (jusque-là ignorés : ni `<script src>` ni `<a href>`), et l'extracteur
       `manifest` en tire `start_url`/`scope`/`id` comme findings `config`.
       `crates/webrev-pipeline/src/stages/fetch/mod.rs`
-- [x] **Introspection GraphQL — détection** — `graphql` signale désormais
+- [x] **Introspection GraphQL — détection (statique)** — `graphql` signale
       quand le client embarque une `IntrospectionQuery`/`__schema`, ce qui
       indique qu'une sonde manuelle sur `/graphql` vaut le coup.
-      **Non fait : l'introspection automatique réelle** (requête HTTP live)
-      est hors de portée d'un extracteur pur (contrat `Extractor`: pas d'I/O) ;
-      il faudrait un nouveau stage pipeline, comme `fetch.rs`. Reste ouvert si
-      utile plus tard.
       `crates/webrev-extract/src/extractors/endpoints/graphql.rs`
+- [x] **Introspection GraphQL — automatique réelle (2026-10-20)** — plutôt
+      qu'un nouveau stage pipeline, la sonde vit dans `active/graphql.rs`
+      (`webrev-pipeline`), au même niveau que les autres checks actifs :
+      c'est là que vivent déjà le scope fail-closed, le budget de requêtes,
+      le retry et la redaction, qu'un stage séparé aurait dû réimporter.
+      `is_graphql_endpoint` repère les endpoints `/graphql` (détectés
+      statiquement ou observés) et `check_graphql_introspection` tente,
+      pour chacun, la requête standard `IntrospectionQuery` du spec
+      GraphQL : d'abord en GET (comme le signal existant), puis en POST
+      uniquement si le GET ne répond pas avec un schéma. Le schéma recouvré
+      (types, champs de `Query`/`Mutation`/`Subscription`) devient un
+      nouveau `FindingKind::GraphQlSchema`, avec l'URL interrogée en
+      provenance et la liste des noms en JSON dans `value` (masqué comme
+      tout le reste par `--redact`, via le chemin JSON générique de
+      `redact.rs`). Introspection = lecture de métadonnées de schéma, jamais
+      une mutation ; c'est la seule dérogation documentée à la politique
+      « sondes GET uniquement » (`docs/security.md`, « Probe behavior ») :
+      `ProbeClient::post_literal` n'accepte qu'un `&'static str`, donc
+      seule une constante du code source — jamais une valeur construite à
+      l'exécution — peut partir en POST. Échec, timeout, hors scope ou
+      introspection désactivée côté serveur : aucun finding, compté comme
+      `graphql_introspection` négatif/non exécuté dans `ScanCoverage`,
+      jamais un faux verdict. **Limites documentées** : seuls les noms de
+      types/champs sont recouvrés (pas les arguments, interfaces,
+      directives ni les raisons de dépréciation) pour borner la taille de
+      la réponse ; pas de contournement des protections anti-introspection
+      non standard (désactivation partielle par champ, GraphQL par lots/
+      `multipart`, alias-based bypass) — hors périmètre d'une sonde GET/POST
+      simple. Tests unitaires : schéma recouvré avec succès, JSON sans
+      `__schema` reconnaissable, introspection désactivée (réponse
+      `errors`), corps non-JSON, statut HTTP en échec ; intégration via le
+      budget/scope déjà testés sur `active/mod.rs`.
+      `crates/webrev-pipeline/src/active/graphql.rs`,
+      `crates/webrev-pipeline/src/active/transport.rs`
 
 Nouveau au passage : `ContentKind::Json` et `Source::Manifest` (core),
 conservés dans les findings et les exports. Tests ajoutés pour

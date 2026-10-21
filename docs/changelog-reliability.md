@@ -1,5 +1,39 @@
 # Changelog — reliability work
 
+## 2026-10-20 — introspection GraphQL réelle et la dérogation GET-only qu'elle introduit
+
+- Constat : `docs/roadmap.md` §1 marquait l'introspection GraphQL live comme
+  non faite ("hors de portée d'un extracteur pur"). Implémentée dans
+  `active/graphql.rs` plutôt que dans un nouveau stage pipeline, pour
+  réutiliser le scope fail-closed, le budget de requêtes et la redaction déjà
+  en place dans `ProbeClient`.
+- Changement touchant la sécurité : `ProbeClient` (`active/transport.rs`)
+  n'envoyait jusqu'ici que des GET. La requête standard `IntrospectionQuery`
+  du spec GraphQL est une lecture pure de métadonnées de schéma, non une
+  mutation, donc envoyée en POST quand le GET ne suffit pas (certains
+  serveurs n'exposent l'introspection qu'en POST). Pour que cette seule
+  dérogation ne devienne jamais une porte vers un POST arbitraire,
+  `ProbeClient::post_literal` prend un `body: &'static str` : seule une
+  constante du code source peut être passée, jamais une valeur assemblée à
+  partir d'une réponse ou d'une URL. Documenté dans `docs/security.md`,
+  « Probe behavior ».
+- Nouveau `FindingKind::GraphQlSchema` : URL interrogée en provenance, liste
+  JSON des types/champs `Query`/`Mutation`/`Subscription` recouvrés en
+  `value` (masquée par `--redact` via le chemin JSON générique existant,
+  sans code de redaction dédié).
+- Limites documentées plutôt que masquées : seuls les noms de types/champs
+  sont recouvrés (pas les arguments/interfaces/directives) ; pas de
+  contournement des protections anti-introspection non standard (désactivation
+  par champ, bypass par alias, GraphQL par lots) — hors périmètre d'une sonde
+  GET/POST simple. Introspection désactivée, hors scope, erreur réseau ou
+  timeout produisent chacun une absence de finding (compté dans
+  `ScanCoverage`), jamais un faux verdict.
+- Tests : `active/graphql.rs` (schéma recouvré, JSON non-schéma, introspection
+  désactivée via `errors`, corps non-JSON, statut HTTP en échec, cohérence
+  GET/POST de la requête). `cargo test --workspace` et
+  `cargo clippy --workspace --all-targets -- -D warnings` passent sans
+  warning après le changement.
+
 ## 2026-10-20 — secret coupé par la troncature d'un extrait de sonde
 
 - Constat : `goal.md` documentait un trou de `--redact` jamais vérifié —

@@ -31,8 +31,18 @@ async fn every_default_active_request_is_a_get_without_internal_targets() {
     .await;
     let lines = request_lines(&fixture);
     assert!(lines.len() > 10, "probes ran: {}", lines.len());
-    for line in &lines {
-        assert!(line.starts_with("GET "), "non-GET probe sent: {line}");
+    let requests = fixture.requests.lock().unwrap();
+    for (line, request) in lines.iter().zip(requests.iter()) {
+        // The one documented exception (`docs/security.md`, "Probe
+        // behavior"): a fixed, literal GraphQL introspection query, sent as
+        // a POST only because this fixture's plain-HTML responses never
+        // satisfy introspection over GET. Every other probe stays GET.
+        let is_graphql_introspection_post =
+            line.starts_with("POST ") && request.contains("IntrospectionQuery");
+        assert!(
+            line.starts_with("GET ") || is_graphql_introspection_post,
+            "unexpected non-GET probe sent: {line}"
+        );
         for internal in [
             "169.254",
             "metadata",
@@ -44,12 +54,12 @@ async fn every_default_active_request_is_a_get_without_internal_targets() {
             assert!(!line.contains(internal), "internal target in {line}");
         }
     }
-    assert!(fixture
-        .requests
-        .lock()
-        .unwrap()
-        .iter()
-        .all(|r| !r.to_ascii_lowercase().contains("content-length: 1")));
+    // No request carries a body — i.e. no `Content-Length` header — except
+    // the one documented GraphQL introspection POST exception above.
+    assert!(requests.iter().all(|r| {
+        r.contains("IntrospectionQuery") || !r.to_ascii_lowercase().contains("content-length:")
+    }));
+    drop(requests);
     assert!(coverage(&findings).requests > 0);
 }
 
