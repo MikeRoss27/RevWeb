@@ -131,6 +131,7 @@ impl Stage for StoreStage {
                 | FindingKind::Parameter
                 | FindingKind::Config
                 | FindingKind::WebSocketFrame
+                | FindingKind::WebSocketReplay
                 | FindingKind::Vulnerability
                 | FindingKind::Idor
                 | FindingKind::ScanCoverage

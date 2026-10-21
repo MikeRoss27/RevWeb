@@ -11,7 +11,7 @@ authors.workspace = true
 webrev-core.workspace = true
 webrev-extract.workspace = true
 webrev-storage.workspace = true
-tokio.workspace = true
+tokio = { workspace = true, features = ["net"] }
 tokio-util.workspace = true
 async-trait.workspace = true
 reqwest.workspace = true
@@ -25,7 +25,8 @@ base64.workspace = true
 sha2.workspace = true
 hex.workspace = true
 futures.workspace = true
+tokio-tungstenite.workspace = true
 
 [dev-dependencies]
-tokio = { workspace = true }
+tokio = { workspace = true, features = ["net"] }
 http = "1.5.0"

@@ -18,9 +18,14 @@ mod targets;
 mod transport;
 mod traversal;
 mod urls;
+mod ws_replay;
 pub use bola::{bola_candidates, run_bola_scan, BolaCandidate};
 pub(crate) use destructive::destructive_keyword;
 pub use targets::active_targets;
+pub use ws_replay::{
+    run_ws_replay_scan, ws_frame_candidates, WsDirection, WsFrameCandidate, WsMutation,
+    MAX_WS_REPLAY_FRAMES,
+};
 #[cfg(test)]
 mod integration_tests;
 #[cfg(test)]

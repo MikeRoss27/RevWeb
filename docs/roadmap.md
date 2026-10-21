@@ -84,11 +84,69 @@ chaque extracteur ; `cargo test --workspace` et `cargo clippy --workspace
       `EventWebSocketCreated`), bornées (`MAX_WS_FRAMES`,
       `MAX_WS_PAYLOAD_CHARS`), conservées avec leurs valeurs d'origine et ressorties comme nouveau
       `FindingKind::WebSocketFrame` (tag direction + URL du socket).
-      **Non fait : replay / mutation des frames** — la capture conserve les
-      échanges pour l'analyse, mais leur réémission n'est pas implémentée.
-      C'est une piste de tests actifs à concevoir avec les contrôles de scope,
-      d'authentification et de trafic du projet. Les payloads peuvent déjà être
-      rejoués avec Burp ou websocat.
+      **Replay / mutation des frames — fait (2026-10-20), portée réduite.**
+      Nouveau test actif `crates/webrev-pipeline/src/active/ws_replay.rs`
+      (`run_ws_replay_scan`, nouveau `FindingKind::WebSocketReplay`), sur le
+      même patron que `bola.rs`/`bola_diff.rs` : même rigueur de preuve
+      (diff de réponse, jamais un simple « accepté »), mêmes garde-fous
+      (scope fail-closed, non-destructif par défaut, budget borné, résultat
+      classé exécuté/refusé/inconclusif/erreur). Deux capacités :
+      - **Replay verbatim** — rejoue une frame `sent` capturée telle quelle et
+        capture les réponses reçues dans la fenêtre qui suit, comme preuve de
+        reproductibilité (`FindingKind::WebSocketReplay`, statut `Observed` —
+        jamais un verdict de vulnérabilité en soi).
+      - **Mutation IDOR-style** — avec un second profil de compte
+        (`--b-auth`), rejoue la même frame (éventuellement après une
+        substitution littérale `find`/`replace` dans son payload, ex. un id
+        d'objet) sous les deux comptes ; une réponse non vide et
+        byte-identique sous les deux déclenche un `FindingKind::Idor` avec
+        diff de champs (réutilise `bola_diff::comparison`), jamais sur un
+        simple statut ou une URL acceptée.
+      Garde-fous : scope vérifié deux fois comme les sondes HTTP (host via
+      `Scope::allows`, puis chaque adresse DNS résolue via
+      `Scope::allows_resolved_ip` avant `TcpStream::connect`, puisque ce
+      module ouvre sa propre socket et ne passe pas par le résolveur épinglé
+      de `reqwest` dans `crate::dns`) ; une frame dont la capture a été
+      tronquée (`MAX_WS_PAYLOAD_CHARS`) est refusée, jamais rejouée à moitié ;
+      une frame dont le payload (après mutation) contient un verbe d'action
+      destructeur (`destructive::payload_keyword`, même liste que
+      `destructive_keyword` pour les URL) ou un champ JSON à nom « montant »
+      (`amount`, `balance`, `price`, `total`, `quantity`, `sum`, `credit`,
+      `debit`, `payment`) avec une valeur numérique est refusée avant tout
+      envoi. Budget : `MAX_WS_REPLAY_FRAMES` (10) connexions live par run,
+      plafonné en plus par `max_requests`. Un proxy configuré fait échouer le
+      scan explicitement (`ws_replay` ouvre sa propre connexion TCP, pas de
+      support `HTTP CONNECT`) plutôt que de s'y substituer silencieusement.
+      CLI : `webrev ws-replay` (`--report`/`--seed`, `--auth`, `--b-auth`,
+      `--mutate-find`/`--mutate-replace`), sur le même patron que `webrev
+      bola` — une commande dédiée, pas branchée sur `scan --active`/la touche
+      `a` du TUI, pour la même raison que `bola` : ce test a besoin d'un
+      second profil de compte explicite que le flux `active` générique n'a
+      pas.
+      **Limites honnêtes, non masquées :** (1) l'injection de payloads
+      XSS/SQLi dans un champ de frame n'est **pas implémentée** — une frame
+      WebSocket n'a pas de canal d'erreur SQL ni de DOM observable depuis un
+      client brut comme une réponse HTTP ; `WsMutation` fait une substitution
+      littérale générique, sans interprétation de ce qui revient. (2) la
+      capture ne distingue pas les frames binaires des frames texte (CDP ne
+      remonte qu'un `payload_data` déjà en chaîne) : tout est rejoué comme
+      frame `Message::Text`, donc une frame binaire d'origine serait rejouée
+      sous sa forme texte/base64 captée, pas reconstruite en binaire. (3)
+      l'appariement requête→réponse capturé par `webrev-browser` n'est pas
+      réutilisé pour établir la preuve de replay : la réponse comparée est
+      toujours celle obtenue en direct après le renvoi, jamais la réponse
+      originale observée pendant la capture (qui n'est pas fiablement
+      associable à sa frame `sent`). (4) le signal cross-account peut être un
+      faux positif documenté (message public/broadcast, écho non
+      authentifié) — la justification jointe au finding le dit explicitement,
+      comme pour `bola`. Tests unitaires : replay réussi avec preuve,
+      frame refusée (destructive, hors scope, tronquée), budget dépassé,
+      mutation qui change la réponse (pas de signal) vs qui ne change rien
+      (signal), proxy configuré refusé. `cargo fmt`, `cargo clippy
+      --workspace --all-targets -- -D warnings` et `cargo test --workspace`
+      passent sans warning (voir `docs/changelog-reliability.md`).
+      `crates/webrev-pipeline/src/active/ws_replay.rs`,
+      `crates/webrev-cli/src/commands/ws_replay.rs`,
       `crates/webrev-browser/src/dynamic.rs`
 - [x] **Adaptation anti-WAF/anti-rate-limit** — en fait plus pertinent côté
       crawler HTTP (`webrev-pipeline`) que navigateur : `fetch_with_retry`

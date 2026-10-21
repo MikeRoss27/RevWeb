@@ -67,6 +67,16 @@ fn keyword(text: &str) -> Option<&'static str> {
     None
 }
 
+/// The destructive keyword found anywhere in an arbitrary text payload (a
+/// WebSocket frame body, a JSON field name or value, ...), tokenized the same
+/// way as a URL path segment. Used by `ws_replay` to refuse a frame that
+/// *looks* state-changing before it is sent; see that module for what this
+/// cannot know (payload semantics, server-side effects of a verb it does not
+/// recognise).
+pub(super) fn payload_keyword(text: &str) -> Option<&'static str> {
+    keyword(text)
+}
+
 /// The destructive keyword found in the URL's path or query, if any.
 pub(crate) fn destructive_keyword(url: &str) -> Option<&'static str> {
     let parsed = reqwest::Url::parse(url).ok()?;

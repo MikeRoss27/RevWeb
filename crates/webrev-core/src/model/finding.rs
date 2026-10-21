@@ -42,6 +42,14 @@ pub enum FindingKind {
     /// an operator can replay the exchange with a tool of their choosing
     /// (webrev itself only observes; it does not resend traffic).
     WebSocketFrame,
+    /// An active-probe replay or bounded mutation of a captured
+    /// [`Self::WebSocketFrame`]: verbatim resend to check reproducibility, or
+    /// a field substitution resent under a second account. Never a
+    /// vulnerability verdict by itself — a cross-account match is reported as
+    /// [`Self::Idor`] instead, with this kind reserved for the executed
+    /// probe's own proof (observed response, refusal, or inconclusive). See
+    /// `webrev_pipeline::active::ws_replay`.
+    WebSocketReplay,
     /// An active-probe result: a concrete, observed weakness (missing
     /// security header, CORS misconfiguration, open redirect, reflected or
     /// error-signalled injection, exposed sensitive file). See
@@ -78,6 +86,7 @@ impl FindingKind {
             Self::Parameter => "parameter",
             Self::Config => "config",
             Self::WebSocketFrame => "ws_frame",
+            Self::WebSocketReplay => "ws_replay",
             Self::Vulnerability => "vulnerability",
             Self::Idor => "idor",
             Self::ScanCoverage => "scan_coverage",
@@ -361,7 +370,10 @@ impl Finding {
             FindingKind::GraphQl | FindingKind::SourceMap | FindingKind::GraphQlSchema => {
                 Severity::Medium
             }
-            FindingKind::Form | FindingKind::Route | FindingKind::WebSocketFrame => Severity::Low,
+            FindingKind::Form
+            | FindingKind::Route
+            | FindingKind::WebSocketFrame
+            | FindingKind::WebSocketReplay => Severity::Low,
             FindingKind::Parameter
             | FindingKind::Link
             | FindingKind::Script

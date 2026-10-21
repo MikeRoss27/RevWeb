@@ -55,7 +55,14 @@ EXAMPLES:
   webrev report --format urls-exact | ffuf -u FUZZ -w -
 
   # Cross-account GET object checks with two test account profiles
-  webrev bola --seed https://app.example.com/ --a-auth account-a.json --b-auth account-b.json";
+  webrev bola --seed https://app.example.com/ --a-auth account-a.json --b-auth account-b.json
+
+  # Replay captured WebSocket frames from a dynamic report (reproducibility)
+  webrev ws-replay --report webrev-dynamic.json --auth account-a.json
+
+  # Same, mutating an id and comparing against a second account (IDOR-style)
+  webrev ws-replay --report webrev-dynamic.json --auth account-a.json --b-auth account-b.json \\
+    --mutate-find 101 --mutate-replace 202";
 
 /// `webrev` — a web security analysis and testing toolkit.
 #[derive(Parser)]
@@ -102,6 +109,10 @@ pub enum Command {
     Compare(CompareArgs),
     /// Compare object access across two captured test accounts.
     Bola(BolaArgs),
+    /// Replay or mutate a captured WebSocket frame (reproducibility check,
+    /// or a cross-account IDOR-style comparison with --b-auth). Opens live
+    /// connections to the captured socket URL — authorized targets only.
+    WsReplay(WsReplayArgs),
 }
 
 /// Arguments for the one-shot `scan` command: the shared scan options plus a
@@ -358,6 +369,53 @@ pub struct BolaArgs {
     pub duration_secs: u64,
     /// Mask credentials in the result report (raw by default, so the object
     /// ids and evidence of a finding stay usable).
+    #[arg(long, env = "WEBREV_REPORT_REDACT", action = clap::ArgAction::SetTrue, value_parser = clap::builder::BoolishValueParser::new())]
+    pub redact: bool,
+}
+
+/// Replay or bounded-mutation test of captured WebSocket frames.
+/// See `webrev_pipeline::active::ws_replay` for the guardrails (scope,
+/// destructive-content refusal, frame budget) and what this does not cover
+/// (binary frames, XSS/SQLi payload interpretation).
+#[derive(Args)]
+pub struct WsReplayArgs {
+    /// JSON report with captured `ws_frame` findings (alternative to --seed).
+    #[arg(long)]
+    pub report: Option<PathBuf>,
+    /// Capture this URL's WebSocket traffic with a dynamic pass before replaying.
+    #[arg(long = "seed", value_name = "URL")]
+    pub seeds: Vec<String>,
+    /// In-scope host suffix for browser capture (repeatable; defaults to seed hosts).
+    #[arg(long = "scope", value_name = "HOST")]
+    pub scope: Vec<String>,
+    /// JSON AuthConfig applied to every replayed connection.
+    #[arg(long)]
+    pub auth: PathBuf,
+    /// Optional second JSON AuthConfig. When given, every (possibly mutated)
+    /// frame is also sent under this account; a byte-identical, non-empty
+    /// response under both accounts is reported as a cross-account signal.
+    #[arg(long)]
+    pub b_auth: Option<PathBuf>,
+    /// Replace the first occurrence of this literal substring in each
+    /// frame's payload before resending (e.g. swap a captured object id for
+    /// one owned by --b-auth). Requires --mutate-replace. Without either
+    /// --mutate flag, frames are replayed verbatim.
+    #[arg(long, requires = "mutate_replace")]
+    pub mutate_find: Option<String>,
+    /// Replacement text for --mutate-find.
+    #[arg(long, requires = "mutate_find")]
+    pub mutate_replace: Option<String>,
+    /// Result report path, or '-' for stdout.
+    #[arg(long, default_value = "webrev-ws-replay.json")]
+    pub output: PathBuf,
+    /// Shared live-connection budget (also capped at `MAX_WS_REPLAY_FRAMES`).
+    #[arg(long, default_value_t = 10)]
+    pub max_requests: usize,
+    /// Browser dwell time for the capture pass, in seconds (only with --seed).
+    #[arg(long, default_value_t = 8)]
+    pub duration_secs: u64,
+    /// Mask credentials in the result report (raw by default, so the frame
+    /// contents and evidence of a finding stay usable).
     #[arg(long, env = "WEBREV_REPORT_REDACT", action = clap::ArgAction::SetTrue, value_parser = clap::builder::BoolishValueParser::new())]
     pub redact: bool,
 }
