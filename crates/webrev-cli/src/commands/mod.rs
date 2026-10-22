@@ -191,6 +191,7 @@ fn build_mission(args: &ScanArgs) -> anyhow::Result<(Mission, OpsecConfig)> {
         delay_max_ms: args.delay_max_ms,
         max_pages: args.max_pages,
         max_depth: args.max_depth,
+        max_body_bytes: args.max_body_bytes,
         max_concurrency: args.max_concurrency.max(1),
         auth,
         active: webrev_core::ActiveLimits {

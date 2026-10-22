@@ -151,10 +151,25 @@ pub struct OpsecConfig {
     pub max_pages: usize,
     /// Maximum link-following depth from the seeds (0 = seeds only).
     pub max_depth: usize,
+    /// Decoded crawl response body limit, per page. Larger responses are
+    /// truncated to this many bytes rather than read to completion: a
+    /// pathologically large or slow-drip response must not grow the
+    /// fetch stage's memory without bound. Distinct from
+    /// `active.max_body_bytes`, which bounds active-probe responses and is
+    /// deliberately much smaller (a probe's proof is a short excerpt; a
+    /// crawled page can legitimately be a multi-megabyte bundle).
+    #[serde(default = "default_crawl_max_body_bytes")]
+    pub max_body_bytes: usize,
     /// Authentication material applied to in-scope requests.
     pub auth: AuthConfig,
     #[serde(default)]
     pub active: ActiveLimits,
+}
+
+/// 20 MiB: generous enough for a real-world minified SPA bundle with an
+/// inlined source map, small enough to bound a pathological response.
+fn default_crawl_max_body_bytes() -> usize {
+    20 * 1024 * 1024
 }
 
 impl Default for OpsecConfig {
@@ -166,6 +181,7 @@ impl Default for OpsecConfig {
             delay_min_ms: 150,
             delay_max_ms: 600,
             max_concurrency: 4,
+            max_body_bytes: default_crawl_max_body_bytes(),
             max_pages: 50,
             max_depth: 2,
             auth: AuthConfig::default(),

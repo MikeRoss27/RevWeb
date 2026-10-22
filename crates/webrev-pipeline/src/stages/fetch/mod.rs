@@ -97,6 +97,7 @@ impl Stage for FetchStage {
         // to `max_depth`, and the whole crawl stops at `max_pages`.
         let max_pages = ctx.opsec.max_pages;
         let max_depth = ctx.opsec.max_depth;
+        let max_body_bytes = ctx.opsec.max_body_bytes;
         let mut visited: BTreeSet<String> = BTreeSet::new();
         let mut queue: VecDeque<(String, usize)> = ctx
             .mission
@@ -147,7 +148,7 @@ impl Stage for FetchStage {
             // Fetch the whole wave concurrently.
             let client_ref = &client;
             let results = join_all(wave.into_iter().map(|(url, depth)| async move {
-                let outcome = fetch_with_retry(client_ref, &url).await;
+                let outcome = fetch_with_retry(client_ref, &url, max_body_bytes).await;
                 (url, depth, outcome)
             }))
             .await;
@@ -224,6 +225,7 @@ impl Stage for FetchStage {
                                 max_pages.saturating_sub(processed),
                                 &events,
                                 self.name(),
+                                max_body_bytes,
                             )
                             .await;
                         }

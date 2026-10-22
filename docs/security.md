@@ -66,6 +66,12 @@ default, and `--redact` masks credentials when a report has to be shared (see
   `[delay-min-ms, delay-max-ms]` window, not a fixed rate.
 - **Concurrency & budgets** — `--max-concurrency`, `--max-pages`, `--max-depth`
   cap load and breadth.
+- **Crawl response body cap** — `--max-body-bytes` (default 20 MiB) truncates
+  a per-page response read instead of buffering it to completion; a
+  pathologically large or slow-drip response cannot grow the fetch stage's
+  memory without bound. Separate from, and much larger than, active
+  scanning's own 512 KiB decoded-body cap below, since a crawled page can
+  legitimately be a multi-megabyte bundle.
 - **Egress policy** — route all traffic through an intercepting proxy with
   `--proxy`; `EgressPolicy::allow_direct = false` (fail-closed egress) refuses
   direct connections when no proxy is set.

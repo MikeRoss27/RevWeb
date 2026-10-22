@@ -35,6 +35,7 @@ pub(super) async fn fetch_sourcemap_json(
     base: &str,
     map_ref: &str,
     scope: &Scope,
+    max_body_bytes: usize,
 ) -> Option<String> {
     if let Some(rest) = map_ref.strip_prefix("data:") {
         let (meta, data) = rest.split_once(',')?;
@@ -51,7 +52,7 @@ pub(super) async fn fetch_sourcemap_json(
     if !scope.allows(&abs) {
         return None;
     }
-    fetch_with_retry(client, &abs)
+    fetch_with_retry(client, &abs, max_body_bytes)
         .await
         .ok()
         .map(|(_, _, body, _, _)| body)
@@ -69,11 +70,13 @@ pub(super) async fn process_sourcemap(
     budget: usize,
     events: &broadcast::Sender<PipelineEvent>,
     stage: &str,
+    max_body_bytes: usize,
 ) -> usize {
     if budget == 0 {
         return 0;
     }
-    let Some(json) = fetch_sourcemap_json(client, base, map_ref, scope).await else {
+    let Some(json) = fetch_sourcemap_json(client, base, map_ref, scope, max_body_bytes).await
+    else {
         return 0;
     };
     let map: SourceMap = match serde_json::from_str(&json) {

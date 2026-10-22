@@ -1,5 +1,5 @@
 use super::discovery::resolve_url;
-use super::request::{is_wasm_response, parse_retry_after, MAX_RETRY_AFTER};
+use super::request::{is_wasm_response, parse_retry_after, read_bounded, MAX_RETRY_AFTER};
 use super::*;
 use std::time::Duration;
 use webrev_core::Scope;
@@ -118,6 +118,57 @@ fn wasm_response_detected_by_url_or_content_type() {
 /// This exercises the exact branch `fetch_with_retry` takes: build a response
 /// carrying bytes that are not valid UTF-8, confirm `is_wasm_response` routes
 /// it to the binary path, and confirm `resp.bytes()` returns them unchanged.
+/// A response under the cap is read in full, byte for byte.
+#[tokio::test]
+async fn read_bounded_passes_through_a_response_under_the_cap() {
+    let raw = b"hello world".to_vec();
+    let resp = reqwest::Response::from(http::Response::builder().body(raw.clone()).unwrap());
+    let (bytes, truncated) = read_bounded(resp, 1024).await.unwrap();
+    assert_eq!(bytes, raw);
+    assert!(!truncated);
+}
+
+/// A response past the cap is truncated to exactly `max_body_bytes`, not
+/// read to completion -- the crawl's unbounded-memory gap this closes.
+#[tokio::test]
+async fn read_bounded_truncates_a_response_past_the_cap() {
+    let raw = vec![b'x'; 10_000];
+    let resp = reqwest::Response::from(http::Response::builder().body(raw).unwrap());
+    let (bytes, truncated) = read_bounded(resp, 100).await.unwrap();
+    assert_eq!(bytes.len(), 100);
+    assert!(truncated);
+}
+
+/// A text body past the cap still decodes (lossily, as `Response::text()`
+/// itself falls back to whenever no explicit non-UTF-8 charset is declared)
+/// rather than erroring, so extraction still runs on the leading bytes kept.
+#[tokio::test]
+async fn fetch_with_retry_truncates_instead_of_erroring() {
+    use std::io::{Read, Write};
+    let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+    let port = listener.local_addr().unwrap().port();
+    let body = "A".repeat(10_000);
+    let server = std::thread::spawn(move || {
+        let (mut stream, _) = listener.accept().unwrap();
+        let mut request = [0u8; 512];
+        let _ = stream.read(&mut request);
+        let response = format!(
+            "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
+            body.len()
+        );
+        stream.write_all(response.as_bytes()).unwrap();
+    });
+    let scope = Scope::new(vec!["127.0.0.1".into()], vec![]);
+    let client =
+        super::request::build_client(&webrev_core::OpsecConfig::default(), &scope).unwrap();
+    let (_, _, text, _, _) =
+        super::request::fetch_with_retry(&client, &format!("http://127.0.0.1:{port}/big"), 100)
+            .await
+            .unwrap();
+    assert_eq!(text.len(), 100);
+    server.join().unwrap();
+}
+
 #[tokio::test]
 async fn wasm_bytes_are_preserved_not_lossily_decoded() {
     // 0xFF is not valid UTF-8 on its own; a `.text()` read would replace it

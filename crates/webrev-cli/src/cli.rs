@@ -276,6 +276,14 @@ pub struct ScanArgs {
     /// Maximum resources fetched per crawl (hard budget).
     #[arg(help_heading = "Budgets & pacing", long, default_value_t = 50)]
     pub max_pages: usize,
+    /// Decoded crawl response body limit per page, in bytes. A larger
+    /// response is truncated to this many bytes rather than read in full.
+    #[arg(
+        help_heading = "Budgets & pacing",
+        long,
+        default_value_t = 20 * 1024 * 1024
+    )]
+    pub max_body_bytes: usize,
     /// Shared active request budget, including controls and failed requests.
     #[arg(help_heading = "Budgets & pacing", long, default_value_t = 200)]
     pub max_active_requests: usize,
@@ -313,6 +321,12 @@ pub struct ScanArgs {
     /// List every attack-surface row in the scan summary.
     #[arg(long, help_heading = "Output")]
     pub all: bool,
+    /// Full per-finding detail (URL, check, evidence excerpt, reason) in the
+    /// scan summary, one block per finding. Without it, each lead is one
+    /// compact line and near-identical secrets are grouped; the exported
+    /// report always keeps every field either way.
+    #[arg(long, help_heading = "Output")]
+    pub verbose: bool,
     /// Exit with status 3 when a vulnerability or secret at or above this
     /// severity was found (for CI gates). Without it findings never change the
     /// exit status.

@@ -309,31 +309,22 @@ Two genuine gaps were found, both small in absolute terms but real:
 
 ## Prioritized follow-up items
 
-1. **Cap `Finding::provenances` growth in `merge_from`.** Description: add a
-   `MAX_PROVENANCES_PER_FINDING`-style constant and check it before
+1. **Done (2026-10-22).** Cap `Finding::provenances` growth in `merge_from`:
+   `MAX_PROVENANCES_PER_FINDING` (50), checked before
    `self.provenances.push(provenance)` in
    `crates/webrev-core/src/model/finding.rs::Finding::merge_from`, mirroring
    the `len() < CAP` guard already used for `MAX_WS_FRAMES` in
-   `crates/webrev-browser/src/dynamic.rs`. Without a cap, any `FindingKind`
-   whose `dedup_key()` collapses many distinct page locations into one
-   finding (most visibly `Endpoint`, whose key ignores the referencing URL
-   entirely) can accumulate one `Provenance` per distinct location for the
-   lifetime of the session on a large crawl. File:
-   `crates/webrev-core/src/model/finding.rs` (`merge_from`, ~lines 251–262).
+   `crates/webrev-browser/src/dynamic.rs`.
 
-2. **Cap the dynamic-capture HAR collector.** Description: add a
-   `MAX_HAR_ENTRIES`-style cap to the CDP `EventRequestWillBeSent` collector
-   in `run_dynamic_with_report`, the same way its three sibling collectors in
-   the same function (`ws_sent_collector`, `ws_recv_collector`, the
-   refused-interactions loop) are already capped. Right now `Har::push`
-   (`crates/webrev-browser/src/har.rs`) is the only uncapped collector among
-   four near-identical ones in
-   `crates/webrev-browser/src/dynamic.rs` (lines 307–329), so a chatty page
-   over a long `--duration` dwell accumulates one `HarEntry` (with full
-   headers) per request event before the post-dwell dedup pass runs.
+2. **Done (2026-10-22).** Cap the dynamic-capture HAR collector:
+   `MAX_HAR_ENTRIES` (2000) added to the CDP `EventRequestWillBeSent`
+   collector in `run_dynamic_with_report`
+   (`crates/webrev-browser/src/dynamic.rs`), checked at the call site before
+   `Har::push`, the same way its three sibling collectors in the same
+   function already were.
 
-3. **(Optional, lower priority) Stream JSONL export instead of buffering a
-   full `String`.** Description: `render_jsonl`
+3. **(Still optional, lower priority) Stream JSONL export instead of
+   buffering a full `String`.** Description: `render_jsonl`
    (`crates/webrev-report/src/format.rs`, lines 167–176) could write each
    serialized finding line directly to the output writer (file handle or
    stdout) instead of accumulating the whole report into one `String` first.
@@ -342,11 +333,18 @@ Two genuine gaps were found, both small in absolute terms but real:
    one redundant in-memory copy at export time, specifically for the one
    format (JSONL) where streaming is a natural fit.
 
-4. **(Optional, out of this audit's main scope) Cap the fetch stage's
-   per-response body size.** Description: `fetch_with_retry`
-   (`crates/webrev-pipeline/src/stages/fetch/request.rs`) reads a response
-   fully into memory with no size limit, unlike active scanning's documented
-   512 KiB decoded-body cap (`docs/security.md`). This is a single-request
-   risk, not a scan-size accumulation, so it does not belong in the genuine
-   gaps above, but it is the same missing-cap pattern applied to a different
-   axis and is listed here for completeness.
+4. **Done (2026-10-22).** Cap the fetch stage's per-response body size:
+   `fetch_with_retry` (`crates/webrev-pipeline/src/stages/fetch/request.rs`)
+   now reads the body in chunks via `read_bounded`, truncating at
+   `OpsecConfig::max_body_bytes` (default 20 MiB, `--max-body-bytes`) instead
+   of reading to completion — the crawl-side counterpart to active
+   scanning's documented 512 KiB decoded-body cap (`docs/security.md`), kept
+   separately configurable since a crawled page can legitimately be far
+   larger than a probe response. A truncated text body is decoded from its
+   first `max_body_bytes` bytes as UTF-8 with lossy replacement, identical to
+   `Response::text()`'s own fallback whenever the response declares no
+   explicit non-UTF-8 charset (the common case for the HTML/JS this scanner
+   extracts from); a response with an explicit non-UTF-8 charset header that
+   gets truncated mid-multi-byte-sequence may show extra replacement
+   characters near the cut, a narrow, documented trade-off rather than
+   reimplementing charset-aware decoding for a bounded read.

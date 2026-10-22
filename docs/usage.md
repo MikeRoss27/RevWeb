@@ -43,6 +43,7 @@ sent to the target.
 | `--delay-min-ms <N>` | `150` | Lower bound of the inter-request delay window. |
 | `--delay-max-ms <N>` | `600` | Upper bound of the inter-request delay window. |
 | `--max-pages <N>` | `50` | Hard budget on resources fetched per crawl. |
+| `--max-body-bytes <N>` | `20971520` (20 MiB) | Decoded crawl response body limit per page; a larger response is truncated rather than read in full. |
 | `--max-active-requests <N>` | `200` | Total active HTTP requests, including controls and unsuccessful attempts. |
 | `--allow-timing-probes` | off | Opt-in: lets the active timing-injection check execute a sleep-shaped command on the target when a parameter is vulnerable. The one documented exception to "active probes never execute OS commands" — see [`security.md`](security.md). Authorized targets only. |
 | `--max-depth <N>` | `2` | Link-following depth from the seeds (0 = seeds only). |
