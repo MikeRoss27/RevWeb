@@ -74,6 +74,13 @@ pub enum FindingKind {
     /// [`FindingKind::GraphQl`], which is a client-side operation name
     /// extracted statically, never fetched over the network.
     GraphQlSchema,
+    /// An MCP tool list recovered via an unauthenticated `initialize` +
+    /// `tools/list` handshake (tool names, descriptions, and the subset
+    /// whose name matches a privileged-verb heuristic). Both calls are
+    /// read-only per the MCP specification (capability negotiation and
+    /// enumeration, never `tools/call`), the same justification
+    /// [`FindingKind::GraphQlSchema`] relies on for its own POST exception.
+    McpTools,
 }
 
 impl FindingKind {
@@ -98,6 +105,7 @@ impl FindingKind {
             Self::Idor => "idor",
             Self::ScanCoverage => "scan_coverage",
             Self::GraphQlSchema => "graphql_schema",
+            Self::McpTools => "mcp_tools",
         }
     }
 }
@@ -380,6 +388,12 @@ impl Finding {
             FindingKind::GraphQl | FindingKind::SourceMap | FindingKind::GraphQlSchema => {
                 Severity::Medium
             }
+            // Capability exposure is the baseline (same tier as a recovered
+            // GraphQL schema); a tool name matching a privileged-verb
+            // heuristic (delete/exec/admin/...) raises it, since an
+            // anonymous actor who can enumerate one may be able to call it
+            // too (tools/call itself is never attempted by this scanner).
+            FindingKind::McpTools => mcp_tools_severity(&self.value),
             FindingKind::Form
             | FindingKind::Route
             | FindingKind::WebSocketFrame
@@ -476,10 +490,24 @@ fn vulnerability_severity(value: &str) -> Severity {
         || v.contains("graphql introspection")
     {
         Severity::Medium
+    } else if v.contains("command injection timing signal") {
+        // Two independently scaled delays net of a non-executing control is
+        // a strong execution signal, even though timing stays a side channel
+        // (see EvidenceVerdict::TimingCorrelated) rather than a deterministic
+        // proof like template_arithmetic's.
+        Severity::High
     } else {
         // SSRF-sink and prototype-pollution leads, missing headers/cookies and
         // other advisory observations remain Low until confirmed dynamically.
         Severity::Low
+    }
+}
+
+fn mcp_tools_severity(value: &str) -> Severity {
+    if value.contains("\"privileged_tools\":[]") || !value.contains("\"privileged_tools\":[") {
+        Severity::Medium
+    } else {
+        Severity::High
     }
 }
 

@@ -10,6 +10,7 @@ mod expression;
 mod graphql;
 mod headers;
 mod injection;
+mod mcp;
 mod origin;
 mod pollution;
 mod ssrf;
@@ -37,6 +38,7 @@ use crlf::check_crlf;
 use expression::check_expressions;
 use graphql::{check_graphql_introspection, is_graphql_endpoint};
 use injection::{check_open_redirect, check_param_fuzz, redirect_parameter};
+use mcp::{check_mcp_tool_exposure, is_mcp_endpoint};
 use origin::{check_cors, check_origin};
 use pollution::check_prototype_pollution;
 use ssrf::{check_ssrf, has_url_param};
@@ -134,6 +136,7 @@ pub async fn run_active_scan(
         "prototype_pollution",
         "graphql_introspection",
         "timing_injection",
+        "mcp_tool_exposure",
     ] {
         if !client.coverage().checks.contains_key(check) {
             client.not_selected(check);
@@ -158,6 +161,7 @@ struct Budget {
     pollution: usize,
     graphql: usize,
     timing: usize,
+    mcp: usize,
 }
 
 /// The original SQLi/XSS/open-redirect/SSTI/IDOR checks for one endpoint.
@@ -279,6 +283,16 @@ async fn recon_checks(
             client.record_check("graphql_introspection", found.len());
             findings.extend(found);
         } else if budget.graphql >= MAX_TARGETS_PER_CHECK {
+            client.update(|c| c.target_limit_reached = true);
+        }
+    }
+    if is_mcp_endpoint(url) {
+        if budget.mcp < MAX_TARGETS_PER_CHECK && !client.stopped() {
+            budget.mcp += 1;
+            let found = check_mcp_tool_exposure(client, url, session).await;
+            client.record_check("mcp_tool_exposure", usize::from(found.is_some()));
+            findings.extend(found);
+        } else if budget.mcp >= MAX_TARGETS_PER_CHECK {
             client.update(|c| c.target_limit_reached = true);
         }
     }

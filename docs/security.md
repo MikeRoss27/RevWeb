@@ -102,19 +102,29 @@ the same web security toolkit.
 
 Probe behavior:
 
-- **GET-shaped probe requests, with one documented exception.** Endpoints
+- **GET-shaped probe requests, with two documented exceptions.** Endpoints
   known to be `POST`/`PUT`/`DELETE`/`PATCH` are skipped by the probe client.
   Browser interactions execute application behavior independently of this
-  restriction. The one exception is GraphQL introspection
-  (`crates/webrev-pipeline/src/active/graphql.rs`): introspection is defined
-  by the GraphQL specification as a read of schema metadata, so it cannot
-  mutate application state regardless of HTTP verb. When a GraphQL endpoint
-  does not answer the standard `IntrospectionQuery` over GET, the probe
-  client sends it once over POST via `ProbeClient::post_literal`, whose body
-  parameter is typed `&'static str` so only that one compile-time-fixed,
-  literal query can ever be sent — never a value built from a response, a
-  URL, or any other runtime input. The same scope check, request budget,
-  retry-once policy, and redirect refusal apply as to every GET probe.
+  restriction. Both exceptions send only a compile-time-fixed, literal
+  JSON body — via `ProbeClient::post_literal`/`post_literal_with_accept`,
+  whose body parameter is typed `&'static str` so it can never carry a
+  value built from a response, a URL, or any other runtime input — and the
+  same scope check, request budget, retry-once policy, and redirect
+  refusal apply as to every GET probe:
+  - **GraphQL introspection** (`crates/webrev-pipeline/src/active/graphql.rs`):
+    introspection is defined by the GraphQL specification as a read of
+    schema metadata, so it cannot mutate application state regardless of
+    HTTP verb. Sent over POST only when the standard `IntrospectionQuery`
+    does not answer over GET.
+  - **MCP tool-exposure check** (`crates/webrev-pipeline/src/active/mcp.rs`):
+    an unauthenticated `initialize` + `tools/list` JSON-RPC handshake
+    against endpoints whose path looks like an MCP server. Per the Model
+    Context Protocol specification, both calls are capability negotiation
+    and read-only enumeration — never `tools/call` (actually invoking a
+    tool), which this check never attempts. Listing a tool does not
+    establish that calling it would also succeed unauthenticated; full
+    OAuth authorization-flow testing is out of scope for this check (see
+    [proof boundaries](active-research.md)).
 - **Destructive-looking URLs are refused.** Endpoints, BOLA candidates and
   crawled `<a href>` links whose path or query contains a whole-token
   state-changing word (logout, delete, remove, unsubscribe, pay, checkout,

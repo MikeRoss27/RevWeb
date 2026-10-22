@@ -135,7 +135,8 @@ impl Stage for StoreStage {
                 | FindingKind::Vulnerability
                 | FindingKind::Idor
                 | FindingKind::ScanCoverage
-                | FindingKind::GraphQlSchema => {}
+                | FindingKind::GraphQlSchema
+                | FindingKind::McpTools => {}
             }
 
             if !first_seen {

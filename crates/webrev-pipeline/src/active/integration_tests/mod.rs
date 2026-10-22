@@ -2,6 +2,7 @@
 mod bola;
 mod fixture;
 mod limits;
+mod mcp;
 mod proofs;
 mod recon;
 mod safety;
