@@ -139,7 +139,7 @@ mod tests {
         let auth_path = directory.path().join("auth.json");
         std::fs::write(&auth_path, r#"{"bearer":"account-a"}"#).unwrap();
         let output = directory.path().join("result.json");
-        run(WsReplayArgs {
+        Box::pin(run(WsReplayArgs {
             report: Some(report_path),
             seeds: Vec::new(),
             scope: Vec::new(),
@@ -151,7 +151,7 @@ mod tests {
             max_requests: 10,
             duration_secs: 0,
             redact: false,
-        })
+        }))
         .await
         .unwrap();
         let result: SessionReport =

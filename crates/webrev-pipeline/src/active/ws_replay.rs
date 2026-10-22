@@ -123,9 +123,11 @@ pub fn ws_frame_candidates(findings: &[Finding]) -> Vec<WsFrameCandidate> {
                 _ => return None,
             };
             let truncated = f.value.ends_with('…');
-            let payload = truncated
-                .then(|| f.value.trim_end_matches('…').to_owned())
-                .unwrap_or_else(|| f.value.clone());
+            let payload = if truncated {
+                f.value.trim_end_matches('…').to_owned()
+            } else {
+                f.value.clone()
+            };
             Some(WsFrameCandidate {
                 socket_url: socket_url.to_owned(),
                 direction,
@@ -272,6 +274,7 @@ impl WsTracker {
 /// plus one `ScanCoverage` finding, same contract as `run_active_scan` and
 /// `run_bola_scan`: an incomplete or all-refused run is never silently
 /// read as "nothing found".
+#[allow(clippy::too_many_arguments)] // a focused entry point; grouping would add noise
 pub async fn run_ws_replay_scan(
     opsec: &OpsecConfig,
     scope: &Scope,

@@ -99,7 +99,7 @@ async fn main() -> std::process::ExitCode {
     if !matches!(parsed.command, Command::Tui(_)) {
         logging::init();
     }
-    match commands::dispatch(parsed).await {
+    match Box::pin(commands::dispatch(parsed)).await {
         Ok(()) => std::process::ExitCode::SUCCESS,
         Err(error) => std::process::ExitCode::from(exit_code_and_print(&error)),
     }
