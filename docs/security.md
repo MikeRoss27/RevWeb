@@ -133,6 +133,22 @@ Probe behavior:
 - **Expression probes** perform two arithmetic evaluations and a payload-free
   control. They do not execute OS commands, write files or trigger callbacks.
   The resulting verdict establishes evaluation only.
+- **Timing-injection probes are the one documented exception, and are
+  disabled unless explicitly requested.** `--allow-timing-probes`
+  (`OpsecConfig.active.allow_timing_probes`, off by default) lets
+  `active::timing` inject a `sleep`-shaped command separator and measure
+  whether the response is delayed by roughly the injected amount — which, on
+  a vulnerable target, means a real shell command actually ran. No file
+  write, no callback: the only side effect, if the target is vulnerable, is
+  the target process sleeping for a few seconds. A single slow response
+  proves nothing (a slow endpoint, jitter, rate limiting can look
+  identical), so each candidate is tested at two distinct injected delays,
+  each measured net of a length-matched, non-executing control carrying the
+  same number; both magnitudes must scale with what was injected before any
+  finding is raised. Even confirmed on both magnitudes, this stays at
+  `EvidenceVerdict::TimingCorrelated`, never `Confirmed`: timing is a side
+  channel, not a deterministic proof, unlike expression evaluation's two
+  independent arithmetic results.
 - **IDOR-lite only runs on an authenticated mission** — it compares "with the
   mission's auth headers" against "with none of those headers," which is only meaningful once
   auth material is actually configured.

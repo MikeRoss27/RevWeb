@@ -15,6 +15,7 @@ mod pollution;
 mod ssrf;
 mod takeover;
 mod targets;
+mod timing;
 mod transport;
 mod traversal;
 mod urls;
@@ -41,6 +42,7 @@ use pollution::check_prototype_pollution;
 use ssrf::{check_ssrf, has_url_param};
 use std::collections::{BTreeMap, BTreeSet};
 use takeover::check_subdomain_takeover;
+use timing::check_timing_injection;
 use tokio_util::sync::CancellationToken;
 use transport::ProbeClient;
 use traversal::{check_path_traversal, has_file_param};
@@ -131,6 +133,7 @@ pub async fn run_active_scan(
         "ssrf_signal",
         "prototype_pollution",
         "graphql_introspection",
+        "timing_injection",
     ] {
         if !client.coverage().checks.contains_key(check) {
             client.not_selected(check);
@@ -154,6 +157,7 @@ struct Budget {
     ssrf: usize,
     pollution: usize,
     graphql: usize,
+    timing: usize,
 }
 
 /// The original SQLi/XSS/open-redirect/SSTI/IDOR checks for one endpoint.
@@ -192,6 +196,16 @@ async fn classic_checks(
             findings.extend(found);
         } else if budget.expressions >= MAX_TARGETS_PER_CHECK {
             client.update(|c| c.target_limit_reached = true);
+        }
+        if opsec.active.allow_timing_probes {
+            if budget.timing < MAX_TARGETS_PER_CHECK && !client.stopped() {
+                budget.timing += 1;
+                let found = check_timing_injection(client, url, params, session).await;
+                client.record_check("timing_injection", found.len());
+                findings.extend(found);
+            } else if budget.timing >= MAX_TARGETS_PER_CHECK {
+                client.update(|c| c.target_limit_reached = true);
+            }
         }
     }
     if !opsec.auth.is_empty() && has_identifier_segment(url) && has_query_credentials(url) {

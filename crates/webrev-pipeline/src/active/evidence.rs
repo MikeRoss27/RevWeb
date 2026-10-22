@@ -17,7 +17,9 @@ pub(super) fn attach(
         {
             FindingStatus::Confirmed
         }
-        EvidenceVerdict::Signal | EvidenceVerdict::EvaluationConfirmed => FindingStatus::Suspicious,
+        EvidenceVerdict::Signal
+        | EvidenceVerdict::EvaluationConfirmed
+        | EvidenceVerdict::TimingCorrelated => FindingStatus::Suspicious,
     };
     finding.justification = limitation.into();
     finding.evidence = Some(Box::new(ProbeEvidence {

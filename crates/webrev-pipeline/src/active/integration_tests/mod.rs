@@ -5,6 +5,7 @@ mod limits;
 mod proofs;
 mod recon;
 mod safety;
+mod timing;
 
 use super::*;
 use fixture::{Fixture, Reply};

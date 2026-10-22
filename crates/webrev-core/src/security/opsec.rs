@@ -114,6 +114,14 @@ pub struct ActiveLimits {
     pub max_body_bytes: usize,
     /// Individual query positions per endpoint (duplicate names stay distinct).
     pub max_parameters: usize,
+    /// Opt-in, off by default: allows the timing-based command-injection probe
+    /// (`active::timing`) to actually execute a sleep on the target if the
+    /// parameter is vulnerable. Every other active probe is GET-shaped and
+    /// never executes OS commands, writes files or triggers callbacks
+    /// (`docs/security.md`, "Probe behavior"); this is the one documented
+    /// exception, gated so it is never run without explicit consent
+    /// (`--allow-timing-probes`).
+    pub allow_timing_probes: bool,
 }
 
 impl Default for ActiveLimits {
@@ -122,6 +130,7 @@ impl Default for ActiveLimits {
             max_requests: 200,
             max_body_bytes: 512 * 1024,
             max_parameters: 4,
+            allow_timing_probes: false,
         }
     }
 }

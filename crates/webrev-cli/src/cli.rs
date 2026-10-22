@@ -279,6 +279,13 @@ pub struct ScanArgs {
     /// Shared active request budget, including controls and failed requests.
     #[arg(help_heading = "Budgets & pacing", long, default_value_t = 200)]
     pub max_active_requests: usize,
+    /// Opt-in: let the active timing-injection check actually execute a
+    /// sleep-shaped command on the target when a parameter is vulnerable.
+    /// Off by default — every other active probe is GET-shaped and never
+    /// executes OS commands, writes files, or triggers callbacks (see
+    /// `docs/security.md`, "Probe behavior"). Authorized targets only.
+    #[arg(help_heading = "Budgets & pacing", long)]
+    pub allow_timing_probes: bool,
     /// Maximum link-following depth from the seeds (0 = seeds only).
     #[arg(help_heading = "Budgets & pacing", long, default_value_t = 2)]
     pub max_depth: usize,

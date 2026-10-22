@@ -17,6 +17,8 @@ impl Finding {
                     "SSTI"
                 } else if value.starts_with("possible sql injection:") {
                     "SQLi"
+                } else if value.starts_with("command injection timing signal:") {
+                    "RCE"
                 } else if value.starts_with("cors misconfiguration:") {
                     "CORS"
                 } else if value.starts_with("open redirect ") {
@@ -42,7 +44,7 @@ impl Finding {
             return evidence.verdict.label();
         }
         match self.category() {
-            "IDOR" | "XSS" | "SQLi" | "Exposure" | "Vuln" => "signal / verify manually",
+            "IDOR" | "XSS" | "SQLi" | "RCE" | "Exposure" | "Vuln" => "signal / verify manually",
             "Secret" => "detected / validity unchecked",
             "Tech" => "signature detected",
             _ => "observed",

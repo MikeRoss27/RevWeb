@@ -195,6 +195,7 @@ fn build_mission(args: &ScanArgs) -> anyhow::Result<(Mission, OpsecConfig)> {
         auth,
         active: webrev_core::ActiveLimits {
             max_requests: args.max_active_requests,
+            allow_timing_probes: args.allow_timing_probes,
             ..webrev_core::ActiveLimits::default()
         },
         ..OpsecConfig::default()
@@ -330,7 +331,7 @@ pub async fn dispatch(cli: Cli) -> anyhow::Result<()> {
         Command::Report(args) => report::run(args),
         Command::Compare(args) => compare::run(args),
         Command::Bola(args) => bola::run(args).await,
-        Command::WsReplay(args) => ws_replay::run(args).await,
+        Command::WsReplay(args) => Box::pin(ws_replay::run(args)).await,
         Command::Completions { shell } => {
             use clap::CommandFactory;
             clap_complete::generate(shell, &mut Cli::command(), "webrev", &mut std::io::stdout());
