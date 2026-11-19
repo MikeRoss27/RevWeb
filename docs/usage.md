@@ -1,8 +1,9 @@
 # Usage
 
-`webrev` has six subcommands: `scan`, `static`, `dynamic`, `active`, `tui`, and
-`report`. `scan` is the one-shot convenience wrapper; the others are the
-individual steps.
+`webrev` has ten subcommands: the scan pipeline (`scan`, `static`, `dynamic`,
+`active`, `tui`), report conversion (`report`), and the targeted tools
+(`compare`, `bola`, `ws-replay`, `completions`). `scan` is the one-shot
+convenience wrapper; the others are the individual steps.
 
 ```text
 webrev <COMMAND> [OPTIONS]
@@ -52,6 +53,9 @@ sent to the target.
 | `--observation-only` | off | For `dynamic` and `scan --dynamic`: no driven scrolling/clicking; refuse methods other than GET/HEAD/OPTIONS. Page scripts still execute. Unsupported in TUI. |
 | `--report <PATH>` | `webrev-report.json` | Direct report output for CLI scans; export path for the TUI `r` key. |
 | `--redact` | off (`WEBREV_REPORT_REDACT=1`) | Mask credentials in the exported report. **By default the report is raw**: URLs, response excerpts, captured frames and finding text keep what was captured, because that is the proof of a finding. A raw report holds live credentials, so keep it private and add `--redact` before sharing it; writing one to a file prints a one-line warning. Detected secret plaintext is kept in both modes, and object identifiers (numbers, UUIDs, short hex ids) are never masked, so even a masked report must be treated as confidential. Logs, errors and the end-of-scan summary are masked whatever the mode. See [`security.md`](security.md). |
+| `--limit <N>` | `8` | Attack-surface rows listed in the CLI scan summary (the TUI has its own view). Vulnerabilities and secrets are always listed in full; the exported report keeps every row either way. Conflicts with `--all`. |
+| `--all` | off | List every attack-surface row in the CLI scan summary (same as a `--limit` at or above the number of rows). |
+| `--fail-on <SEVERITY>` | — | CLI scans only (the TUI ignores it): exit with status 3 when a vulnerability or secret at or above `low`, `medium`, `high`, or `critical` is found, for CI gates. Without it, findings never change the exit status. |
 
 Scope matching is **host-suffix** based: `--scope example.com` matches
 `example.com` and `api.example.com`. The scope is **fail-closed** — an empty
@@ -82,6 +86,17 @@ back to the seed-derived scope.
 All scans hold their session in memory. No database is created. Detected secrets
 are retained and shown in plaintext by default, including JSON, JSONL, CSV and
 the TUI. No reveal flag is required. The fingerprint remains a deduplication key.
+
+## Global options
+
+These apply to every subcommand, before or after it.
+
+| Flag | Default | Description |
+| --- | --- | --- |
+| `--no-banner` | off | Suppress the startup banner. |
+| `--color <WHEN>` | `auto` | `auto` honours `NO_COLOR`, `CLICOLOR(_FORCE)` and TTY detection; `always` forces ANSI styling even when piped; `never` disables it. |
+| `--quiet`, `-q` | off | Suppress progress and status lines on stderr; data on stdout is unaffected. |
+| `--progress <MODE>` | `auto` | `auto` draws one in-place line on a terminal and plain lines elsewhere; `plain` emits append-only timestamped lines; `json` emits one JSON object per line; `none` disables progress. |
 
 ## `report` options
 
@@ -325,14 +340,16 @@ for the matching flags, so they can be set once per engagement.
 
 All scan commands print a prioritized triage view to stdout and send progress to
 stderr. Vulnerability and secret leads appear first, followed by technologies,
-the top eight surface observations, and a coverage summary. The JSON report
-retains every finding and its full evidence; `webrev report --format text` shows
-the complete human-readable version. Secrets remain complete. Lead rows show
-severity (priority), status, confidence, and a short evidence excerpt.
+the first eight surface observations (`--limit N`, or `--all`), and a coverage
+summary. The JSON report retains every finding and its full evidence;
+`webrev report --format text` shows the complete human-readable version. Secrets
+remain complete. Lead rows show severity (priority), status, confidence, and a
+short evidence excerpt.
 Technologies are signature matches; secret validity is not tested. XSS reflections, SQL errors, sensitive-file and
 IDOR-lite observations require manual verification, independently of their
 severity. Template arithmetic can confirm expression evaluation, while OS RCE is not
-tested. A count of zero is not proof of coverage.
+tested. A count of zero is not proof of coverage. Use `--fail-on <SEVERITY>` to
+turn findings at or above that level into exit status 3.
 
 Use `--report -` on any CLI scan to send only the machine report to stdout (JSON
 for standalone commands; `--format` selects it for `scan`). No file is created:
@@ -344,6 +361,7 @@ webrev static --seed https://app.example.com/ --report - > findings.json
 webrev scan --seed https://app.example.com/ --format text --report findings.txt
 ```
 
-`NO_COLOR` disables CLI result styling; redirected output has no ANSI escapes.
-Machine exports retain the original bytes; terminal views escape control
-characters so fetched content cannot forge rows or terminal commands.
+`--color never` or `NO_COLOR` disables CLI result styling; redirected output has
+no ANSI escapes unless `--color always` is set. Machine exports retain the
+original bytes; terminal views escape control characters so fetched content
+cannot forge rows or terminal commands.
