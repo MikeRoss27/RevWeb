@@ -249,7 +249,7 @@ fn render_doc(report: &SessionReport, opts: ShowOpts) -> Doc {
         }
     }
     out.blank();
-    out.plain("Signals: RCE: not tested (no detector). Counts are findings, not test coverage.");
+    out.plain("Signals: RCE: timing probe only (opt-in, never confirmed). Counts are findings, not test coverage.");
     out
 }
 

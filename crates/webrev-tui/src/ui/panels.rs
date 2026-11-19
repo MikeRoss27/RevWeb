@@ -181,7 +181,7 @@ fn status_panel(app: &App) -> Paragraph<'static> {
             app.category_count("SQLi"),
             app.category_count("SSTI")
         )),
-        Line::from("RCE:       not tested (no detector)"),
+        Line::from("RCE:       timing signal only (opt-in)"),
         Line::from("Active:    press a to probe; IDOR needs authentication"),
         Line::from("Signals require manual verification; counts are not coverage."),
         Line::from(format!("log lines: {}", app.logs.len())),

@@ -242,7 +242,8 @@ Endpoints and Findings lead each row with a colored severity tag
 (`CRIT`/`HIGH`/`MED`/`LOW`/`INFO`) and, for endpoints, an `int`/`ext` scope tag;
 `o` reorders by severity. The focused Secrets, Vulns and Tech tabs share the same records and support
 filtering, severity sorting and inspection. The Status tab shows scope counts,
-IDOR/XSS/SQLi/SSTI counts and RCE as not tested. The latest active coverage appears
+IDOR/XSS/SQLi/SSTI counts and RCE as a timing-only signal (opt-in, never
+confirmed). The latest active coverage appears
 in Status. Details include structured probe observations, proof limits, severity,
 confidence, full evidence and source; use arrows to scroll long details. Scans
 run one at a time and the UI returns to ready when each task finishes.
@@ -347,8 +348,9 @@ remain complete. Lead rows show severity (priority), status, confidence, and a
 short evidence excerpt.
 Technologies are signature matches; secret validity is not tested. XSS reflections, SQL errors, sensitive-file and
 IDOR-lite observations require manual verification, independently of their
-severity. Template arithmetic can confirm expression evaluation, while OS RCE is not
-tested. A count of zero is not proof of coverage. Use `--fail-on <SEVERITY>` to
+severity. Template arithmetic can confirm expression evaluation; OS RCE is never
+confirmed, and the opt-in timing probe can only produce a correlated timing
+signal. A count of zero is not proof of coverage. Use `--fail-on <SEVERITY>` to
 turn findings at or above that level into exit status 3.
 
 Use `--report -` on any CLI scan to send only the machine report to stdout (JSON

@@ -78,7 +78,7 @@ fn technology_name_and_vulnerability_evidence_are_visible_in_their_tabs() {
     assert!(screen.contains("severity"));
     app.show_detail = false;
     app.select_tab(Tab::Status);
-    assert!(render_text(&mut app).contains("RCE:       not tested"));
+    assert!(render_text(&mut app).contains("RCE:       timing signal only"));
 }
 
 #[test]
