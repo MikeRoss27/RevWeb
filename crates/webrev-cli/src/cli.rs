@@ -321,12 +321,6 @@ pub struct ScanArgs {
     /// List every attack-surface row in the scan summary.
     #[arg(long, help_heading = "Output")]
     pub all: bool,
-    /// Full per-finding detail (URL, check, evidence excerpt, reason) in the
-    /// scan summary, one block per finding. Without it, each lead is one
-    /// compact line and near-identical secrets are grouped; the exported
-    /// report always keeps every field either way.
-    #[arg(long, help_heading = "Output")]
-    pub verbose: bool,
     /// Exit with status 3 when a vulnerability or secret at or above this
     /// severity was found (for CI gates). Without it findings never change the
     /// exit status.
