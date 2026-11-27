@@ -108,7 +108,7 @@ impl Masker {
             rest = &rest[at + 3 + end..];
         }
         out.push_str(rest);
-        self.sanitizer.scrub(&self.relative_urls(&out))
+        self.sanitizer.scrub(&Self::relative_urls(&out))
     }
 
     /// Mask relative URLs (`/api/users/1?token=abc`, also after a method as in
@@ -116,7 +116,7 @@ impl Masker {
     /// the `url` fields, so one secret is never masked in one field and left
     /// readable in another. Unlike the sanitizer's key/value patterns this also
     /// hides values shorter than four characters.
-    fn relative_urls(&self, text: &str) -> String {
+    fn relative_urls(text: &str) -> String {
         fn flush(token: &mut String, out: &mut String) {
             let lead = token
                 .find(|c: char| !matches!(c, '"' | '\'' | '(' | '[' | '{' | '`' | '<'))
