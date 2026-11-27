@@ -33,7 +33,7 @@ async fn main() -> anyhow::Result<()> {
     // stdout stays pipe-clean, and let the TUI show its own branded header.
     if matches!(
         parsed.command,
-        Command::Scan(_) | Command::Static(_) | Command::Dynamic(_)
+        Command::Scan(_) | Command::Static(_) | Command::Dynamic(_) | Command::WsReplay(_)
     ) {
         banner::print(parsed.no_banner);
     }
