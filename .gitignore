@@ -40,3 +40,6 @@ __pycache__/
 # though it matches the report patterns above.
 !benchmarks/**/*-report.json
 !benchmarks/**/webrev-report.json
+
+# Claude Code local state
+.claude/
