@@ -12,14 +12,90 @@ mod scan;
 mod static_scan;
 mod ws_replay;
 
-use crate::cli::{Cli, Command, ScanArgs};
+use crate::cli::{Cli, Command, ScanArgs, SeveritySel};
 use serde_json::Value;
 use webrev_core::{AuthConfig, EgressPolicy, Mission, MissionProfile, OpsecConfig, Scope};
 use webrev_tui::TuiOptions;
 
+/// Default attack-surface rows in the scan summary (`--limit`).
+pub const SUMMARY_LIMIT: usize = 8;
+
+/// `--fail-on` tripped: the scan itself succeeded but found something at or
+/// above the requested severity. `main` maps this to exit status 3.
+#[derive(Debug)]
+pub struct FindingsFailure {
+    pub count: usize,
+    pub threshold: webrev_core::Severity,
+}
+
+impl std::fmt::Display for FindingsFailure {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{} vulnerability or secret finding(s) at or above {} (--fail-on)",
+            self.count,
+            self.threshold.tag().trim()
+        )
+    }
+}
+
+impl std::error::Error for FindingsFailure {}
+
+/// A mistake in how the command was invoked (exit status 2), as opposed to a
+/// runtime failure (exit status 1). Carries an optional fix-it hint.
+#[derive(Debug)]
+pub struct UsageError {
+    pub message: String,
+    pub hint: Option<&'static str>,
+}
+
+impl std::fmt::Display for UsageError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&self.message)
+    }
+}
+
+impl std::error::Error for UsageError {}
+
+fn usage(message: impl Into<String>, hint: Option<&'static str>) -> anyhow::Error {
+    UsageError {
+        message: message.into(),
+        hint,
+    }
+    .into()
+}
+
+fn severity_of(sel: SeveritySel) -> webrev_core::Severity {
+    use webrev_core::Severity;
+    match sel {
+        SeveritySel::Info => Severity::Info,
+        SeveritySel::Low => Severity::Low,
+        SeveritySel::Medium => Severity::Medium,
+        SeveritySel::High => Severity::High,
+        SeveritySel::Critical => Severity::Critical,
+    }
+}
+
+/// Apply `--fail-on` to a finished report.
+fn check_fail_on(
+    report: &webrev_report::SessionReport,
+    fail_on: Option<SeveritySel>,
+) -> anyhow::Result<()> {
+    let Some(sel) = fail_on else {
+        return Ok(());
+    };
+    let threshold = severity_of(sel);
+    let count = output::count_at_least(report, threshold);
+    if count > 0 {
+        return Err(FindingsFailure { count, threshold }.into());
+    }
+    Ok(())
+}
+
 /// One line on stderr when a raw report lands on disk: it holds whatever the
 /// scan captured, credentials included, so it is confidential until masked.
 fn warn_if_raw(redact: bool) {
+    // A security warning: never muted by --quiet.
     if !redact {
         eprintln!(
             "warning: the report is raw and holds captured credentials; keep it private or re-export with --redact before sharing"
@@ -31,21 +107,21 @@ fn warn_if_raw(redact: bool) {
 async fn write_session_report(
     mission: &Mission,
     storage: &dyn webrev_storage::Storage,
-    path: &std::path::Path,
-    redact: bool,
+    args: &ScanArgs,
 ) -> anyhow::Result<()> {
+    let (path, redact) = (args.report.as_path(), args.redact);
     let findings = storage.findings_by_session(mission.id).await?;
     let endpoints = storage.endpoints_by_session(mission.id).await?;
     let report = webrev_report::SessionReport::build(mission.clone(), findings, endpoints);
     if path == std::path::Path::new("-") {
         report::write_stdout(&report.export_json(redact)?)?;
     } else {
-        output::show(&report)?;
+        output::show(&report, output::ShowOpts::from_args(args))?;
         std::fs::write(path, report.export_json(redact)?)?;
-        eprintln!("report written to {}", path.display());
+        crate::progress::note!("report written to {}", path.display());
         warn_if_raw(redact);
     }
-    Ok(())
+    check_fail_on(&report, args.fail_on)
 }
 
 /// Resolve the seed list: explicit `--seed` values, plus stdin (one URL per
@@ -72,9 +148,10 @@ fn resolve_seeds(args: &ScanArgs) -> anyhow::Result<Vec<String>> {
     seeds.retain(|s| seen.insert(s.clone()));
 
     if seeds.is_empty() {
-        anyhow::bail!(
-            "no seeds: pass --seed <URL> (repeatable) or pipe URLs on stdin (one per line)"
-        );
+        return Err(usage(
+            "no seeds: no target URL was given",
+            Some("pass --seed <URL> (repeatable), or pipe URLs in: echo https://app.example.com/ | webrev scan"),
+        ));
     }
     Ok(seeds)
 }
@@ -91,18 +168,8 @@ fn build_mission(args: &ScanArgs) -> anyhow::Result<(Mission, OpsecConfig)> {
     let scope = merge_scope(file_scope, &args.scope, &args.exclude, &seeds)?;
     let mission = Mission::new(args.name.clone(), scope, seeds);
     let auth = AuthConfig {
-        headers: args
-            .headers
-            .iter()
-            .filter_map(|h| h.split_once(':'))
-            .map(|(k, v)| (k.trim().to_owned(), v.trim().to_owned()))
-            .collect(),
-        cookies: args
-            .cookies
-            .iter()
-            .filter_map(|c| c.split_once('='))
-            .map(|(k, v)| (k.trim().to_owned(), v.trim().to_owned()))
-            .collect(),
+        headers: parse_pairs(&args.headers, ':', "--header", "\"Name: Value\"")?,
+        cookies: parse_pairs(&args.cookies, '=', "--cookie", "name=value")?,
         bearer: args.bearer.clone(),
     };
     let opsec = OpsecConfig {
@@ -114,15 +181,49 @@ fn build_mission(args: &ScanArgs) -> anyhow::Result<(Mission, OpsecConfig)> {
         delay_max_ms: args.delay_max_ms,
         max_pages: args.max_pages,
         max_depth: args.max_depth,
+        max_body_bytes: args.max_body_bytes,
         max_concurrency: args.max_concurrency.max(1),
         auth,
         active: webrev_core::ActiveLimits {
             max_requests: args.max_active_requests,
+            allow_timing_probes: args.allow_timing_probes,
             ..webrev_core::ActiveLimits::default()
         },
         ..OpsecConfig::default()
     };
     Ok((mission, opsec))
+}
+
+/// Split `--header`/`--cookie` values on `sep`. A value without the separator
+/// is an error rather than dropped, and its content is not echoed because it
+/// may be a credential.
+fn parse_pairs(
+    raw: &[String],
+    sep: char,
+    flag: &str,
+    shape: &str,
+) -> anyhow::Result<Vec<(String, String)>> {
+    raw.iter()
+        .enumerate()
+        .map(|(i, item)| match item.split_once(sep) {
+            Some((k, v)) if !k.trim().is_empty() => Ok((k.trim().to_owned(), v.trim().to_owned())),
+            _ => Err(usage(
+                format!(
+                    "malformed {flag} value #{} (expected {shape}); it would be ignored and the scan would run without it",
+                    i + 1
+                ),
+                Some(example_hint(sep)),
+            )),
+        })
+        .collect()
+}
+
+fn example_hint(sep: char) -> &'static str {
+    if sep == ':' {
+        "write it as \"Name: value\", for example --header \"X-Api-Key: value\""
+    } else {
+        "write it as name=value, for example --cookie session=value"
+    }
 }
 
 fn merge_scope(
@@ -218,7 +319,10 @@ fn validate_scope_host(host: &str) -> anyhow::Result<()> {
             .any(|c| matches!(c, '/' | '?' | '#' | '@' | '*'))
         || host.contains("://")
     {
-        anyhow::bail!("invalid scope host {host:?}; use a hostname or IP literal");
+        return Err(usage(
+            format!("invalid scope host {host:?}"),
+            Some("use a bare hostname or IP literal, e.g. --scope example.com"),
+        ));
     }
     let domain = host.strip_suffix('.').unwrap_or(host);
     let valid = domain.len() <= 253
@@ -232,7 +336,10 @@ fn validate_scope_host(host: &str) -> anyhow::Result<()> {
                     .all(|byte| byte.is_ascii_alphanumeric() || byte == b'-')
         });
     if !valid {
-        anyhow::bail!("invalid scope host {host:?}; use a hostname or IP literal");
+        return Err(usage(
+            format!("invalid scope host {host:?}"),
+            Some("use a bare hostname or IP literal, e.g. --scope example.com"),
+        ));
     }
     Ok(())
 }
@@ -247,10 +354,19 @@ pub async fn dispatch(cli: Cli) -> anyhow::Result<()> {
         Command::Report(args) => report::run(args),
         Command::Compare(args) => compare::run(args),
         Command::Bola(args) => bola::run(args).await,
-        Command::WsReplay(args) => ws_replay::run(args).await,
+        Command::WsReplay(args) => Box::pin(ws_replay::run(args)).await,
+        Command::Completions { shell } => {
+            use clap::CommandFactory;
+            clap_complete::generate(shell, &mut Cli::command(), "webrev", &mut std::io::stdout());
+            Ok(())
+        }
         Command::Tui(args) => {
-            anyhow::ensure!(!args.observation_only,
-                "--observation-only is supported by dynamic and scan --dynamic; TUI browser exploration does not support this policy");
+            if args.observation_only {
+                return Err(usage(
+                    "--observation-only is supported by dynamic and scan --dynamic; TUI browser exploration does not support this policy",
+                    Some("use `webrev dynamic --observation-only`"),
+                ));
+            }
             let (mission, opsec) = build_mission(&args)?;
             webrev_tui::run(TuiOptions {
                 profile: MissionProfile::new(mission, opsec),
@@ -258,6 +374,31 @@ pub async fn dispatch(cli: Cli) -> anyhow::Result<()> {
                 redact_report: args.redact,
             })
             .await
+        }
+    }
+}
+
+#[cfg(test)]
+mod pair_tests {
+    use super::*;
+
+    #[test]
+    fn well_formed_pairs_are_trimmed() {
+        let got = parse_pairs(&["X-A :  b:c ".into()], ':', "--header", "x").unwrap();
+        assert_eq!(got, vec![("X-A".to_owned(), "b:c".to_owned())]);
+    }
+
+    #[test]
+    fn malformed_pairs_are_errors_that_do_not_echo_the_value() {
+        for (raw, sep) in [
+            ("MalformedNoColon", ':'),
+            ("nocookiesecret", '='),
+            (": v", ':'),
+        ] {
+            let err = parse_pairs(&[raw.into()], sep, "--x", "shape").unwrap_err();
+            let usage = err.downcast_ref::<UsageError>().expect("usage error");
+            assert!(!usage.message.contains(raw), "{}", usage.message);
+            assert!(usage.hint.is_some());
         }
     }
 }

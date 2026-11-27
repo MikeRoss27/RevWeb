@@ -66,6 +66,12 @@ default, and `--redact` masks credentials when a report has to be shared (see
   `[delay-min-ms, delay-max-ms]` window, not a fixed rate.
 - **Concurrency & budgets** — `--max-concurrency`, `--max-pages`, `--max-depth`
   cap load and breadth.
+- **Crawl response body cap** — `--max-body-bytes` (default 20 MiB) truncates
+  a per-page response read instead of buffering it to completion; a
+  pathologically large or slow-drip response cannot grow the fetch stage's
+  memory without bound. Separate from, and much larger than, active
+  scanning's own 512 KiB decoded-body cap below, since a crawled page can
+  legitimately be a multi-megabyte bundle.
 - **Egress policy** — route all traffic through an intercepting proxy with
   `--proxy`; `EgressPolicy::allow_direct = false` (fail-closed egress) refuses
   direct connections when no proxy is set.
@@ -102,19 +108,29 @@ the same web security toolkit.
 
 Probe behavior:
 
-- **GET-shaped probe requests, with one documented exception.** Endpoints
+- **GET-shaped probe requests, with two documented exceptions.** Endpoints
   known to be `POST`/`PUT`/`DELETE`/`PATCH` are skipped by the probe client.
   Browser interactions execute application behavior independently of this
-  restriction. The one exception is GraphQL introspection
-  (`crates/webrev-pipeline/src/active/graphql.rs`): introspection is defined
-  by the GraphQL specification as a read of schema metadata, so it cannot
-  mutate application state regardless of HTTP verb. When a GraphQL endpoint
-  does not answer the standard `IntrospectionQuery` over GET, the probe
-  client sends it once over POST via `ProbeClient::post_literal`, whose body
-  parameter is typed `&'static str` so only that one compile-time-fixed,
-  literal query can ever be sent — never a value built from a response, a
-  URL, or any other runtime input. The same scope check, request budget,
-  retry-once policy, and redirect refusal apply as to every GET probe.
+  restriction. Both exceptions send only a compile-time-fixed, literal
+  JSON body — via `ProbeClient::post_literal`/`post_literal_with_accept`,
+  whose body parameter is typed `&'static str` so it can never carry a
+  value built from a response, a URL, or any other runtime input — and the
+  same scope check, request budget, retry-once policy, and redirect
+  refusal apply as to every GET probe:
+  - **GraphQL introspection** (`crates/webrev-pipeline/src/active/graphql.rs`):
+    introspection is defined by the GraphQL specification as a read of
+    schema metadata, so it cannot mutate application state regardless of
+    HTTP verb. Sent over POST only when the standard `IntrospectionQuery`
+    does not answer over GET.
+  - **MCP tool-exposure check** (`crates/webrev-pipeline/src/active/mcp.rs`):
+    an unauthenticated `initialize` + `tools/list` JSON-RPC handshake
+    against endpoints whose path looks like an MCP server. Per the Model
+    Context Protocol specification, both calls are capability negotiation
+    and read-only enumeration — never `tools/call` (actually invoking a
+    tool), which this check never attempts. Listing a tool does not
+    establish that calling it would also succeed unauthenticated; full
+    OAuth authorization-flow testing is out of scope for this check (see
+    [proof boundaries](active-research.md)).
 - **Destructive-looking URLs are refused.** Endpoints, BOLA candidates and
   crawled `<a href>` links whose path or query contains a whole-token
   state-changing word (logout, delete, remove, unsubscribe, pay, checkout,
@@ -133,6 +149,22 @@ Probe behavior:
 - **Expression probes** perform two arithmetic evaluations and a payload-free
   control. They do not execute OS commands, write files or trigger callbacks.
   The resulting verdict establishes evaluation only.
+- **Timing-injection probes are the one documented exception, and are
+  disabled unless explicitly requested.** `--allow-timing-probes`
+  (`OpsecConfig.active.allow_timing_probes`, off by default) lets
+  `active::timing` inject a `sleep`-shaped command separator and measure
+  whether the response is delayed by roughly the injected amount — which, on
+  a vulnerable target, means a real shell command actually ran. No file
+  write, no callback: the only side effect, if the target is vulnerable, is
+  the target process sleeping for a few seconds. A single slow response
+  proves nothing (a slow endpoint, jitter, rate limiting can look
+  identical), so each candidate is tested at two distinct injected delays,
+  each measured net of a length-matched, non-executing control carrying the
+  same number; both magnitudes must scale with what was injected before any
+  finding is raised. Even confirmed on both magnitudes, this stays at
+  `EvidenceVerdict::TimingCorrelated`, never `Confirmed`: timing is a side
+  channel, not a deterministic proof, unlike expression evaluation's two
+  independent arithmetic results.
 - **IDOR-lite only runs on an authenticated mission** — it compares "with the
   mission's auth headers" against "with none of those headers," which is only meaningful once
   auth material is actually configured.

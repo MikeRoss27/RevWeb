@@ -18,6 +18,7 @@
 
 pub mod app;
 pub mod brand;
+pub mod color;
 pub mod events;
 pub mod ui;
 

@@ -95,16 +95,47 @@ pub(super) fn is_wasm_response(url: &str, content_type: &str) -> bool {
             .contains("application/wasm")
 }
 
+/// Read a response body in chunks, stopping (without erroring) once
+/// `max_body_bytes` is reached. Unlike `Response::bytes()`/`Response::text()`,
+/// this never buffers an unbounded amount of attacker- or
+/// misconfiguration-controlled data: a pathologically large or slow-drip
+/// response is truncated to the cap rather than read to completion, the same
+/// bounded-read discipline `active::transport::read_bounded_body` already
+/// applies to active-probe responses (there, exceeding the cap drops the
+/// response entirely; here, the leading bytes are kept, since a crawled page
+/// is read for extraction rather than as an exact proof).
+pub(super) async fn read_bounded(
+    mut resp: reqwest::Response,
+    max_body_bytes: usize,
+) -> std::result::Result<(Vec<u8>, bool), reqwest::Error> {
+    let mut bytes = Vec::new();
+    while let Some(chunk) = resp.chunk().await? {
+        let remaining = max_body_bytes.saturating_sub(bytes.len());
+        if chunk.len() > remaining {
+            bytes.extend_from_slice(&chunk[..remaining]);
+            return Ok((bytes, true));
+        }
+        bytes.extend_from_slice(&chunk);
+    }
+    Ok((bytes, false))
+}
+
 /// Returns `(content_type, response_headers, body, bytes, rate_limited)`.
 /// `body` is always empty for a binary (wasm) response — the raw bytes live in
 /// `bytes` instead, so a binary body is never lossily decoded to UTF-8.
 /// `bytes` is `None` for ordinary text responses. `rate_limited` is set once
 /// this URL ever drew a 429/503, even if a later attempt eventually
 /// succeeded, so the caller can back off the whole crawl, not just retry this
-/// one request.
+/// one request. The body is bounded by `max_body_bytes`
+/// (`OpsecConfig::max_body_bytes`); a text body past the cap is decoded from
+/// only its first `max_body_bytes` bytes as UTF-8 with lossy replacement —
+/// identical to `Response::text()`'s own fallback decoding whenever the
+/// response declares no explicit non-UTF-8 charset, which is the common case
+/// for the HTML/JS this scanner extracts from.
 pub(super) async fn fetch_with_retry(
     client: &reqwest::Client,
     url: &str,
+    max_body_bytes: usize,
 ) -> Result<(String, Vec<(String, String)>, String, Option<Vec<u8>>, bool)> {
     let mut attempt = 0;
     let mut rate_limited = false;
@@ -135,15 +166,21 @@ pub(super) async fn fetch_with_retry(
                     })
                     .collect();
                 let is_wasm = is_wasm_response(url, &content_type);
-                let read_outcome = if is_wasm {
-                    resp.bytes()
-                        .await
-                        .map(|b| (String::new(), Some(b.to_vec())))
-                } else {
-                    resp.text().await.map(|body| (body, None))
-                };
+                let read_outcome = read_bounded(resp, max_body_bytes).await;
                 match read_outcome {
-                    Ok((body, bytes)) => {
+                    Ok((raw, truncated)) => {
+                        if truncated {
+                            tracing::debug!(
+                                url = %webrev_core::redact_url(url),
+                                max_body_bytes,
+                                "response body truncated at the crawl body cap"
+                            );
+                        }
+                        let (body, bytes) = if is_wasm {
+                            (String::new(), Some(raw))
+                        } else {
+                            (String::from_utf8_lossy(&raw).into_owned(), None)
+                        };
                         if (status.is_server_error() || is_rate_limited) && attempt < MAX_ATTEMPTS {
                             let wait = retry_after
                                 .unwrap_or_else(|| Duration::from_millis(200 * u64::from(attempt)));

@@ -1,8 +1,9 @@
 # Usage
 
-`webrev` has six subcommands: `scan`, `static`, `dynamic`, `active`, `tui`, and
-`report`. `scan` is the one-shot convenience wrapper; the others are the
-individual steps.
+`webrev` has ten subcommands: the scan pipeline (`scan`, `static`, `dynamic`,
+`active`, `tui`), report conversion (`report`), and the targeted tools
+(`compare`, `bola`, `ws-replay`, `completions`). `scan` is the one-shot
+convenience wrapper; the others are the individual steps.
 
 ```text
 webrev <COMMAND> [OPTIONS]
@@ -43,13 +44,18 @@ sent to the target.
 | `--delay-min-ms <N>` | `150` | Lower bound of the inter-request delay window. |
 | `--delay-max-ms <N>` | `600` | Upper bound of the inter-request delay window. |
 | `--max-pages <N>` | `50` | Hard budget on resources fetched per crawl. |
+| `--max-body-bytes <N>` | `20971520` (20 MiB) | Decoded crawl response body limit per page; a larger response is truncated rather than read in full. |
 | `--max-active-requests <N>` | `200` | Total active HTTP requests, including controls and unsuccessful attempts. |
+| `--allow-timing-probes` | off | Opt-in: lets the active timing-injection check execute a sleep-shaped command on the target when a parameter is vulnerable. The one documented exception to "active probes never execute OS commands" — see [`security.md`](security.md). Authorized targets only. |
 | `--max-depth <N>` | `2` | Link-following depth from the seeds (0 = seeds only). |
 | `--max-concurrency <N>` | `4` | Concurrent in-flight requests during the crawl. |
 | `--duration-secs <N>` | `8` | Dynamic dwell time per seed (dynamic/tui only). |
 | `--observation-only` | off | For `dynamic` and `scan --dynamic`: no driven scrolling/clicking; refuse methods other than GET/HEAD/OPTIONS. Page scripts still execute. Unsupported in TUI. |
 | `--report <PATH>` | `webrev-report.json` | Direct report output for CLI scans; export path for the TUI `r` key. |
 | `--redact` | off (`WEBREV_REPORT_REDACT=1`) | Mask credentials in the exported report. **By default the report is raw**: URLs, response excerpts, captured frames and finding text keep what was captured, because that is the proof of a finding. A raw report holds live credentials, so keep it private and add `--redact` before sharing it; writing one to a file prints a one-line warning. Detected secret plaintext is kept in both modes, and object identifiers (numbers, UUIDs, short hex ids) are never masked, so even a masked report must be treated as confidential. Logs, errors and the end-of-scan summary are masked whatever the mode. See [`security.md`](security.md). |
+| `--limit <N>` | `8` | Attack-surface rows listed in the CLI scan summary (the TUI has its own view). Vulnerabilities and secrets are always listed in full; the exported report keeps every row either way. Conflicts with `--all`. |
+| `--all` | off | List every attack-surface row in the CLI scan summary (same as a `--limit` at or above the number of rows). |
+| `--fail-on <SEVERITY>` | — | CLI scans only (the TUI ignores it): exit with status 3 when a vulnerability or secret at or above `low`, `medium`, `high`, or `critical` is found, for CI gates. Without it, findings never change the exit status. |
 
 Scope matching is **host-suffix** based: `--scope example.com` matches
 `example.com` and `api.example.com`. The scope is **fail-closed** — an empty
@@ -80,6 +86,17 @@ back to the seed-derived scope.
 All scans hold their session in memory. No database is created. Detected secrets
 are retained and shown in plaintext by default, including JSON, JSONL, CSV and
 the TUI. No reveal flag is required. The fingerprint remains a deduplication key.
+
+## Global options
+
+These apply to every subcommand, before or after it.
+
+| Flag | Default | Description |
+| --- | --- | --- |
+| `--no-banner` | off | Suppress the startup banner. |
+| `--color <WHEN>` | `auto` | `auto` honours `NO_COLOR`, `CLICOLOR(_FORCE)` and TTY detection; `always` forces ANSI styling even when piped; `never` disables it. |
+| `--quiet`, `-q` | off | Suppress progress and status lines on stderr; data on stdout is unaffected. |
+| `--progress <MODE>` | `auto` | `auto` draws one in-place line on a terminal and plain lines elsewhere; `plain` emits append-only timestamped lines; `json` emits one JSON object per line; `none` disables progress. |
 
 ## `report` options
 
@@ -225,7 +242,8 @@ Endpoints and Findings lead each row with a colored severity tag
 (`CRIT`/`HIGH`/`MED`/`LOW`/`INFO`) and, for endpoints, an `int`/`ext` scope tag;
 `o` reorders by severity. The focused Secrets, Vulns and Tech tabs share the same records and support
 filtering, severity sorting and inspection. The Status tab shows scope counts,
-IDOR/XSS/SQLi/SSTI counts and RCE as not tested. The latest active coverage appears
+IDOR/XSS/SQLi/SSTI counts and RCE as a timing-only signal (opt-in, never
+confirmed). The latest active coverage appears
 in Status. Details include structured probe observations, proof limits, severity,
 confidence, full evidence and source; use arrows to scroll long details. Scans
 run one at a time and the UI returns to ready when each task finishes.
@@ -308,6 +326,50 @@ The body is raw by default, because it is what you attach to a bug report.
 readable. A raw `bola` result contains the other account's data: treat it as
 confidential.
 
+### `ws-replay`
+
+Replays, or mutates and replays, WebSocket frames captured by a dynamic pass.
+It opens live connections to the captured socket URL, so use it only against
+targets you are authorized to test. Frames are only replayed when their socket
+URL is in the mission scope; the number of live connections is limited by
+`--max-requests`, and the command refuses to run through a proxy.
+
+Input is either an existing JSON report holding `ws_frame` findings
+(`--report`) or one or more `--seed` URLs, which are first driven in Chromium
+for `--duration-secs` to capture the frames. Give exactly one of the two.
+`--auth` is required: a JSON file with the account's authentication, in the
+same shape as for `bola` (`{"cookies":[["sid","ACCOUNT_SESSION"]]}` or
+`{"bearer":"TOKEN"}`).
+
+```bash
+# Reproducibility check: resend the captured frames as account A
+webrev ws-replay --report webrev-dynamic.json --auth account-a.json
+
+# Swap an object id for one owned by account B, send the result under both
+# accounts, and compare (IDOR-style)
+webrev ws-replay --report webrev-dynamic.json --auth account-a.json \
+  --b-auth account-b.json --mutate-find 101 --mutate-replace 202
+```
+
+| Flag | Meaning |
+| --- | --- |
+| `--report <PATH>` | JSON report with captured `ws_frame` findings (alternative to `--seed`). |
+| `--seed <URL>` | Capture this URL's WebSocket traffic with a dynamic pass first (repeatable). |
+| `--scope <HOST>` | In-scope host suffix for the capture (repeatable; defaults to the seed hosts). Only with `--seed`. |
+| `--auth <PATH>` | Required. JSON authentication applied to every replayed connection. |
+| `--b-auth <PATH>` | Second account. Every (possibly mutated) frame is also sent under it; a byte-identical, non-empty response under both accounts is reported as a cross-account signal. Must differ from `--auth`. |
+| `--mutate-find <TEXT>` | Replace the first occurrence of this literal substring in each frame's payload before resending. Requires `--mutate-replace`. Without `--b-auth` the mutated frame is only replayed under `--auth`, with nothing to compare it against. |
+| `--mutate-replace <TEXT>` | Replacement for `--mutate-find`. |
+| `--output <PATH>` | Result report path, or `-` for stdout. Default `webrev-ws-replay.json`. |
+| `--max-requests <N>` | Shared live-connection budget. Default 10; also capped internally. |
+| `--duration-secs <N>` | Browser dwell time for the capture pass. Default 8. Only with `--seed`. |
+| `--redact` | Mask credentials in the result report. Raw by default, so frame contents and evidence stay usable; also `WEBREV_REPORT_REDACT`. |
+
+Without a `--mutate-*` flag the frames are replayed verbatim. The output is a
+JSON report with the replayed frames, any cross-account signals and a coverage
+record. A raw result can contain the other account's data: treat it as
+confidential, and check ownership before treating a signal as a vulnerability.
+
 ## Environment variables
 
 `WEBREV_NAME`, `WEBREV_PROXY`, and `WEBREV_BEARER` provide defaults
@@ -323,14 +385,17 @@ for the matching flags, so they can be set once per engagement.
 
 All scan commands print a prioritized triage view to stdout and send progress to
 stderr. Vulnerability and secret leads appear first, followed by technologies,
-the top eight surface observations, and a coverage summary. The JSON report
-retains every finding and its full evidence; `webrev report --format text` shows
-the complete human-readable version. Secrets remain complete. Lead rows show
-severity (priority), status, confidence, and a short evidence excerpt.
+the first eight surface observations (`--limit N`, or `--all`), and a coverage
+summary. The JSON report retains every finding and its full evidence;
+`webrev report --format text` shows the complete human-readable version. Secrets
+remain complete. Lead rows show severity (priority), status, confidence, and a
+short evidence excerpt.
 Technologies are signature matches; secret validity is not tested. XSS reflections, SQL errors, sensitive-file and
 IDOR-lite observations require manual verification, independently of their
-severity. Template arithmetic can confirm expression evaluation, while OS RCE is not
-tested. A count of zero is not proof of coverage.
+severity. Template arithmetic can confirm expression evaluation; OS RCE is never
+confirmed, and the opt-in timing probe can only produce a correlated timing
+signal. A count of zero is not proof of coverage. Use `--fail-on <SEVERITY>` to
+turn findings at or above that level into exit status 3.
 
 Use `--report -` on any CLI scan to send only the machine report to stdout (JSON
 for standalone commands; `--format` selects it for `scan`). No file is created:
@@ -342,6 +407,7 @@ webrev static --seed https://app.example.com/ --report - > findings.json
 webrev scan --seed https://app.example.com/ --format text --report findings.txt
 ```
 
-`NO_COLOR` disables CLI result styling; redirected output has no ANSI escapes.
-Machine exports retain the original bytes; terminal views escape control
-characters so fetched content cannot forge rows or terminal commands.
+`--color never` or `NO_COLOR` disables CLI result styling; redirected output has
+no ANSI escapes unless `--color always` is set. Machine exports retain the
+original bytes; terminal views escape control characters so fetched content
+cannot forge rows or terminal commands.

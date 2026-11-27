@@ -135,8 +135,7 @@ async fn tui_active_key_surfaces_real_probe_results_after_static_recon() {
         &mut app,
         &controller,
         &tx,
-    )
-    .await;
+    );
     assert!(app.scanning);
     drain_scan(&mut app, &mut rx).await;
     assert!(!app.scanning);
@@ -145,7 +144,7 @@ async fn tui_active_key_surfaces_real_probe_results_after_static_recon() {
         crossterm::event::KeyCode::Char('a'),
         crossterm::event::KeyModifiers::NONE,
     ));
-    handle_action(active, &mut app, &controller, &tx).await;
+    handle_action(active, &mut app, &controller, &tx);
     drain_scan(&mut app, &mut rx).await;
     assert!(!app.scanning);
     for category in ["IDOR", "XSS", "SQLi"] {

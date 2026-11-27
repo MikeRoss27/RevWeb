@@ -8,7 +8,7 @@ mod theme;
 
 use crate::app::App;
 use chrome::{render_footer, render_header};
-use overlays::{render_detail, render_help};
+use overlays::{render_detail, render_help, render_quit_confirm, render_toast};
 use panels::render_body;
 use ratatui::{
     layout::{Constraint, Layout},
@@ -39,5 +39,12 @@ pub fn render(frame: &mut Frame, app: &mut App) {
     // The help overlay floats above everything; it takes precedence visually.
     if app.show_help {
         render_help(frame, body);
+    }
+
+    if let Some(toast) = &app.toast {
+        render_toast(frame, body, &toast.text);
+    }
+    if app.confirm_quit {
+        render_quit_confirm(frame, body, app);
     }
 }

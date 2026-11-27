@@ -18,7 +18,7 @@ impl SessionReport {
         let by_category = |category| findings.iter().filter(|f| f.category() == category).count();
         let _ = writeln!(
             out,
-            "Signals: IDOR {} | XSS {} | SQLi {} | SSTI {} | RCE: not tested (no detector)",
+            "Signals: IDOR {} | XSS {} | SQLi {} | SSTI {} | RCE: timing probe only (opt-in, never confirmed)",
             by_category("IDOR"),
             by_category("XSS"),
             by_category("SQLi"),
@@ -174,7 +174,7 @@ mod tests {
             .unwrap();
         for expected in [
             "IDOR 1 | XSS 1 | SQLi 0",
-            "RCE: not tested",
+            "RCE: timing probe only",
             "credential-raw",
             "React (frontend)",
             "reflected parameter: possible XSS",

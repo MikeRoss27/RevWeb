@@ -8,6 +8,14 @@ pub enum EvidenceVerdict {
     Signal,
     Observed,
     EvaluationConfirmed,
+    /// Elapsed response time correlates with an injected delay at two
+    /// distinct magnitudes, net of a length-matched, non-executing control.
+    /// Only reachable via an opt-in probe (`--allow-timing-probes`) that
+    /// actually executes a sleep on the target if vulnerable. A strong
+    /// command/code-execution signal, but timing remains a side channel
+    /// (network jitter, slow queries, rate limiting can mimic it), so it is
+    /// never promoted to `FindingStatus::Confirmed`.
+    TimingCorrelated,
 }
 
 impl EvidenceVerdict {
@@ -17,6 +25,9 @@ impl EvidenceVerdict {
             Self::Signal => "signal / verify manually",
             Self::Observed => "observed",
             Self::EvaluationConfirmed => "expression evaluation confirmed / RCE not established",
+            Self::TimingCorrelated => {
+                "response delay correlates with injected sleep / execution likely, not certain (timing side channel)"
+            }
         }
     }
 }

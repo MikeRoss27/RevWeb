@@ -1,5 +1,6 @@
 //! Application state, separated from navigation and incoming-event updates.
 mod navigation;
+mod session;
 mod tab;
 #[cfg(test)]
 mod tests;
@@ -7,6 +8,7 @@ mod updates;
 
 pub use crate::events::UiEvent;
 use ratatui::widgets::ListState;
+pub use session::{ExportOutcome, ScanProgress, Toast};
 pub use tab::Tab;
 use webrev_core::{Finding, Scope};
 /// All mutable UI state.
@@ -47,6 +49,29 @@ pub struct App {
     scope: Scope,
     /// When true, the selection sticks to the newest item as entries arrive.
     follow: bool,
+    /// Animation frame counter, advanced by [`App::tick`] while a scan runs.
+    pub tick_count: u64,
+    /// Findings exist that have not been written to a report yet.
+    pub dirty: bool,
+    /// True while the quit-confirmation dialog is open.
+    pub confirm_quit: bool,
+    /// Quit as soon as the in-flight export succeeds (dialog `e`).
+    pub quit_after_export: bool,
+    /// The report file already exists; the next export must be confirmed.
+    pub overwrite_pending: bool,
+    /// This session already wrote the report, so re-exporting is expected.
+    pub report_written: bool,
+    /// Number of scans that have finished in this session.
+    pub scans_completed: u32,
+    /// Latest `Progress` heartbeat of the running scan.
+    pub progress: Option<ScanProgress>,
+    /// Whole seconds since the running scan started.
+    pub elapsed_secs: u64,
+    /// Short-lived notification shown over the body.
+    pub toast: Option<Toast>,
+    /// Use the `|/-\` spinner instead of braille (no color/Unicode guarantees).
+    pub spinner_ascii: bool,
+    pub(crate) scan_started: Option<std::time::Instant>,
 }
 
 impl App {
@@ -75,6 +100,18 @@ impl App {
             endpoint_data: Vec::new(),
             scope,
             follow: true,
+            tick_count: 0,
+            dirty: false,
+            confirm_quit: false,
+            quit_after_export: false,
+            overwrite_pending: false,
+            report_written: false,
+            scans_completed: 0,
+            progress: None,
+            elapsed_secs: 0,
+            toast: None,
+            spinner_ascii: crate::color::mode(true) == crate::color::ColorMode::None,
+            scan_started: None,
         }
     }
 }

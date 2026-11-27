@@ -234,7 +234,7 @@ fn active_scan_triage_uses_real_queries_and_ids_and_shows_the_stack() {
         "SQLi",
         "IDOR",
         "signal / verify manually",
-        "RCE: not tested",
+        "RCE: timing probe only",
         "confidence=",
     ] {
         assert!(text.contains(expected), "missing {expected}: {text}");

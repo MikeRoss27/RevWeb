@@ -183,7 +183,7 @@ impl App {
         self.after_filter_change();
     }
 
-    fn after_filter_change(&mut self) {
+    pub(crate) fn after_filter_change(&mut self) {
         self.follow = true;
         self.refresh_follow();
     }

@@ -225,14 +225,15 @@ impl<'a> ProbeClient<'a> {
     /// omits every mission header; URL query material is still part of the URL.
     pub async fn get(&self, url: &str, auth: bool, origin: Option<&str>) -> Option<ProbeResponse> {
         let headers = auth.then(|| self.opsec.auth.effective_headers());
-        self.with_retry(url, headers.as_deref(), origin, None).await
+        self.with_retry(url, headers.as_deref(), origin, None, None)
+            .await
     }
 
     /// Send a bounded GET under an explicitly supplied account. The same
     /// scope, DNS pinning, request budget and redirect policy apply.
     pub async fn get_as(&self, url: &str, account: &AuthConfig) -> Option<ProbeResponse> {
         let headers = account.effective_headers();
-        self.with_retry(url, Some(&headers), None, None).await
+        self.with_retry(url, Some(&headers), None, None, None).await
     }
 
     /// Send a single fixed, literal JSON POST body — the sole POST exception
@@ -249,7 +250,24 @@ impl<'a> ProbeClient<'a> {
         body: &'static str,
     ) -> Option<ProbeResponse> {
         let headers = auth.then(|| self.opsec.auth.effective_headers());
-        self.with_retry(url, headers.as_deref(), None, Some(body))
+        self.with_retry(url, headers.as_deref(), None, Some(body), None)
+            .await
+    }
+
+    /// Like [`Self::post_literal`], with a fixed `Accept` header added. The
+    /// MCP Streamable HTTP transport requires `Accept: application/json,
+    /// text/event-stream` and many servers answer 406 without it; `accept`
+    /// is `&'static str` for the same reason `body` is — only a compile-time
+    /// constant can ever be sent, never a runtime-built header value.
+    pub async fn post_literal_with_accept(
+        &self,
+        url: &str,
+        auth: bool,
+        body: &'static str,
+        accept: &'static str,
+    ) -> Option<ProbeResponse> {
+        let headers = auth.then(|| self.opsec.auth.effective_headers());
+        self.with_retry(url, headers.as_deref(), None, Some(body), Some(accept))
             .await
     }
 
@@ -259,14 +277,19 @@ impl<'a> ProbeClient<'a> {
         headers: Option<&[(String, String)]>,
         origin: Option<&str>,
         post_body: Option<&'static str>,
+        accept: Option<&'static str>,
     ) -> Option<ProbeResponse> {
         let failures = self.coverage().transport_errors;
-        let response = self.send_once(url, headers, origin, post_body).await;
+        let response = self
+            .send_once(url, headers, origin, post_body, accept)
+            .await;
         // One explicitly counted retry for a transport failure. This goes
         // through the same budget, delay and cancellation gates; hidden
         // HTTP-client retries remain disabled. Failures stay in coverage.
         if response.is_none() && self.coverage().transport_errors > failures && !self.stopped() {
-            return self.send_once(url, headers, origin, post_body).await;
+            return self
+                .send_once(url, headers, origin, post_body, accept)
+                .await;
         }
         response
     }
@@ -280,6 +303,7 @@ impl<'a> ProbeClient<'a> {
         headers: Option<&[(String, String)]>,
         origin: Option<&str>,
         post_body: Option<&'static str>,
+        accept: Option<&'static str>,
     ) -> Option<reqwest::RequestBuilder> {
         let mut request = match post_body {
             Some(body) => self
@@ -304,6 +328,9 @@ impl<'a> ProbeClient<'a> {
             origin_headers.insert(reqwest::header::ORIGIN, origin.parse().ok()?);
             request = request.headers(origin_headers);
         }
+        if let Some(accept) = accept {
+            request = request.header(reqwest::header::ACCEPT, accept);
+        }
         Some(request)
     }
 
@@ -313,6 +340,7 @@ impl<'a> ProbeClient<'a> {
         headers: Option<&[(String, String)]>,
         origin: Option<&str>,
         post_body: Option<&'static str>,
+        accept: Option<&'static str>,
     ) -> Option<ProbeResponse> {
         let parsed = reqwest::Url::parse(url).ok()?;
         if !matches!(parsed.scheme(), "http" | "https")
@@ -342,7 +370,7 @@ impl<'a> ProbeClient<'a> {
             () = sleep_with_jitter(self.opsec, 0) => {},
         }
         let method: &'static str = if post_body.is_some() { "POST" } else { "GET" };
-        let request = self.build_request(url, reservation, headers, origin, post_body)?;
+        let request = self.build_request(url, reservation, headers, origin, post_body, accept)?;
         self.update(|c| c.requests += 1);
         let response = tokio::select! {
             () = self.cancel.cancelled() => return None,

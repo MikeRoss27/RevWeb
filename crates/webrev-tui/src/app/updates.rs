@@ -1,12 +1,13 @@
 //! Apply scan events and build the visible finding/log records.
 
-use super::{App, UiEvent};
+use super::{session::ScanProgress, App, UiEvent};
+use webrev_core::model::triage::terminal_text;
 use webrev_core::{EndpointScope, Finding, FindingKind};
 
 const MAX_LOGS: usize = 1000;
 
 impl App {
-    fn push_log(&mut self, line: &str) {
+    pub(super) fn push_log(&mut self, line: &str) {
         self.logs
             .push(webrev_core::model::triage::terminal_text(line));
         if self.logs.len() > MAX_LOGS {
@@ -23,10 +24,17 @@ impl App {
                 self.status = s;
             }
             UiEvent::ScanFinished(s) => {
-                self.scanning = false;
+                self.end_scan();
                 self.push_log(&format!("[status] {s}"));
+                self.show_toast(&s);
                 self.status = s;
             }
+            UiEvent::Lagged(n) => {
+                let note = format!("{n} pipeline events dropped (UI fell behind)");
+                self.push_log(&format!("[status] {note}"));
+                self.show_toast(&note);
+            }
+            UiEvent::Exported(outcome) => self.apply_export(outcome),
         }
         self.refresh_follow();
     }
@@ -35,14 +43,22 @@ impl App {
         use webrev_pipeline::PipelineEvent as Pe;
         match event {
             Pe::StageStarted { stage } => {
-                self.scanning = true;
+                self.begin_scan();
+                self.progress = Some(ScanProgress {
+                    stage: terminal_text(&stage),
+                    processed: 0,
+                });
                 self.push_log(&format!("[{stage}] started"));
             }
             Pe::StageCompleted { stage, emitted } => {
                 self.push_log(&format!("[{stage}] completed ({emitted} emitted)"));
             }
             Pe::Progress { stage, processed } => {
-                self.push_log(&format!("[{stage}] progress: {processed}"));
+                // Heartbeats feed the footer progress line, not the log.
+                self.progress = Some(ScanProgress {
+                    stage: terminal_text(&stage),
+                    processed,
+                });
             }
             Pe::Error { stage, message } => {
                 self.push_log(&format!("[{stage}] ERROR: {message}"));
@@ -106,6 +122,7 @@ impl App {
             self.endpoint_data.push(finding.clone());
         }
         self.findings.push(line);
+        self.dirty = true;
         self.finding_data.push(finding.clone());
     }
 }

@@ -1,0 +1,28 @@
+---
+source: crates/webrev-tui/src/ui/tests.rs
+expression: "snapshot(&mut app, 80, 24)"
+---
+┌  <_  webrev  ·  snapshot ──────────────────────────────────────────── v0.1.0 ┐
+│ Endpoints · Findings · Vulns · Secrets · Tech · Logs · Status                │
+└──────────────────────────────────────────────────────────────────────────────┘
+┌ Endpoints (2) ───────────────────────────────────────────────────────────────┐
+│  MED  int GET /api/users [js-ast; evidence=static]                           │
+│▶ LOW  ext GET /lib.js [html; evidence=static]                                │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│        ┌ quit? ─────────────────────────────────────────────────────┐        │
+│        │3 findings are not exported (the session is memory-only).   │        │
+│        │                                                            │        │
+│        │[e]xport + quit  [y] quit  [n] cancel                       │        │
+│        └────────────────────────────────────────────────────────────┘        │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+┌ status ──────────────────────────────────────────────────────────────────────┐
+│ ○ ready idle                                                                 │
+│? keys · Tab views · / filter · Enter detail · s/d/a scans · r report · q quit│
+└──────────────────────────────────────────────────────────────────────────────┘

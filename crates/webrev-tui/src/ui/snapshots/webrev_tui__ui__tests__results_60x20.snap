@@ -1,0 +1,24 @@
+---
+source: crates/webrev-tui/src/ui/tests.rs
+expression: "snapshot(&mut app, w, h)"
+---
+┌  <_  webrev  ·  snapshot ──────────────────────── v0.1.0 ┐
+│ Endpoints · Findings · Vulns · Secrets · Tech · Logs · St│
+└──────────────────────────────────────────────────────────┘
+┌ Endpoints (2) ───────────────────────────────────────────┐
+│  MED  int GET /api/users [js-ast; evidence=static]       │
+│▶ LOW  ext GET /lib.js [html; evidence=static]            │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+│                                                          │
+└──────────────────────────────────────────────────────────┘
+┌ status ──────────────────────────────────────────────────┐
+│ ○ ready idle                                             │
+│? keys · Tab views · / filter · Enter detail · s/d/a scans│
+└──────────────────────────────────────────────────────────┘

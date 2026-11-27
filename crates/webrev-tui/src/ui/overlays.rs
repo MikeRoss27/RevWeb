@@ -161,3 +161,64 @@ fn centered_rect(area: Rect, width: u16, height: u16) -> Rect {
         .areas(h);
     v
 }
+
+/// Quit confirmation: says what would be lost and offers export, quit or cancel.
+pub(super) fn render_quit_confirm(frame: &mut Frame, area: Rect, app: &crate::app::App) {
+    let mut lines = Vec::new();
+    if app.scanning {
+        lines.push(Line::from("A scan is still running."));
+    }
+    if app.dirty {
+        lines.push(Line::from(format!(
+            "{} findings are not exported (the session is memory-only).",
+            app.findings.len()
+        )));
+    }
+    lines.push(Line::from(""));
+    let key = |k: &str, rest: &str| {
+        vec![
+            Span::from(format!("[{k}]")).fg(PRIMARY).bold(),
+            Span::from(format!("{rest}  ")),
+        ]
+    };
+    let mut choices = Vec::new();
+    choices.extend(key("e", "xport + quit"));
+    choices.extend(key("y", " quit"));
+    choices.extend(key("n", " cancel"));
+    lines.push(Line::from(choices));
+    #[allow(clippy::cast_possible_truncation)]
+    let height = lines.len() as u16 + 2;
+    let popup = centered_rect(area, 62, height);
+    let block = Block::bordered()
+        .border_style(Style::new().fg(PRIMARY))
+        .title(Span::from(" quit? ").fg(PRIMARY).bold());
+    frame.render_widget(Clear, popup);
+    frame.render_widget(
+        Paragraph::new(lines)
+            .block(block)
+            .wrap(Wrap { trim: false }),
+        popup,
+    );
+}
+
+/// A one-line notification pinned to the bottom-right of `area`.
+pub(super) fn render_toast(frame: &mut Frame, area: Rect, text: &str) {
+    let text = webrev_core::model::triage::terminal_text(text);
+    let want = u16::try_from(text.chars().count() + 4).unwrap_or(u16::MAX);
+    let width = want.min(area.width);
+    if width < 5 || area.height < 3 {
+        return;
+    }
+    let popup = Rect {
+        x: area.x + area.width - width,
+        y: area.y + area.height - 3,
+        width,
+        height: 3,
+    };
+    frame.render_widget(Clear, popup);
+    frame.render_widget(
+        Paragraph::new(Line::from(text))
+            .block(Block::bordered().border_style(Style::new().fg(PRIMARY))),
+        popup,
+    );
+}

@@ -36,8 +36,16 @@ pub(super) fn render_body(frame: &mut Frame, area: Rect, app: &mut App) {
         )
     };
     if visible.is_empty() && app.tab != Tab::Logs {
-        let filtered = !app.filter.is_empty();
-        render_empty(frame, area, title, app.scanning, filtered);
+        let state = if !app.filter.is_empty() {
+            EmptyState::FilterNoMatch
+        } else if app.scanning {
+            EmptyState::Scanning
+        } else if app.scans_completed > 0 {
+            EmptyState::FinishedEmpty
+        } else {
+            EmptyState::Idle
+        };
+        render_empty(frame, area, title, state);
         return;
     }
     let items: Vec<ListItem> = visible
@@ -51,26 +59,44 @@ pub(super) fn render_body(frame: &mut Frame, area: Rect, app: &mut App) {
     frame.render_stateful_widget(list, area, &mut app.list_state);
 }
 
+/// Why a list is empty, so the panel can say the right thing.
+#[derive(Clone, Copy)]
+enum EmptyState {
+    Idle,
+    Scanning,
+    FinishedEmpty,
+    FilterNoMatch,
+}
+
 /// Empty-state panel: the symbol in brand orange over a one-line status and a
 /// hint, instead of a blank bordered list. The art is dropped when it won't fit.
-fn render_empty(frame: &mut Frame, area: Rect, title: String, scanning: bool, filtered: bool) {
+fn render_empty(frame: &mut Frame, area: Rect, title: String, state: EmptyState) {
     let block = Block::bordered().title(title);
     let inner = block.inner(area);
     frame.render_widget(block, area);
 
-    let (headline, hint) = if filtered {
-        ("no match for this filter", "Esc clears it")
-    } else if scanning {
-        ("scanning…", "results stream in as they are found")
-    } else {
-        (
+    let (headline, hint) = match state {
+        EmptyState::FilterNoMatch => ("no match for this filter", "Esc clears it"),
+        EmptyState::Scanning => ("scanning…", "results stream in as they are found"),
+        EmptyState::FinishedEmpty => (
+            "scan finished, nothing found",
+            "d dynamic scan · a active probes · ? keys",
+        ),
+        // A static scan starts by itself, so it is not suggested here.
+        EmptyState::Idle => (
             "nothing here yet",
-            "press s to start a static scan · ? for keys",
-        )
+            "d dynamic scan · a active probes · ? keys",
+        ),
     };
     let mut lines: Vec<Line<'static>> = Vec::new();
     let art_rows = u16::try_from(brand::GLYPH.len()).unwrap_or(u16::MAX);
-    if inner.height >= art_rows + 4 {
+    let art_cols = brand::GLYPH
+        .iter()
+        .map(|r| r.chars().count())
+        .max()
+        .unwrap_or(0);
+    let fits_width = usize::from(inner.width) >= art_cols + 4;
+    if fits_width && inner.height >= art_rows + 4 {
         lines.extend(
             brand::GLYPH
                 .iter()
@@ -155,7 +181,7 @@ fn status_panel(app: &App) -> Paragraph<'static> {
             app.category_count("SQLi"),
             app.category_count("SSTI")
         )),
-        Line::from("RCE:       not tested (no detector)"),
+        Line::from("RCE:       timing signal only (opt-in)"),
         Line::from("Active:    press a to probe; IDOR needs authentication"),
         Line::from("Signals require manual verification; counts are not coverage."),
         Line::from(format!("log lines: {}", app.logs.len())),

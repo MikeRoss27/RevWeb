@@ -1,6 +1,7 @@
 // crates/webrev-cli/src/cli.rs
 //! Command-line surface (clap derive + `WEBREV_` environment variables).
 
+use crate::progress::ProgressArg;
 use clap::builder::styling::{Color, RgbColor, Style, Styles};
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use std::path::PathBuf;
@@ -76,43 +77,115 @@ EXAMPLES:
                   and technology fingerprints; inspect HTTP/WebSocket traffic; probe access \
                   controls, CORS, redirects and injection signals.\n\nUse only against targets \
                   you are explicitly authorized to test.",
-    after_help = EXAMPLES,
+    after_help = "Run `webrev <COMMAND> --help` for examples, `webrev completions <SHELL>` for tab completion.",
     after_long_help = EXAMPLES
 )]
 pub struct Cli {
     #[command(subcommand)]
     pub command: Command,
     /// Suppress the startup banner.
-    #[arg(long, global = true)]
+    #[arg(long, global = true, help_heading = "Global options")]
     pub no_banner: bool,
+    /// When to use color: `auto` honours NO_COLOR, CLICOLOR(_FORCE) and TTY detection.
+    #[arg(long, global = true, help_heading = "Global options", value_enum, default_value_t = ColorArg::Auto, value_name = "WHEN")]
+    pub color: ColorArg,
+    /// Suppress progress and status lines on stderr (data on stdout is unaffected).
+    #[arg(short, long, global = true, help_heading = "Global options")]
+    pub quiet: bool,
+    /// Progress display on stderr: `auto` draws one in-place line on a terminal and
+    /// plain lines elsewhere; `json` emits one JSON object per line.
+    #[arg(long, global = true, help_heading = "Global options", value_enum, default_value_t = ProgressArg::Auto, value_name = "MODE")]
+    pub progress: ProgressArg,
+}
+
+/// `--color` values.
+#[derive(Clone, Copy, ValueEnum)]
+pub enum ColorArg {
+    Auto,
+    Always,
+    Never,
+}
+
+impl From<ColorArg> for webrev_tui::color::ColorChoice {
+    fn from(arg: ColorArg) -> Self {
+        match arg {
+            ColorArg::Auto => Self::Auto,
+            ColorArg::Always => Self::Always,
+            ColorArg::Never => Self::Never,
+        }
+    }
 }
 
 #[derive(Subcommand)]
 pub enum Command {
     /// Analyze and test an application: static, optionally + dynamic/active, then report.
+    #[command(after_long_help = "\
+EXAMPLES:
+  webrev scan --seed https://app.example.com/
+  webrev scan --seed https://app.example.com/ --dynamic --active --fail-on high
+  subfinder -d example.com | httpx | webrev scan --report -
+  webrev scan --seed https://app.example.com/ --all --progress json 2>progress.jsonl
+
+EXIT STATUS:
+  0 ok   1 runtime error   2 usage error   3 --fail-on threshold reached")]
     Scan(ScanAllArgs),
     /// Static analysis: fetch seeds + their scripts and extract endpoints.
+    #[command(after_long_help = "\
+EXAMPLES:
+  webrev static --seed https://app.example.com/ --max-pages 100
+  webrev static --seed https://app.example.com/ --report - | jq '.findings | length'")]
     Static(ScanArgs),
     /// Dynamic analysis: drive headless Chromium and capture live calls.
+    #[command(after_long_help = "\
+EXAMPLES:
+  webrev dynamic --seed https://app.example.com/ --duration-secs 15
+  webrev dynamic --seed https://app.example.com/ --observation-only")]
     Dynamic(ScanArgs),
     /// Active analysis: lightweight, opt-in vulnerability probing (security
     /// headers, CORS, cookie flags, sensitive-file exposure, open redirect,
     /// parameter fuzzing, IDOR-lite) against discovered endpoints. Sends
     /// abnormal traffic — authorized targets only.
+    #[command(after_long_help = "\
+EXAMPLES:
+  webrev active --seed https://app.example.com/ --max-active-requests 100
+  webrev scan --seed https://app.example.com/ --active   # probe everything discovered")]
     Active(ScanArgs),
     /// Launch the interactive terminal UI.
+    #[command(after_long_help = "\
+EXAMPLES:
+  webrev tui --seed https://app.example.com/")]
     Tui(ScanArgs),
     /// Convert or filter an existing JSON report.
+    #[command(after_long_help = "\
+EXAMPLES:
+  webrev report --format text
+  webrev report --format urls-exact | ffuf -u FUZZ -w -
+  webrev report --min-severity high --format jsonl | jq .")]
     Report(ReportArgs),
     /// Compare stack, API, and secret fingerprints across target reports to
     /// spot infrastructure reuse in a multi-target engagement.
+    #[command(after_long_help = "\
+EXAMPLES:
+  webrev compare --input a.json --input b.json --output diff.json")]
     Compare(CompareArgs),
     /// Compare object access across two captured test accounts.
+    #[command(after_long_help = "\
+EXAMPLES:
+  webrev bola --seed https://app.example.com/ --a-auth a.json --b-auth b.json")]
     Bola(BolaArgs),
     /// Replay or mutate a captured WebSocket frame (reproducibility check,
     /// or a cross-account IDOR-style comparison with --b-auth). Opens live
     /// connections to the captured socket URL — authorized targets only.
     WsReplay(WsReplayArgs),
+    /// Print a shell completion script (bash, zsh, fish, elvish, powershell).
+    #[command(after_long_help = "\
+EXAMPLES:
+  webrev completions bash > ~/.local/share/bash-completion/completions/webrev
+  webrev completions zsh > ~/.zfunc/_webrev")]
+    Completions {
+        /// Shell to generate the script for.
+        shell: clap_complete::Shell,
+    },
 }
 
 /// Arguments for the one-shot `scan` command: the shared scan options plus a
@@ -141,73 +214,118 @@ pub struct ScanAllArgs {
 }
 
 /// Arguments shared by the scanning subcommands.
+// Justification: each bool is an independent CLI switch, not a state machine.
+#[allow(clippy::struct_excessive_bools)]
 #[derive(Args)]
 pub struct ScanArgs {
     /// Seed URL to analyze (repeatable). When omitted, seeds are read from
     /// stdin (one URL per line), so `webrev` composes with other tools:
     /// `subfinder -d x.com | httpx | webrev static`.
-    #[arg(long = "seed", value_name = "URL")]
+    #[arg(help_heading = "Target & scope", long = "seed", value_name = "URL")]
     pub seeds: Vec<String>,
     /// Read seed URLs from stdin even if `--seed` was also given (merge both).
-    #[arg(long)]
+    #[arg(help_heading = "Target & scope", long)]
     pub stdin: bool,
     /// In-scope host suffix (repeatable). Defaults to the seeds' hosts.
-    #[arg(long = "scope", value_name = "HOST")]
+    #[arg(help_heading = "Target & scope", long = "scope", value_name = "HOST")]
     pub scope: Vec<String>,
     /// JSON file containing explicit `include` and optional `exclude` host lists.
-    #[arg(long = "scope-file", value_name = "PATH")]
+    #[arg(
+        help_heading = "Target & scope",
+        long = "scope-file",
+        value_name = "PATH"
+    )]
     pub scope_file: Option<std::path::PathBuf>,
     /// Out-of-scope host suffix (repeatable).
-    #[arg(long = "exclude", value_name = "HOST")]
+    #[arg(help_heading = "Target & scope", long = "exclude", value_name = "HOST")]
     pub exclude: Vec<String>,
     /// Mission name.
-    #[arg(long, env = "WEBREV_NAME", default_value = "webrev-mission")]
+    #[arg(
+        help_heading = "Target & scope",
+        long,
+        env = "WEBREV_NAME",
+        default_value = "webrev-mission"
+    )]
     pub name: String,
     /// Optional egress proxy (e.g. http://127.0.0.1:8080).
-    #[arg(long, env = "WEBREV_PROXY")]
+    #[arg(help_heading = "Network & auth", long, env = "WEBREV_PROXY")]
     pub proxy: Option<String>,
     /// Extra request header "Name: Value" (repeatable).
-    #[arg(long = "header", value_name = "NAME: VALUE")]
+    #[arg(
+        help_heading = "Network & auth",
+        long = "header",
+        value_name = "NAME: VALUE"
+    )]
     pub headers: Vec<String>,
     /// Cookie "name=value" (repeatable).
-    #[arg(long = "cookie", value_name = "NAME=VALUE")]
+    #[arg(
+        help_heading = "Network & auth",
+        long = "cookie",
+        value_name = "NAME=VALUE"
+    )]
     pub cookies: Vec<String>,
     /// Bearer token sent as `Authorization: Bearer <token>`.
-    #[arg(long, env = "WEBREV_BEARER")]
+    #[arg(help_heading = "Network & auth", long, env = "WEBREV_BEARER")]
     pub bearer: Option<String>,
     /// Lower bound of the inter-request delay window, in milliseconds.
-    #[arg(long, default_value_t = 150)]
+    #[arg(help_heading = "Budgets & pacing", long, default_value_t = 150)]
     pub delay_min_ms: u64,
     /// Upper bound of the inter-request delay window, in milliseconds.
-    #[arg(long, default_value_t = 600)]
+    #[arg(help_heading = "Budgets & pacing", long, default_value_t = 600)]
     pub delay_max_ms: u64,
     /// Maximum resources fetched per crawl (hard budget).
-    #[arg(long, default_value_t = 50)]
+    #[arg(help_heading = "Budgets & pacing", long, default_value_t = 50)]
     pub max_pages: usize,
+    /// Decoded crawl response body limit per page, in bytes. A larger
+    /// response is truncated to this many bytes rather than read in full.
+    #[arg(
+        help_heading = "Budgets & pacing",
+        long,
+        default_value_t = 20 * 1024 * 1024
+    )]
+    pub max_body_bytes: usize,
     /// Shared active request budget, including controls and failed requests.
-    #[arg(long, default_value_t = 200)]
+    #[arg(help_heading = "Budgets & pacing", long, default_value_t = 200)]
     pub max_active_requests: usize,
+    /// Opt-in: let the active timing-injection check actually execute a
+    /// sleep-shaped command on the target when a parameter is vulnerable.
+    /// Off by default — every other active probe is GET-shaped and never
+    /// executes OS commands, writes files, or triggers callbacks (see
+    /// `docs/security.md`, "Probe behavior"). Authorized targets only.
+    #[arg(help_heading = "Budgets & pacing", long)]
+    pub allow_timing_probes: bool,
     /// Maximum link-following depth from the seeds (0 = seeds only).
-    #[arg(long, default_value_t = 2)]
+    #[arg(help_heading = "Budgets & pacing", long, default_value_t = 2)]
     pub max_depth: usize,
     /// Maximum concurrent in-flight requests during the crawl.
-    #[arg(long, default_value_t = 4)]
+    #[arg(help_heading = "Budgets & pacing", long, default_value_t = 4)]
     pub max_concurrency: usize,
     /// Dynamic dwell time per seed, in seconds.
-    #[arg(long, default_value_t = 8)]
+    #[arg(help_heading = "Budgets & pacing", long, default_value_t = 8)]
     pub duration_secs: u64,
     /// Browser observation only: no driven clicks/scroll; refuse non-GET/HEAD/OPTIONS.
     /// Page scripts, GET and WebSockets can still mutate state. For dynamic and scan --dynamic.
-    #[arg(long)]
+    #[arg(help_heading = "Budgets & pacing", long)]
     pub observation_only: bool,
     /// Report output path (or the TUI's 'r' key). Use '-' for stdout in CLI scans.
-    #[arg(long, default_value = "webrev-report.json")]
+    #[arg(help_heading = "Output", long, default_value = "webrev-report.json")]
     pub report: PathBuf,
     /// Mask credentials in the exported report (URLs, evidence, captured
     /// frames, finding text) so it can be shared. By default the report is raw
     /// and keeps every captured value: treat it as confidential.
-    #[arg(long, env = "WEBREV_REPORT_REDACT", action = clap::ArgAction::SetTrue, value_parser = clap::builder::BoolishValueParser::new())]
+    #[arg(help_heading = "Output", long, env = "WEBREV_REPORT_REDACT", action = clap::ArgAction::SetTrue, value_parser = clap::builder::BoolishValueParser::new())]
     pub redact: bool,
+    /// Attack-surface rows listed in the scan summary (the report keeps all of them).
+    #[arg(long, help_heading = "Output", default_value_t = crate::commands::SUMMARY_LIMIT, value_name = "N", conflicts_with = "all")]
+    pub limit: usize,
+    /// List every attack-surface row in the scan summary.
+    #[arg(long, help_heading = "Output")]
+    pub all: bool,
+    /// Exit with status 3 when a vulnerability or secret at or above this
+    /// severity was found (for CI gates). Without it findings never change the
+    /// exit status.
+    #[arg(long, help_heading = "Output", value_enum, value_name = "SEVERITY")]
+    pub fail_on: Option<SeveritySel>,
 }
 
 /// Output serialization for `report`.

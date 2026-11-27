@@ -10,11 +10,13 @@ mod expression;
 mod graphql;
 mod headers;
 mod injection;
+mod mcp;
 mod origin;
 mod pollution;
 mod ssrf;
 mod takeover;
 mod targets;
+mod timing;
 mod transport;
 mod traversal;
 mod urls;
@@ -36,11 +38,13 @@ use crlf::check_crlf;
 use expression::check_expressions;
 use graphql::{check_graphql_introspection, is_graphql_endpoint};
 use injection::{check_open_redirect, check_param_fuzz, redirect_parameter};
+use mcp::{check_mcp_tool_exposure, is_mcp_endpoint};
 use origin::{check_cors, check_origin};
 use pollution::check_prototype_pollution;
 use ssrf::{check_ssrf, has_url_param};
 use std::collections::{BTreeMap, BTreeSet};
 use takeover::check_subdomain_takeover;
+use timing::check_timing_injection;
 use tokio_util::sync::CancellationToken;
 use transport::ProbeClient;
 use traversal::{check_path_traversal, has_file_param};
@@ -131,6 +135,8 @@ pub async fn run_active_scan(
         "ssrf_signal",
         "prototype_pollution",
         "graphql_introspection",
+        "timing_injection",
+        "mcp_tool_exposure",
     ] {
         if !client.coverage().checks.contains_key(check) {
             client.not_selected(check);
@@ -154,6 +160,8 @@ struct Budget {
     ssrf: usize,
     pollution: usize,
     graphql: usize,
+    timing: usize,
+    mcp: usize,
 }
 
 /// The original SQLi/XSS/open-redirect/SSTI/IDOR checks for one endpoint.
@@ -192,6 +200,16 @@ async fn classic_checks(
             findings.extend(found);
         } else if budget.expressions >= MAX_TARGETS_PER_CHECK {
             client.update(|c| c.target_limit_reached = true);
+        }
+        if opsec.active.allow_timing_probes {
+            if budget.timing < MAX_TARGETS_PER_CHECK && !client.stopped() {
+                budget.timing += 1;
+                let found = check_timing_injection(client, url, params, session).await;
+                client.record_check("timing_injection", found.len());
+                findings.extend(found);
+            } else if budget.timing >= MAX_TARGETS_PER_CHECK {
+                client.update(|c| c.target_limit_reached = true);
+            }
         }
     }
     if !opsec.auth.is_empty() && has_identifier_segment(url) && has_query_credentials(url) {
@@ -265,6 +283,16 @@ async fn recon_checks(
             client.record_check("graphql_introspection", found.len());
             findings.extend(found);
         } else if budget.graphql >= MAX_TARGETS_PER_CHECK {
+            client.update(|c| c.target_limit_reached = true);
+        }
+    }
+    if is_mcp_endpoint(url) {
+        if budget.mcp < MAX_TARGETS_PER_CHECK && !client.stopped() {
+            budget.mcp += 1;
+            let found = check_mcp_tool_exposure(client, url, session).await;
+            client.record_check("mcp_tool_exposure", usize::from(found.is_some()));
+            findings.extend(found);
+        } else if budget.mcp >= MAX_TARGETS_PER_CHECK {
             client.update(|c| c.target_limit_reached = true);
         }
     }

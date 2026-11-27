@@ -127,9 +127,15 @@ async fn oversized_body_is_inconclusive_instead_of_a_partial_positive() {
 
 #[tokio::test]
 async fn cancellation_interrupts_an_inflight_response() {
-    let fixture = Fixture::new(|_| Reply {
-        delay_ms: 800,
-        ..Reply::html("page")
+    // The server holds the response until the test releases it, so the only
+    // way the scan can return in time is by honouring cancellation. No
+    // wall-clock race: client construction or scheduling delays under load
+    // cannot change the outcome.
+    let (release, held) = std::sync::mpsc::channel::<()>();
+    let fixture = Fixture::new(move |_| {
+        // Bounded so a failing assertion cannot deadlock fixture teardown.
+        let _ = held.recv_timeout(std::time::Duration::from_secs(10));
+        Reply::html("page")
     });
     let opsec = config();
     let cancel = CancellationToken::new();
@@ -146,8 +152,9 @@ async fn cancellation_interrupts_an_inflight_response() {
         Method::Get,
         Source::Html,
     )];
+    // The timeout is only a hang guard, far above any plausible load delay.
     let findings = tokio::time::timeout(
-        std::time::Duration::from_millis(300),
+        std::time::Duration::from_secs(30),
         run_active_scan(
             &opsec,
             &Scope::new(vec!["127.0.0.1".into()], vec![]),
@@ -159,6 +166,9 @@ async fn cancellation_interrupts_an_inflight_response() {
     .await
     .expect("cancel must interrupt HTTP")
     .unwrap();
+    // The response was never released, so the scan returned because of the
+    // cancellation, not because the response completed.
+    release.send(()).unwrap();
     assert!(coverage(&findings).cancelled);
     assert!(coverage(&findings).requests >= 1);
     assert_eq!(fixture.requests.lock().unwrap().len(), 1);

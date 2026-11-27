@@ -78,7 +78,7 @@ fn technology_name_and_vulnerability_evidence_are_visible_in_their_tabs() {
     assert!(screen.contains("severity"));
     app.show_detail = false;
     app.select_tab(Tab::Status);
-    assert!(render_text(&mut app).contains("RCE:       not tested"));
+    assert!(render_text(&mut app).contains("RCE:       timing signal only"));
 }
 
 #[test]
@@ -127,4 +127,131 @@ fn status_shows_latest_incomplete_active_coverage() {
     let screen = render_text(&mut app);
     assert!(screen.contains("incomplete / no clean verdict"));
     assert!(screen.contains("7 / 7 requests"));
+}
+
+// --- snapshot tests ---------------------------------------------------------
+
+fn snapshot(app: &mut App, width: u16, height: u16) -> String {
+    let mut terminal = Terminal::new(TestBackend::new(width, height)).unwrap();
+    terminal.draw(|frame| render(frame, app)).unwrap();
+    let buffer = terminal.backend().buffer();
+    (0..height)
+        .map(|y| {
+            (0..width)
+                .map(|x| buffer[(x, y)].symbol())
+                .collect::<String>()
+                .trim_end()
+                .to_owned()
+        })
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
+fn fixture_app() -> App {
+    let mut app = App::new(
+        "snapshot".into(),
+        Scope::new(vec!["app.test".into()], vec![]),
+    );
+    app.spinner_ascii = true;
+    for (kind, url, value, source) in [
+        (
+            FindingKind::Endpoint,
+            "https://app.test/api/users",
+            "GET /api/users",
+            Source::JsAst,
+        ),
+        (
+            FindingKind::Endpoint,
+            "https://cdn.other.test/lib.js",
+            "GET /lib.js",
+            Source::Html,
+        ),
+        (
+            FindingKind::Technology,
+            "https://app.test/",
+            "React (framework)",
+            Source::Html,
+        ),
+    ] {
+        let finding = Finding::new(
+            SessionId::new(),
+            kind,
+            Some(url.into()),
+            value,
+            Confidence::High,
+            Provenance::new(source, None),
+        );
+        app.apply(UiEvent::Pipeline(PipelineEvent::Finding(Box::new(finding))));
+    }
+    app
+}
+
+#[test]
+fn main_render_with_results() {
+    for (w, h) in [(60, 20), (80, 24), (120, 40)] {
+        let mut app = fixture_app();
+        insta::assert_snapshot!(format!("results_{w}x{h}"), snapshot(&mut app, w, h));
+    }
+}
+
+#[test]
+fn main_render_while_scanning_shows_progress_and_empty_state() {
+    for (w, h) in [(60, 20), (80, 24), (120, 40)] {
+        let mut app = App::new("snapshot".into(), Scope::default());
+        app.spinner_ascii = true;
+        app.apply(UiEvent::Pipeline(PipelineEvent::StageStarted {
+            stage: "fetch".into(),
+        }));
+        app.apply(UiEvent::Pipeline(PipelineEvent::Progress {
+            stage: "fetch".into(),
+            processed: 12,
+        }));
+        app.elapsed_secs = 7;
+        insta::assert_snapshot!(format!("scanning_{w}x{h}"), snapshot(&mut app, w, h));
+    }
+}
+
+#[test]
+fn quit_dialog_snapshot() {
+    let mut app = fixture_app();
+    app.request_quit();
+    insta::assert_snapshot!(snapshot(&mut app, 80, 24));
+}
+
+#[test]
+fn empty_states_are_distinct() {
+    let mut idle = App::new("e".into(), Scope::default());
+    idle.spinner_ascii = true;
+    assert!(snapshot(&mut idle, 80, 24).contains("nothing here yet"));
+    let mut done = App::new("e".into(), Scope::default());
+    done.apply(UiEvent::ScanFinished("static scan done".into()));
+    assert!(snapshot(&mut done, 80, 24).contains("scan finished, nothing found"));
+    let mut filtered = fixture_app();
+    filtered.filter = "zzz".into();
+    assert!(snapshot(&mut filtered, 80, 24).contains("no match for this filter"));
+}
+
+#[test]
+fn filter_flow_narrows_confirms_and_cancels() {
+    use crate::runtime::handle_filter_key_for_tests as filter_key;
+    use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+    let press = |c| KeyEvent::new(c, KeyModifiers::NONE);
+    let mut app = fixture_app();
+    app.begin_filter();
+    for c in "react".chars() {
+        filter_key(press(KeyCode::Char(c)), &mut app);
+    }
+    app.select_tab(Tab::Technologies);
+    assert_eq!(app.visible_items().len(), 1);
+    filter_key(press(KeyCode::Enter), &mut app);
+    assert!(!app.filtering && app.filter == "react");
+    app.begin_filter();
+    filter_key(
+        KeyEvent::new(KeyCode::Char('u'), KeyModifiers::CONTROL),
+        &mut app,
+    );
+    assert!(app.filter.is_empty());
+    filter_key(press(KeyCode::Char('x')), &mut app);
+    filter_key(press(KeyCode::Esc), &mut app);
+    assert!(!app.filtering && app.filter.is_empty());
 }
