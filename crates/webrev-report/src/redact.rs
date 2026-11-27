@@ -108,7 +108,51 @@ impl Masker {
             rest = &rest[at + 3 + end..];
         }
         out.push_str(rest);
-        self.sanitizer.scrub(&out)
+        self.sanitizer.scrub(&self.relative_urls(&out))
+    }
+
+    /// Mask relative URLs (`/api/users/1?token=abc`, also after a method as in
+    /// `UNKNOWN /api/users/1?token=abc`) with the same [`redact_url`] logic as
+    /// the `url` fields, so one secret is never masked in one field and left
+    /// readable in another. Unlike the sanitizer's key/value patterns this also
+    /// hides values shorter than four characters.
+    fn relative_urls(&self, text: &str) -> String {
+        fn flush(token: &mut String, out: &mut String) {
+            let lead = token
+                .find(|c: char| !matches!(c, '"' | '\'' | '(' | '[' | '{' | '`' | '<'))
+                .unwrap_or(token.len());
+            let (prefix, body) = token.split_at(lead);
+            out.push_str(prefix);
+            if body.starts_with('/') && !body.starts_with("//") {
+                // Closing quotes and sentence punctuation are not part of the
+                // URL: keep them out of the masked value so they survive.
+                let end = body
+                    .trim_end_matches(|c: char| {
+                        matches!(
+                            c,
+                            '"' | '\'' | ')' | ']' | '}' | '`' | '>' | ',' | ';' | '.'
+                        )
+                    })
+                    .len();
+                out.push_str(&redact_url(&body[..end]));
+                out.push_str(&body[end..]);
+            } else {
+                out.push_str(body);
+            }
+            token.clear();
+        }
+        let mut out = String::with_capacity(text.len());
+        let mut token = String::new();
+        for c in text.chars() {
+            if c.is_whitespace() {
+                flush(&mut token, &mut out);
+                out.push(c);
+            } else {
+                token.push(c);
+            }
+        }
+        flush(&mut token, &mut out);
+        out
     }
 
     fn opt_url(&self, value: &mut Option<String>) {
@@ -530,6 +574,24 @@ mod tests {
                 assert!(!masked.contains(leaked), "{format:?} leaked {leaked}");
             }
         }
+    }
+
+    #[test]
+    fn relative_urls_in_values_are_masked_like_the_url_field() {
+        let mission = Mission::new("demo", Scope::new(vec!["t.test".into()], vec![]), vec![]);
+        let finding = finding(
+            &mission,
+            FindingKind::Endpoint,
+            Some("/api/users/123?token=abc"),
+            "UNKNOWN /api/users/123?token=abc",
+        );
+        let masked = SessionReport::build(mission, vec![finding], vec![]).redacted();
+        let f = &masked.findings[0];
+        assert_eq!(f.url.as_deref(), Some("/api/users/123?token=[REDACTED]"));
+        assert_eq!(f.value, "UNKNOWN /api/users/123?token=[REDACTED]");
+        // Quoted in prose, and the ordinary parts stay readable.
+        let text = Masker::new().text(r#"saw "/a/b?page=2&access_token=xy" here"#);
+        assert_eq!(text, r#"saw "/a/b?page=2&access_token=[REDACTED]" here"#);
     }
 
     #[test]
