@@ -42,5 +42,14 @@ async fn main() -> anyhow::Result<()> {
     if !matches!(parsed.command, Command::Tui(_)) {
         logging::init();
     }
-    commands::dispatch(parsed).await
+    match commands::dispatch(parsed).await {
+        Err(error) => match error.downcast_ref::<commands::UsageError>() {
+            Some(usage) => {
+                eprintln!("error: {usage}\nhint: {}", usage.hint);
+                std::process::exit(2);
+            }
+            None => Err(error),
+        },
+        ok => ok,
+    }
 }
