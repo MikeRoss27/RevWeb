@@ -91,6 +91,7 @@ async fn main() -> std::process::ExitCode {
             | Command::Active(_)
             | Command::Bola(_)
             | Command::Compare(_)
+            | Command::WsReplay(_)
     ) {
         banner::print(parsed.no_banner || parsed.quiet);
     }

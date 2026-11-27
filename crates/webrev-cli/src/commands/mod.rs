@@ -168,18 +168,8 @@ fn build_mission(args: &ScanArgs) -> anyhow::Result<(Mission, OpsecConfig)> {
     let scope = merge_scope(file_scope, &args.scope, &args.exclude, &seeds)?;
     let mission = Mission::new(args.name.clone(), scope, seeds);
     let auth = AuthConfig {
-        headers: args
-            .headers
-            .iter()
-            .filter_map(|h| h.split_once(':'))
-            .map(|(k, v)| (k.trim().to_owned(), v.trim().to_owned()))
-            .collect(),
-        cookies: args
-            .cookies
-            .iter()
-            .filter_map(|c| c.split_once('='))
-            .map(|(k, v)| (k.trim().to_owned(), v.trim().to_owned()))
-            .collect(),
+        headers: parse_pairs(&args.headers, ':', "--header", "\"Name: Value\"")?,
+        cookies: parse_pairs(&args.cookies, '=', "--cookie", "name=value")?,
         bearer: args.bearer.clone(),
     };
     let opsec = OpsecConfig {
@@ -202,6 +192,38 @@ fn build_mission(args: &ScanArgs) -> anyhow::Result<(Mission, OpsecConfig)> {
         ..OpsecConfig::default()
     };
     Ok((mission, opsec))
+}
+
+/// Split `--header`/`--cookie` values on `sep`. A value without the separator
+/// is an error rather than dropped, and its content is not echoed because it
+/// may be a credential.
+fn parse_pairs(
+    raw: &[String],
+    sep: char,
+    flag: &str,
+    shape: &str,
+) -> anyhow::Result<Vec<(String, String)>> {
+    raw.iter()
+        .enumerate()
+        .map(|(i, item)| match item.split_once(sep) {
+            Some((k, v)) if !k.trim().is_empty() => Ok((k.trim().to_owned(), v.trim().to_owned())),
+            _ => Err(usage(
+                format!(
+                    "malformed {flag} value #{} (expected {shape}); it would be ignored and the scan would run without it",
+                    i + 1
+                ),
+                Some(example_hint(sep)),
+            )),
+        })
+        .collect()
+}
+
+fn example_hint(sep: char) -> &'static str {
+    if sep == ':' {
+        "write it as \"Name: value\", for example --header \"X-Api-Key: value\""
+    } else {
+        "write it as name=value, for example --cookie session=value"
+    }
 }
 
 fn merge_scope(
@@ -352,6 +374,31 @@ pub async fn dispatch(cli: Cli) -> anyhow::Result<()> {
                 redact_report: args.redact,
             })
             .await
+        }
+    }
+}
+
+#[cfg(test)]
+mod pair_tests {
+    use super::*;
+
+    #[test]
+    fn well_formed_pairs_are_trimmed() {
+        let got = parse_pairs(&["X-A :  b:c ".into()], ':', "--header", "x").unwrap();
+        assert_eq!(got, vec![("X-A".to_owned(), "b:c".to_owned())]);
+    }
+
+    #[test]
+    fn malformed_pairs_are_errors_that_do_not_echo_the_value() {
+        for (raw, sep) in [
+            ("MalformedNoColon", ':'),
+            ("nocookiesecret", '='),
+            (": v", ':'),
+        ] {
+            let err = parse_pairs(&[raw.into()], sep, "--x", "shape").unwrap_err();
+            let usage = err.downcast_ref::<UsageError>().expect("usage error");
+            assert!(!usage.message.contains(raw), "{}", usage.message);
+            assert!(usage.hint.is_some());
         }
     }
 }

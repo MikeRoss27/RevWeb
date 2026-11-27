@@ -5,7 +5,7 @@
 <p align="center">
   <a href="https://github.com/MikeRoss27/WebRev/actions/workflows/ci.yml"><img alt="CI workflow" src="https://img.shields.io/badge/ci-workflow-E5653F?style=flat-square&labelColor=211C1C"></a>
   <img alt="Rust 1.89+" src="https://img.shields.io/badge/rust-1.89%2B-E5653F?style=flat-square&labelColor=211C1C">
-  <img alt="Platforms" src="https://img.shields.io/badge/platform-linux%20%C2%B7%20windows-FAF4E8?style=flat-square&labelColor=211C1C">
+  <img alt="Platforms" src="https://img.shields.io/badge/platform-linux%20%C2%B7%20windows%20%C2%B7%20macos-FAF4E8?style=flat-square&labelColor=211C1C">
   <img alt="License MIT" src="https://img.shields.io/badge/license-MIT-FAF4E8?style=flat-square&labelColor=211C1C">
 </p>
 
