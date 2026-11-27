@@ -72,7 +72,7 @@ impl App {
         changed
     }
 
-    /// Show a toast for [`TOAST_TTL`]. Text is sanitized: it may derive from the target.
+    /// Show a toast for `TOAST_TTL`. Text is sanitized: it may derive from the target.
     pub fn show_toast(&mut self, text: &str) {
         self.toast = Some(Toast {
             text: terminal_text(text),
