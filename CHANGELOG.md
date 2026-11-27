@@ -4,7 +4,7 @@ All notable changes to webrev are listed here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Reliability and
 benchmark history lives in [docs/changelog-reliability.md](docs/changelog-reliability.md).
 
-## [0.1.0] - Unreleased
+## [0.1.0] - 2026-11-27
 
 First public release. Static, dynamic and active analysis of web applications,
 with a CLI (`webrev`) and a terminal UI (`webrev-tui`).
@@ -70,7 +70,7 @@ with a CLI (`webrev`) and a terminal UI (`webrev-tui`).
 
 ### Known limitations
 
-- Only the Windows release bundle has been validated locally; the Linux and
+- Only the Windows and Linux release bundles have been validated locally; the
   macOS bundles are built by `bundles.yml`, which has not run yet.
 - No correlation on TLS certificates or error pages; no route-to-endpoint or
   endpoint-to-technology links in the relation graph (see

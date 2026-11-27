@@ -50,7 +50,7 @@ The `Portable bundles` GitHub Actions workflow builds Windows x64, Linux x64
 (Ubuntu 24.04 / glibc), macOS Intel and macOS Apple Silicon archives. Run it
 manually, or push a version tag to generate downloadable workflow artifacts.
 This workflow prepares artifacts; it does not publish a GitHub Release. Only
-the local Windows bundle has been validated in the development workspace.
+the local Windows and Linux (x86_64) bundles have been validated in the development workspace.
 
 Each archive contains `bin/webrev`, `bin/webrev-tui` (with `.exe` on Windows),
 install scripts, this guide, the license and `SHA256SUMS`. An adjacent `.sha256`
