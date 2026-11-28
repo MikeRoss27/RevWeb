@@ -98,6 +98,24 @@ impl LocalBrowserFixture {
                          <form method='post' action='/ui-form-post'><button type='submit'>Save</button></form>"
                             .to_owned(),
                     ),
+                    "/input-controls" => (
+                        "text/html",
+                        "<input type='button' value='Load' onclick=\"fetch('/input-click')\">\
+                         <form method='post' action='/input-post-submit'><input type='submit' value='Delete'></form>\
+                         <input type='reset' value='Clear'>"
+                            .to_owned(),
+                    ),
+                    "/many-buttons" => (
+                        "text/html",
+                        (0..12).fold(String::new(), |mut html, i| {
+                            use std::fmt::Write;
+                            let _ = write!(
+                                html,
+                                "<button id='b{i}' onclick=\"fetch('/btn-{i}')\">Button {i}</button>"
+                            );
+                            html
+                        }),
+                    ),
                     "/websocket-probe" => (
                         "text/html",
                         format!("<script>new WebSocket('ws://127.0.0.1:{port}/ws-in-scope').onerror=()=>{{}}; new WebSocket('ws://127.0.0.2:{port}/ws-out-of-scope').onerror=()=>{{}}; fetch('/probe-executed');fetch('/probe-control');</script>"),
@@ -336,6 +354,84 @@ async fn explore_never_clicks_destructive_controls_and_records_refusals() {
     let evidence: serde_json::Value = serde_json::from_str(&coverage.value).unwrap();
     assert_eq!(evidence["complete"], false);
     assert_eq!(evidence["refused_interaction_count"], 4);
+}
+
+#[tokio::test]
+#[ignore = "requires a local Chromium/Chrome installation"]
+async fn native_input_controls_are_clicked_or_refused_like_buttons() {
+    // input[type=submit|button|reset] were entirely invisible to the active
+    // driver before it covered more than `<button>`/`[role=button]`.
+    let fixture = LocalBrowserFixture::start();
+    let profile = BrowserProfile::from_opsec(&OpsecConfig::default())
+        .expect("profile")
+        .with_scope(Scope::new(vec!["127.0.0.1".into()], vec![]));
+    let pool = BrowserPool::new(1);
+    let report = run_dynamic_with_report(
+        &pool,
+        &profile,
+        &format!("{}/input-controls", fixture.origin),
+        Duration::from_secs(3),
+        SessionId::new(),
+        CancellationToken::new(),
+    )
+    .await
+    .expect("dynamic run");
+    pool.shutdown().await;
+    let requests = fixture.requests.lock().expect("request log");
+    assert_eq!(
+        requests
+            .iter()
+            .filter(|r| r.ends_with("/input-click"))
+            .count(),
+        1,
+        "input[type=button] should be clicked exactly once: {requests:?}"
+    );
+    assert!(
+        !requests.iter().any(|r| r.ends_with("/input-post-submit")),
+        "input[type=submit] in a POST form must never be clicked (would submit it): {requests:?}"
+    );
+    assert!(
+        report
+            .refused_interactions
+            .iter()
+            .any(|i| i.reason == "non_get_form" || i.reason == "delete"),
+        "the POST-form submit control should be recorded as refused: {:?}",
+        report.refused_interactions
+    );
+}
+
+#[tokio::test]
+#[ignore = "requires a local Chromium/Chrome installation"]
+async fn active_interaction_covers_every_control_across_passes_without_repeats() {
+    // More buttons than MAX_CLICKS_PER_PASS (10): proves the active-interaction
+    // driver advances past the first pass's worth of controls instead of
+    // re-clicking the same ones every pass for the whole dwell while the rest
+    // are never reached.
+    let fixture = LocalBrowserFixture::start();
+    let profile = BrowserProfile::from_opsec(&OpsecConfig::default())
+        .expect("profile")
+        .with_scope(Scope::new(vec!["127.0.0.1".into()], vec![]));
+    let pool = BrowserPool::new(1);
+    run_dynamic_with_report(
+        &pool,
+        &profile,
+        &format!("{}/many-buttons", fixture.origin),
+        Duration::from_secs(8),
+        SessionId::new(),
+        CancellationToken::new(),
+    )
+    .await
+    .expect("dynamic run");
+    pool.shutdown().await;
+    let requests = fixture.requests.lock().expect("request log");
+    for i in 0..12 {
+        let path = format!("/btn-{i}");
+        let hits = requests.iter().filter(|r| r.ends_with(&path)).count();
+        assert_eq!(
+            hits, 1,
+            "{path} should be clicked exactly once: {requests:?}"
+        );
+    }
 }
 
 /// A diagnostic of actual handshake egress, independent of findings filtering.
