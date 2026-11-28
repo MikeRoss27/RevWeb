@@ -98,6 +98,47 @@ impl LocalBrowserFixture {
                          <form method='post' action='/ui-form-post'><button type='submit'>Save</button></form>"
                             .to_owned(),
                     ),
+                    "/input-controls" => (
+                        "text/html",
+                        "<input type='button' value='Load' onclick=\"fetch('/input-click')\">\
+                         <form method='post' action='/input-post-submit'><input type='submit' value='Delete'></form>\
+                         <input type='reset' value='Clear'>"
+                            .to_owned(),
+                    ),
+                    "/aria-widgets" => (
+                        "text/html",
+                        "<div role='checkbox' aria-checked='false' onclick=\"fetch('/aria-checkbox-toggle')\">Enable feature</div>\
+                         <div role='menuitem' aria-label='Delete item' onclick=\"fetch('/aria-menuitem-delete',{method:'DELETE'})\">x</div>"
+                            .to_owned(),
+                    ),
+                    "/select-destructive-option" => (
+                        "text/html",
+                        "<select onchange=\"fetch('/select-' + this.value)\">\
+                         <option value='placeholder' selected disabled>Choose…</option>\
+                         <option value='all'>All</option>\
+                         <option value='delete'>Delete all users</option>\
+                         </select>"
+                            .to_owned(),
+                    ),
+                    "/select-safe" => (
+                        "text/html",
+                        "<select onchange=\"fetch('/select-changed')\">\
+                         <option value='a' selected>Option A</option>\
+                         <option value='b'>Option B</option>\
+                         </select>"
+                            .to_owned(),
+                    ),
+                    "/many-buttons" => (
+                        "text/html",
+                        (0..12).fold(String::new(), |mut html, i| {
+                            use std::fmt::Write;
+                            let _ = write!(
+                                html,
+                                "<button id='b{i}' onclick=\"fetch('/btn-{i}')\">Button {i}</button>"
+                            );
+                            html
+                        }),
+                    ),
                     "/websocket-probe" => (
                         "text/html",
                         format!("<script>new WebSocket('ws://127.0.0.1:{port}/ws-in-scope').onerror=()=>{{}}; new WebSocket('ws://127.0.0.2:{port}/ws-out-of-scope').onerror=()=>{{}}; fetch('/probe-executed');fetch('/probe-control');</script>"),
@@ -336,6 +377,191 @@ async fn explore_never_clicks_destructive_controls_and_records_refusals() {
     let evidence: serde_json::Value = serde_json::from_str(&coverage.value).unwrap();
     assert_eq!(evidence["complete"], false);
     assert_eq!(evidence["refused_interaction_count"], 4);
+}
+
+#[tokio::test]
+#[ignore = "requires a local Chromium/Chrome installation"]
+async fn aria_widget_roles_are_clicked_or_refused_like_buttons() {
+    // role=checkbox/menuitem widgets (custom components, not native <button>)
+    // were entirely invisible to the active driver before it covered ARIA
+    // widget roles beyond [role=button].
+    let fixture = LocalBrowserFixture::start();
+    let profile = BrowserProfile::from_opsec(&OpsecConfig::default())
+        .expect("profile")
+        .with_scope(Scope::new(vec!["127.0.0.1".into()], vec![]));
+    let pool = BrowserPool::new(1);
+    let report = run_dynamic_with_report(
+        &pool,
+        &profile,
+        &format!("{}/aria-widgets", fixture.origin),
+        Duration::from_secs(3),
+        SessionId::new(),
+        CancellationToken::new(),
+    )
+    .await
+    .expect("dynamic run");
+    pool.shutdown().await;
+    let requests = fixture.requests.lock().expect("request log");
+    assert_eq!(
+        requests
+            .iter()
+            .filter(|r| r.ends_with("/aria-checkbox-toggle"))
+            .count(),
+        1,
+        "role=checkbox should be clicked exactly once: {requests:?}"
+    );
+    assert!(
+        !requests
+            .iter()
+            .any(|r| r.ends_with("/aria-menuitem-delete")),
+        "role=menuitem labeled Delete item must never be clicked: {requests:?}"
+    );
+    assert!(
+        report
+            .refused_interactions
+            .iter()
+            .any(|i| i.reason == "delete"),
+        "the destructive menuitem should be recorded as refused: {:?}",
+        report.refused_interactions
+    );
+}
+
+#[tokio::test]
+#[ignore = "requires a local Chromium/Chrome installation"]
+async fn select_never_switches_to_a_destructive_looking_option() {
+    let fixture = LocalBrowserFixture::start();
+    let profile = BrowserProfile::from_opsec(&OpsecConfig::default())
+        .expect("profile")
+        .with_scope(Scope::new(vec!["127.0.0.1".into()], vec![]));
+    let pool = BrowserPool::new(1);
+    run_dynamic_with_report(
+        &pool,
+        &profile,
+        &format!("{}/select-destructive-option", fixture.origin),
+        Duration::from_secs(3),
+        SessionId::new(),
+        CancellationToken::new(),
+    )
+    .await
+    .expect("dynamic run");
+    pool.shutdown().await;
+    let requests = fixture.requests.lock().expect("request log");
+    assert!(
+        requests.iter().any(|r| r.ends_with("/select-all")),
+        "the safe option should be selected: {requests:?}"
+    );
+    assert!(
+        !requests.iter().any(|r| r.ends_with("/select-delete")),
+        "the destructive-looking option must never be selected: {requests:?}"
+    );
+}
+
+#[tokio::test]
+#[ignore = "requires a local Chromium/Chrome installation"]
+async fn select_change_fires_exactly_once_across_the_whole_dwell() {
+    let fixture = LocalBrowserFixture::start();
+    let profile = BrowserProfile::from_opsec(&OpsecConfig::default())
+        .expect("profile")
+        .with_scope(Scope::new(vec!["127.0.0.1".into()], vec![]));
+    let pool = BrowserPool::new(1);
+    run_dynamic_with_report(
+        &pool,
+        &profile,
+        &format!("{}/select-safe", fixture.origin),
+        Duration::from_secs(5),
+        SessionId::new(),
+        CancellationToken::new(),
+    )
+    .await
+    .expect("dynamic run");
+    pool.shutdown().await;
+    let requests = fixture.requests.lock().expect("request log");
+    assert_eq!(
+        requests
+            .iter()
+            .filter(|r| r.ends_with("/select-changed"))
+            .count(),
+        1,
+        "select change should fire exactly once across the dwell, not every pass: {requests:?}"
+    );
+}
+
+#[tokio::test]
+#[ignore = "requires a local Chromium/Chrome installation"]
+async fn native_input_controls_are_clicked_or_refused_like_buttons() {
+    // input[type=submit|button|reset] were entirely invisible to the active
+    // driver before it covered more than `<button>`/`[role=button]`.
+    let fixture = LocalBrowserFixture::start();
+    let profile = BrowserProfile::from_opsec(&OpsecConfig::default())
+        .expect("profile")
+        .with_scope(Scope::new(vec!["127.0.0.1".into()], vec![]));
+    let pool = BrowserPool::new(1);
+    let report = run_dynamic_with_report(
+        &pool,
+        &profile,
+        &format!("{}/input-controls", fixture.origin),
+        Duration::from_secs(3),
+        SessionId::new(),
+        CancellationToken::new(),
+    )
+    .await
+    .expect("dynamic run");
+    pool.shutdown().await;
+    let requests = fixture.requests.lock().expect("request log");
+    assert_eq!(
+        requests
+            .iter()
+            .filter(|r| r.ends_with("/input-click"))
+            .count(),
+        1,
+        "input[type=button] should be clicked exactly once: {requests:?}"
+    );
+    assert!(
+        !requests.iter().any(|r| r.ends_with("/input-post-submit")),
+        "input[type=submit] in a POST form must never be clicked (would submit it): {requests:?}"
+    );
+    assert!(
+        report
+            .refused_interactions
+            .iter()
+            .any(|i| i.reason == "non_get_form" || i.reason == "delete"),
+        "the POST-form submit control should be recorded as refused: {:?}",
+        report.refused_interactions
+    );
+}
+
+#[tokio::test]
+#[ignore = "requires a local Chromium/Chrome installation"]
+async fn active_interaction_covers_every_control_across_passes_without_repeats() {
+    // More buttons than MAX_CLICKS_PER_PASS (10): proves the active-interaction
+    // driver advances past the first pass's worth of controls instead of
+    // re-clicking the same ones every pass for the whole dwell while the rest
+    // are never reached.
+    let fixture = LocalBrowserFixture::start();
+    let profile = BrowserProfile::from_opsec(&OpsecConfig::default())
+        .expect("profile")
+        .with_scope(Scope::new(vec!["127.0.0.1".into()], vec![]));
+    let pool = BrowserPool::new(1);
+    run_dynamic_with_report(
+        &pool,
+        &profile,
+        &format!("{}/many-buttons", fixture.origin),
+        Duration::from_secs(8),
+        SessionId::new(),
+        CancellationToken::new(),
+    )
+    .await
+    .expect("dynamic run");
+    pool.shutdown().await;
+    let requests = fixture.requests.lock().expect("request log");
+    for i in 0..12 {
+        let path = format!("/btn-{i}");
+        let hits = requests.iter().filter(|r| r.ends_with(&path)).count();
+        assert_eq!(
+            hits, 1,
+            "{path} should be clicked exactly once: {requests:?}"
+        );
+    }
 }
 
 /// A diagnostic of actual handshake egress, independent of findings filtering.

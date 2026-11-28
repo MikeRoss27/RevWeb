@@ -30,7 +30,11 @@ async fn exchange(proxy: SocketAddr, request: &str) -> Vec<u8> {
     let mut client = TcpStream::connect(proxy).await.unwrap();
     client.write_all(request.as_bytes()).await.unwrap();
     let mut response = Vec::new();
-    timeout(Duration::from_secs(3), client.read_to_end(&mut response))
+    // Generous on purpose: this bounds a loopback round-trip, not a network
+    // call, but under heavy concurrent CPU load (e.g. a `cargo build` running
+    // in parallel) the test's own tokio runtime can be starved for longer
+    // than a tight bound would tolerate, failing the test with no real bug.
+    timeout(Duration::from_secs(10), client.read_to_end(&mut response))
         .await
         .unwrap()
         .unwrap();

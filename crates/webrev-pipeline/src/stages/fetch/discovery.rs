@@ -1,9 +1,7 @@
 //! Resolve and enqueue in-scope resources; classify fetched content.
+use super::scheduler::{Candidate, Frontier, ResourceHint};
 use regex::Regex;
-use std::{
-    collections::{BTreeSet, VecDeque},
-    path::Path,
-};
+use std::{collections::BTreeSet, path::Path};
 use webrev_core::Scope;
 use webrev_extract::ContentKind;
 
@@ -72,13 +70,20 @@ pub(super) fn strip_fragment(url: &str) -> String {
 }
 
 /// Resolve, normalize, scope-filter, and enqueue a batch of hrefs at `depth`.
+///
+/// `seq` is a monotonically increasing discovery counter the caller owns
+/// across the whole crawl; it only affects `BestFirst` tie-breaking (oldest
+/// discovery wins) and is ignored by `Bfs`.
+#[allow(clippy::too_many_arguments)]
 pub(super) fn enqueue(
-    queue: &mut VecDeque<(String, usize)>,
+    frontier: &mut Frontier,
+    seq: &mut u64,
     visited: &BTreeSet<String>,
     scope: &Scope,
     base: &str,
     hrefs: &[String],
     depth: usize,
+    hint: ResourceHint,
 ) {
     for href in hrefs {
         let Some(abs) = resolve_url(base, href).map(|u| strip_fragment(&u)) else {
@@ -91,7 +96,8 @@ pub(super) fn enqueue(
                 tracing::info!(url = %abs, keyword = word, "crawl link refused: looks state-changing");
                 continue;
             }
-            queue.push_back((abs, depth));
+            frontier.push(Candidate { url: abs, depth }, hint, *seq);
+            *seq += 1;
         }
     }
 }
@@ -99,11 +105,13 @@ pub(super) fn enqueue(
 #[cfg(test)]
 mod destructive_link_tests {
     use super::*;
+    use webrev_core::CrawlerStrategy;
 
     #[test]
     fn crawler_never_enqueues_state_changing_links() {
         let scope = Scope::new(vec!["ex.com".into()], vec![]);
-        let mut queue = VecDeque::new();
+        let mut frontier = Frontier::new(CrawlerStrategy::Bfs);
+        let mut seq = 0u64;
         let hrefs = vec![
             "/logout".to_owned(),
             "/items?action=delete&id=2".to_owned(),
@@ -112,14 +120,19 @@ mod destructive_link_tests {
             "/about".to_owned(),
         ];
         enqueue(
-            &mut queue,
+            &mut frontier,
+            &mut seq,
             &BTreeSet::new(),
             &scope,
             "https://ex.com/",
             &hrefs,
             1,
+            ResourceHint::Link,
         );
-        let urls: Vec<_> = queue.iter().map(|(u, _)| u.as_str()).collect();
+        let mut urls = Vec::new();
+        while let Some(c) = frontier.pop() {
+            urls.push(c.url);
+        }
         assert_eq!(
             urls,
             ["https://ex.com/static/remove.js", "https://ex.com/about"]

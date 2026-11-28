@@ -116,6 +116,23 @@ impl From<ColorArg> for webrev_tui::color::ColorChoice {
     }
 }
 
+/// `--crawler-strategy` values. See `webrev_core::CrawlerStrategy` for what
+/// each one actually does.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, ValueEnum)]
+pub enum CrawlerStrategyArg {
+    Bfs,
+    BestFirst,
+}
+
+impl From<CrawlerStrategyArg> for webrev_core::CrawlerStrategy {
+    fn from(arg: CrawlerStrategyArg) -> Self {
+        match arg {
+            CrawlerStrategyArg::Bfs => Self::Bfs,
+            CrawlerStrategyArg::BestFirst => Self::BestFirst,
+        }
+    }
+}
+
 #[derive(Subcommand)]
 pub enum Command {
     /// Analyze and test an application: static, optionally + dynamic/active, then report.
@@ -300,6 +317,17 @@ pub struct ScanArgs {
     /// Maximum concurrent in-flight requests during the crawl.
     #[arg(help_heading = "Budgets & pacing", long, default_value_t = 4)]
     pub max_concurrency: usize,
+    /// Crawl frontier order. `bfs` (default) is strict first-in-first-out,
+    /// unchanged from prior releases. `best-first` is deterministic, not
+    /// adaptive: it prioritizes shallower pages and scripts/source maps
+    /// over plain navigation links, with discovery order breaking ties.
+    #[arg(
+        help_heading = "Budgets & pacing",
+        long,
+        value_enum,
+        default_value_t = CrawlerStrategyArg::Bfs
+    )]
+    pub crawler_strategy: CrawlerStrategyArg,
     /// Dynamic dwell time per seed, in seconds.
     #[arg(help_heading = "Budgets & pacing", long, default_value_t = 8)]
     pub duration_secs: u64,

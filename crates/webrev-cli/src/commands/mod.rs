@@ -189,6 +189,7 @@ fn build_mission(args: &ScanArgs) -> anyhow::Result<(Mission, OpsecConfig)> {
             allow_timing_probes: args.allow_timing_probes,
             ..webrev_core::ActiveLimits::default()
         },
+        crawler_strategy: args.crawler_strategy.into(),
         ..OpsecConfig::default()
     };
     Ok((mission, opsec))

@@ -31,7 +31,8 @@ pub use model::resolve::EndpointResolver;
 pub use model::session::{Mission, Scope, SessionId};
 pub use security::auth::AuthConfig;
 pub use security::opsec::{
-    ActiveLimits, DnsPolicy, EgressPolicy, MissionProfile, OpsecConfig, RotationPolicy,
+    ActiveLimits, CrawlerStrategy, DnsPolicy, EgressPolicy, MissionProfile, OpsecConfig,
+    RotationPolicy,
 };
 pub use security::sanitize::{redact_url, Sanitizer, SessionKey};
 

@@ -7,6 +7,7 @@
 
 mod discovery;
 mod request;
+mod scheduler;
 mod sourcemaps;
 #[cfg(test)]
 mod tests;
@@ -21,8 +22,9 @@ use discovery::{capture_group1, detect_kind, enqueue, strip_fragment};
 use futures::future::join_all;
 use regex::Regex;
 use request::{build_client, fetch_with_retry};
+use scheduler::{Frontier, ResourceHint};
 use sourcemaps::{process_sourcemap, sourcemap_ref};
-use std::collections::{BTreeSet, VecDeque};
+use std::collections::BTreeSet;
 use tokio::sync::{broadcast, mpsc};
 use webrev_core::{Result, WebrevError};
 use webrev_extract::ContentKind;
@@ -99,12 +101,14 @@ impl Stage for FetchStage {
         let max_depth = ctx.opsec.max_depth;
         let max_body_bytes = ctx.opsec.max_body_bytes;
         let mut visited: BTreeSet<String> = BTreeSet::new();
-        let mut queue: VecDeque<(String, usize)> = ctx
-            .mission
-            .seeds
-            .iter()
-            .map(|s| (strip_fragment(s), 0usize))
-            .collect();
+        let mut frontier = Frontier::seed(
+            ctx.opsec.crawler_strategy,
+            ctx.mission.seeds.iter().map(|s| strip_fragment(s)),
+        );
+        // Discovery sequence counter, shared across the whole crawl: only
+        // `BestFirst` reads it (oldest-discovered-first tie-break), `Bfs`
+        // ignores it entirely.
+        let mut discover_seq: u64 = ctx.mission.seeds.len() as u64;
         let max_concurrency = ctx.opsec.max_concurrency.max(1);
         let mut processed = 0usize;
         // Consecutive waves that drew a 429/503. Halves the next wave's
@@ -126,9 +130,10 @@ impl Stage for FetchStage {
                 .min(max_pages - processed);
             let mut wave: Vec<(String, usize)> = Vec::new();
             while wave.len() < effective_concurrency {
-                let Some((url, depth)) = queue.pop_front() else {
+                let Some(candidate) = frontier.pop() else {
                     break;
                 };
+                let (url, depth) = (candidate.url, candidate.depth);
                 if !visited.insert(url.clone()) {
                     continue;
                 }
@@ -199,20 +204,24 @@ impl Stage for FetchStage {
                         processed += 1;
 
                         enqueue(
-                            &mut queue,
+                            &mut frontier,
+                            &mut discover_seq,
                             &visited,
                             &ctx.mission.scope,
                             &url,
                             &scripts,
                             depth,
+                            ResourceHint::Script,
                         );
                         enqueue(
-                            &mut queue,
+                            &mut frontier,
+                            &mut discover_seq,
                             &visited,
                             &ctx.mission.scope,
                             &url,
                             &links,
                             depth + 1,
+                            ResourceHint::Link,
                         );
 
                         if let Some(map_ref) = smap {

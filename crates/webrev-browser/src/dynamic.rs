@@ -5,8 +5,8 @@
 use crate::har::{Har, HarEntry};
 use crate::hooks::{self, HookRecord};
 use crate::policy::{
-    interaction_refusal, request_refusal, DynamicRunReport, InteractionPolicy, RefusalLog,
-    RefusedInteraction,
+    destructive_keyword, interaction_refusal, request_refusal, DynamicRunReport, InteractionPolicy,
+    RefusalLog, RefusedInteraction,
 };
 use crate::pool::BrowserPool;
 use crate::profile::BrowserProfile;
@@ -112,29 +112,73 @@ const MAX_WS_PAYLOAD_CHARS: usize = 500;
 /// pre-dedup request log unboundedly.
 const MAX_HAR_ENTRIES: usize = 2000;
 
+/// Clickable elements the active-interaction driver considers, excluding
+/// ones it has already examined this dwell (see `data-webrev-seen` below).
+/// Without the exclusion, a page with more clickable elements than
+/// `MAX_CLICKS_PER_PASS` would have its first elements re-described and
+/// re-clicked every pass for the whole dwell while later elements are never
+/// reached at all.
+///
+/// Covers `<button>`, `[role=button]`, the native
+/// `<input type=submit|button|reset>` forms, and the ARIA widget roles
+/// (`checkbox`/`switch`/`menuitem`/`tab`/`option`) that custom component
+/// libraries (React/MUI/Radix-style) commonly build on a plain `<div>` or
+/// `<span>` with a click handler instead of a native control — previously
+/// invisible to this driver entirely despite triggering the same kind of
+/// app behavior as a `<button>` click. Deliberately *not* `role=link`:
+/// that's meant to behave like an `<a>` (often a full navigation), a
+/// different risk/behavior profile than the rest of this selector.
+/// Deliberately *not* a generic `[onclick]` selector either: that would
+/// also match non-control elements (a `<div onclick>` wrapping unrelated
+/// content) and is a separate, larger decision about how much of the page
+/// surface this engine actively touches.
+const INTERACTIVE_SELECTOR: &str = "button:not([data-webrev-seen]), \
+[role=button]:not([data-webrev-seen]), \
+input[type=submit]:not([data-webrev-seen]), \
+input[type=button]:not([data-webrev-seen]), \
+input[type=reset]:not([data-webrev-seen]), \
+[role=checkbox]:not([data-webrev-seen]), \
+[role=switch]:not([data-webrev-seen]), \
+[role=menuitem]:not([data-webrev-seen]), \
+[role=tab]:not([data-webrev-seen]), \
+[role=option]:not([data-webrev-seen])";
+
 /// Scroll to the bottom (to trigger lazy loading) and report how many
-/// clickable elements are now on the page.
-const COUNT_INTERACTIVE_SCRIPT: &str = r"(() => {
-  try { window.scrollTo(0, document.body.scrollHeight); } catch (e) {}
-  return document.querySelectorAll('button, [role=button]').length;
-})();";
+/// not-yet-examined clickable elements remain on the page.
+fn count_interactive_script() -> String {
+    format!(
+        r"(() => {{
+  try {{ window.scrollTo(0, document.body.scrollHeight); }} catch (e) {{}}
+  return document.querySelectorAll('{INTERACTIVE_SELECTOR}').length;
+}})();"
+    )
+}
 
 /// Maximum refused controls kept as evidence (the total is always counted).
 const MAX_REFUSED_INTERACTIONS: usize = 256;
 
-/// Describe the `index`-th clickable element without touching it: a JSON
-/// `{"label", "text", "form"}` where `text` joins everything that could reveal
-/// intent (id, class, name, value, title, aria-label, onclick, enclosing link
-/// and form action) and `form` is true for a control that would submit a
-/// non-GET form. Returns `null` once `index` is out of range.
+/// Describe the `index`-th not-yet-examined clickable element without
+/// touching it: a JSON `{"label", "text", "form"}` where `text` joins
+/// everything that could reveal intent (id, class, name, value, title,
+/// aria-label, onclick, enclosing link and form action) and `form` is true
+/// for a control that would submit a non-GET form. Returns `null` once
+/// `index` is out of range. Stashes the element on `window.__webrev_pending`
+/// so a later `click_attributed_script`/`mark_pending_seen_script` call acts
+/// on the exact same element, since marking it `data-webrev-seen` (done by
+/// those two, not here) would otherwise shift live `querySelectorAll`
+/// indices out from under a second index-based lookup.
 fn describe_script(index: usize) -> String {
     format!(
         r"(() => {{
-  const el = document.querySelectorAll('button, [role=button]')[{index}];
+  const el = document.querySelectorAll('{INTERACTIVE_SELECTOR}')[{index}];
   if (!el) return null;
+  window.__webrev_pending = el;
   const form = el.form || el.closest('form');
   const method = form ? String(form.getAttribute('method') || 'get').toLowerCase() : 'get';
-  const submits = !!form && (el.tagName !== 'BUTTON' || (el.getAttribute('type') || 'submit').toLowerCase() === 'submit');
+  // <button> defaults to type=submit; <input> defaults to type=button (only
+  // type=submit actually submits). Both tags are covered by the same check.
+  const defaultType = el.tagName === 'BUTTON' ? 'submit' : 'button';
+  const submits = !!form && (el.getAttribute('type') || defaultType).toLowerCase() === 'submit';
   const anchor = el.closest('a');
   const text = [el.id, el.className && el.className.baseVal !== undefined ? el.className.baseVal : el.className,
     el.getAttribute('name'), el.getAttribute('value'), el.getAttribute('title'),
@@ -142,7 +186,7 @@ fn describe_script(index: usize) -> String {
     el.textContent, anchor && anchor.getAttribute('href'), form && form.getAttribute('action')]
     .filter(Boolean).join(' ');
   const label = (el.id && ('#' + el.id)) || el.getAttribute('aria-label')
-    || (el.textContent || '').trim().slice(0, 40) || el.tagName;
+    || (el.textContent || '').trim().slice(0, 40) || el.getAttribute('value') || el.tagName;
   return JSON.stringify({{ label: String(label), text: text.slice(0, 2000), form: submits && method !== 'get' }});
 }})();"
     )
@@ -155,30 +199,120 @@ struct ControlDescription {
     form: bool,
 }
 
-/// Click the `index`-th clickable element (never a link, to avoid navigating
-/// away), first setting `window.__webrev_trigger` to a short label derived
-/// from the element so any network call the click causes is attributed to it
-/// (see [`crate::hooks::INSTALL_HOOKS`]). Returns `false` once `index` is out
-/// of range.
-fn click_attributed_script(index: usize) -> String {
-    format!(
-        r"(() => {{
-  const els = document.querySelectorAll('button, [role=button]');
-  const el = els[{index}];
+/// Click the element `describe_script` last stashed on
+/// `window.__webrev_pending` (never a link, to avoid navigating away),
+/// marking it `data-webrev-seen` and setting `window.__webrev_trigger` to a
+/// short label derived from it so any network call the click causes is
+/// attributed to it (see [`crate::hooks::INSTALL_HOOKS`]). Returns `false`
+/// if nothing is pending.
+const CLICK_ATTRIBUTED_SCRIPT: &str = r"(() => {
+  const el = window.__webrev_pending;
+  window.__webrev_pending = null;
   if (!el) return false;
+  el.setAttribute('data-webrev-seen', '1');
   const label = (el.id && ('#' + el.id))
     || el.getAttribute('aria-label')
     || (el.textContent || '').trim().slice(0, 40)
     || el.tagName;
   window.__webrev_trigger = String(label);
-  try {{ el.click(); }} catch (e) {{}}
+  try { el.click(); } catch (e) {}
   return true;
+})();";
+
+/// Mark the pending element `data-webrev-seen` without clicking it: used for
+/// a control `describe_script` found but the policy refused to click, so it
+/// is not re-examined (and does not keep occupying a pass's click budget)
+/// every subsequent pass for the rest of the dwell.
+const MARK_PENDING_SEEN_SCRIPT: &str = r"(() => {
+  const el = window.__webrev_pending;
+  window.__webrev_pending = null;
+  if (el) el.setAttribute('data-webrev-seen', '1');
+  return true;
+})();";
+
+/// Clear the active trigger label once its settle window has elapsed.
+const CLEAR_TRIGGER_SCRIPT: &str = "window.__webrev_trigger = null;";
+
+/// `<select>` dropdowns the active-interaction driver considers, excluding
+/// ones already examined this dwell. Kept separate from
+/// `INTERACTIVE_SELECTOR`: a `<select>` is not meaningfully "clicked" (that
+/// just opens/closes the native dropdown UI in a real browser) — the useful
+/// interaction is choosing a different option and firing `change`.
+const SELECT_SELECTOR: &str = "select:not([data-webrev-seen])";
+
+/// Report how many not-yet-examined `<select>` elements remain on the page.
+fn count_selects_script() -> String {
+    format!(r"document.querySelectorAll('{SELECT_SELECTOR}').length")
+}
+
+/// Describe the `index`-th not-yet-examined `<select>` without touching it:
+/// a JSON `{"label", "self_text", "options": [{"index", "text", "selected"}]}`.
+/// `self_text` is the select's own identifying text (id/name/aria-label/title),
+/// checked against the same destructive-keyword policy as a click target so a
+/// `<select name="delete-confirmation">` is refused outright regardless of its
+/// options. Each option's own `text` (its label plus its value) is checked
+/// separately when choosing which option to switch to. Returns `null` once
+/// `index` is out of range. Stashes the element on `window.__webrev_pending`,
+/// same contract as `describe_script`.
+fn describe_select_script(index: usize) -> String {
+    format!(
+        r"(() => {{
+  const el = document.querySelectorAll('{SELECT_SELECTOR}')[{index}];
+  if (!el) return null;
+  window.__webrev_pending = el;
+  const label = (el.id && ('#' + el.id)) || el.getAttribute('aria-label')
+    || el.getAttribute('name') || el.tagName;
+  const self_text = [el.id, el.getAttribute('name'), el.getAttribute('aria-label'),
+    el.getAttribute('title')].filter(Boolean).join(' ');
+  const options = Array.from(el.options).map((o, i) => ({{
+    index: i,
+    text: ((o.textContent || '').trim() + ' ' + (o.value || '')).trim(),
+    selected: o.selected,
+  }}));
+  return JSON.stringify({{ label: String(label), self_text, options }});
 }})();"
     )
 }
 
-/// Clear the active trigger label once its settle window has elapsed.
-const CLEAR_TRIGGER_SCRIPT: &str = "window.__webrev_trigger = null;";
+#[derive(serde::Deserialize)]
+struct SelectOption {
+    index: usize,
+    text: String,
+    selected: bool,
+}
+
+#[derive(serde::Deserialize)]
+struct SelectDescription {
+    label: String,
+    self_text: String,
+    options: Vec<SelectOption>,
+}
+
+/// Switch the pending `<select>` (see `describe_select_script`) to the
+/// option at `option_index` and fire `change`, marking it `data-webrev-seen`
+/// and attributing any resulting network call the same way
+/// `CLICK_ATTRIBUTED_SCRIPT` does for a click. Returns `false` if nothing is
+/// pending or the option index is stale.
+fn select_change_attributed_script(option_index: usize) -> String {
+    format!(
+        r"(() => {{
+  const el = window.__webrev_pending;
+  window.__webrev_pending = null;
+  if (!el) return false;
+  el.setAttribute('data-webrev-seen', '1');
+  const option = el.options[{option_index}];
+  if (!option) return false;
+  const label = (el.id && ('#' + el.id))
+    || el.getAttribute('aria-label')
+    || el.getAttribute('name')
+    || el.tagName;
+  window.__webrev_trigger = String(label);
+  el.value = option.value;
+  try {{ el.dispatchEvent(new Event('change', {{ bubbles: true }})); }} catch (e) {{}}
+  return true;
+}})();"
+    )
+}
 
 /// Load `url` under `profile`, let it run for `duration` (or until `cancel`),
 /// then return the endpoints the page actually called.
@@ -399,16 +533,20 @@ pub async fn run_dynamic_with_report(
 
         with_timeout(&cancel, page.goto(url)).await?;
 
-        // Active dwell: repeatedly scroll and click clickable elements one at a
-        // time, attributing each click to the UI element that caused it (see
-        // `click_attributed_script`), until the deadline or cancellation.
+        // Active dwell: repeatedly scroll and click not-yet-examined clickable
+        // elements, attributing each click to the UI element that caused it
+        // (see `CLICK_ATTRIBUTED_SCRIPT`), until the deadline or cancellation.
+        // Every examined element is marked `data-webrev-seen` (clicked or
+        // refused alike) so each pass makes fresh progress through the page's
+        // controls instead of repeatedly re-examining the first
+        // `MAX_CLICKS_PER_PASS` while later ones are never reached.
         let deadline = Instant::now() + duration;
         let mut refused_interactions: Vec<RefusedInteraction> = Vec::new();
         let mut refused_interaction_count = 0usize;
         let mut refused_seen: BTreeSet<(String, String)> = BTreeSet::new();
         while Instant::now() < deadline && !cancel.is_cancelled() {
             let count: usize = if profile.interaction_policy == InteractionPolicy::Explore {
-                with_timeout(&cancel, page.evaluate(COUNT_INTERACTIVE_SCRIPT))
+                with_timeout(&cancel, page.evaluate(count_interactive_script()))
                     .await
                     .ok()
                     .and_then(|v| v.into_value().ok())
@@ -417,14 +555,17 @@ pub async fn run_dynamic_with_report(
                 0
             };
             let clicks = count.min(MAX_CLICKS_PER_PASS);
-            for i in 0..clicks {
+            for _ in 0..clicks {
                 if cancel.is_cancelled() || Instant::now() >= deadline {
                     break;
                 }
                 // Decide before clicking: destructive-looking controls and
-                // non-GET form submits are recorded, never clicked.
+                // non-GET form submits are recorded, never clicked. Index 0:
+                // marking each examined element `data-webrev-seen` drops it
+                // from the live NodeList, so the next not-yet-examined
+                // element is always back at index 0.
                 let described: Option<ControlDescription> =
-                    with_timeout(&cancel, page.evaluate(describe_script(i)))
+                    with_timeout(&cancel, page.evaluate(describe_script(0)))
                         .await
                         .ok()
                         .and_then(|v| v.into_value::<String>().ok())
@@ -434,6 +575,7 @@ pub async fn run_dynamic_with_report(
                     continue;
                 };
                 if let Some(reason) = interaction_refusal(&control.text, control.form) {
+                    let _ = with_timeout(&cancel, page.evaluate(MARK_PENDING_SEEN_SCRIPT)).await;
                     let key = (control.label.clone(), reason.clone());
                     if refused_seen.insert(key) {
                         refused_interaction_count += 1;
@@ -446,13 +588,79 @@ pub async fn run_dynamic_with_report(
                     }
                     continue;
                 }
-                let _ = with_timeout(&cancel, page.evaluate(click_attributed_script(i))).await;
+                let _ = with_timeout(&cancel, page.evaluate(CLICK_ATTRIBUTED_SCRIPT)).await;
                 tokio::select! {
                     () = cancel.cancelled() => break,
                     () = tokio::time::sleep(CLICK_SETTLE) => {},
                 }
                 let _ = with_timeout(&cancel, page.evaluate(CLEAR_TRIGGER_SCRIPT)).await;
             }
+
+            // Same pass, a second not-yet-examined-element budget: <select>
+            // dropdowns, which aren't "clicked" (see `SELECT_SELECTOR`).
+            let select_count: usize = if profile.interaction_policy == InteractionPolicy::Explore {
+                with_timeout(&cancel, page.evaluate(count_selects_script()))
+                    .await
+                    .ok()
+                    .and_then(|v| v.into_value().ok())
+                    .unwrap_or(0)
+            } else {
+                0
+            };
+            let selects = select_count.min(MAX_CLICKS_PER_PASS);
+            for _ in 0..selects {
+                if cancel.is_cancelled() || Instant::now() >= deadline {
+                    break;
+                }
+                let described: Option<SelectDescription> =
+                    with_timeout(&cancel, page.evaluate(describe_select_script(0)))
+                        .await
+                        .ok()
+                        .and_then(|v| v.into_value::<String>().ok())
+                        .and_then(|json| serde_json::from_str(&json).ok());
+                let Some(select) = described else {
+                    continue;
+                };
+                // The select's own identity (id/name/aria-label) is refused
+                // outright, same as a click target, regardless of its options.
+                if let Some(reason) = interaction_refusal(&select.self_text, false) {
+                    let _ = with_timeout(&cancel, page.evaluate(MARK_PENDING_SEEN_SCRIPT)).await;
+                    let key = (select.label.clone(), reason.clone());
+                    if refused_seen.insert(key) {
+                        refused_interaction_count += 1;
+                        if refused_interactions.len() < MAX_REFUSED_INTERACTIONS {
+                            refused_interactions.push(RefusedInteraction {
+                                label: select.label.chars().take(60).collect(),
+                                reason,
+                            });
+                        }
+                    }
+                    continue;
+                }
+                // Pick the first option that both changes something (not
+                // already selected) and isn't destructive-looking on its own
+                // terms; a select with no such option (e.g. its only other
+                // option reads "Delete all") is left untouched.
+                let choice = select
+                    .options
+                    .iter()
+                    .find(|option| !option.selected && destructive_keyword(&option.text).is_none());
+                let Some(option) = choice else {
+                    let _ = with_timeout(&cancel, page.evaluate(MARK_PENDING_SEEN_SCRIPT)).await;
+                    continue;
+                };
+                let _ = with_timeout(
+                    &cancel,
+                    page.evaluate(select_change_attributed_script(option.index)),
+                )
+                .await;
+                tokio::select! {
+                    () = cancel.cancelled() => break,
+                    () = tokio::time::sleep(CLICK_SETTLE) => {},
+                }
+                let _ = with_timeout(&cancel, page.evaluate(CLEAR_TRIGGER_SCRIPT)).await;
+            }
+
             tokio::select! {
                 () = cancel.cancelled() => break,
                 () = tokio::time::sleep(INTERACTION_STEP) => {},
