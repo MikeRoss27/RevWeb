@@ -5,6 +5,7 @@ mod graphql;
 mod html;
 mod js_ast;
 mod js_regex;
+mod nextjs;
 mod routes;
 mod sourcemaps;
 
@@ -13,6 +14,7 @@ pub use graphql::GraphQlExtractor;
 pub use html::HtmlExtractor;
 pub use js_ast::JsAstExtractor;
 pub use js_regex::JsRegexExtractor;
+pub use nextjs::NextJsExtractor;
 pub use routes::SpaRouteExtractor;
 pub use sourcemaps::SourceMapExtractor;
 

@@ -6,7 +6,7 @@ mod secrets;
 pub(crate) use endpoints::inline_scripts;
 pub use endpoints::{
     GhostEndpointExtractor, GraphQlExtractor, HtmlExtractor, JsAstExtractor, JsRegexExtractor,
-    SourceMapExtractor, SpaRouteExtractor,
+    NextJsExtractor, SourceMapExtractor, SpaRouteExtractor,
 };
 pub use metadata::{
     BucketExtractor, ConfigExtractor, CspExtractor, DomSinkExtractor, ManifestExtractor,
