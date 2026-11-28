@@ -57,7 +57,8 @@ fn resolves_and_discovers() {
 #[test]
 fn enqueue_respects_scope_and_visited() {
     let scope = Scope::new(vec!["ex.com".into()], vec![]);
-    let mut queue = VecDeque::new();
+    let mut frontier = scheduler::Frontier::new(webrev_core::CrawlerStrategy::Bfs);
+    let mut seq = 0u64;
     let mut visited = BTreeSet::new();
     visited.insert("https://ex.com/seen".to_owned());
     let hrefs = vec![
@@ -67,14 +68,19 @@ fn enqueue_respects_scope_and_visited() {
         "mailto:a@b".to_owned(),          // filtered by resolve_url
     ];
     enqueue(
-        &mut queue,
+        &mut frontier,
+        &mut seq,
         &visited,
         &scope,
         "https://ex.com/base",
         &hrefs,
         1,
+        scheduler::ResourceHint::Link,
     );
-    let urls: Vec<String> = queue.into_iter().map(|(u, _)| u).collect();
+    let mut urls = Vec::new();
+    while let Some(c) = frontier.pop() {
+        urls.push(c.url);
+    }
     assert_eq!(urls, vec!["https://ex.com/new"]);
 }
 

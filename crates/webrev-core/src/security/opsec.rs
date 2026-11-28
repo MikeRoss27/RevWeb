@@ -135,6 +135,24 @@ impl Default for ActiveLimits {
     }
 }
 
+/// How the fetch stage orders the crawl frontier.
+///
+/// `Bfs` is the historical, unconditional default: strict first-in-first-out
+/// order, identical to the crawler's behavior before this enum existed.
+/// `BestFirst` is deterministic, not adaptive: it has no feedback loop and no
+/// invented novelty/confidence signal, only a priority grounded in what the
+/// crawler already knows when a candidate is discovered (shallower depth
+/// first, scripts/source maps before plain links at the same depth), with
+/// discovery order as the final, fairness-preserving tie-break. See
+/// `docs/asgc-plan.md` for why an adaptive/learned strategy is deliberately
+/// not implemented yet.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub enum CrawlerStrategy {
+    #[default]
+    Bfs,
+    BestFirst,
+}
+
 /// Request-cadence and egress configuration.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct OpsecConfig {
@@ -164,6 +182,11 @@ pub struct OpsecConfig {
     pub auth: AuthConfig,
     #[serde(default)]
     pub active: ActiveLimits,
+    /// How the fetch stage orders the crawl frontier. Defaults to `Bfs`, so
+    /// older serialized `OpsecConfig`/`MissionProfile` JSON without this
+    /// field deserializes to the same behavior it always had.
+    #[serde(default)]
+    pub crawler_strategy: CrawlerStrategy,
 }
 
 /// 20 MiB: generous enough for a real-world minified SPA bundle with an
@@ -186,6 +209,7 @@ impl Default for OpsecConfig {
             max_depth: 2,
             auth: AuthConfig::default(),
             active: ActiveLimits::default(),
+            crawler_strategy: CrawlerStrategy::default(),
         }
     }
 }
