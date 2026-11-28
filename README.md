@@ -120,23 +120,46 @@ investigation and `--active` adds security probes. The TUI exposes all three mod
 
 ## Install
 
-From a checkout, one command builds and installs **both** the CLI and TUI:
+### Linux x86-64 (prebuilt)
 
-```powershell
-# Windows (Rust 1.89+, Visual Studio C++ tools, CMake)
-./scripts/install.ps1
-```
+Download the [v0.1.0 release](https://github.com/MikeRoss27/RevWeb/releases/tag/v0.1.0)
+bundle, verify its SHA-256 checksum, and install both `webrev` and `webrev-tui`
+in `~/.local/bin`:
 
 ```sh
-# Linux/macOS (Rust 1.89+, C compiler, CMake)
+(
+  set -eu
+  work_dir=$(mktemp -d)
+  trap 'rm -r -- "$work_dir"' EXIT
+  cd "$work_dir"
+  bundle=webrev-0.1.0-x86_64-unknown-linux-gnu
+  release_url=https://github.com/MikeRoss27/RevWeb/releases/download/v0.1.0
+  curl -fsSLO "$release_url/$bundle.tar.gz"
+  curl -fsSLO "$release_url/$bundle.tar.gz.sha256"
+  sha256sum -c "$bundle.tar.gz.sha256"
+  tar -xzf "$bundle.tar.gz"
+  sh "$bundle/scripts/install.sh"
+)
+```
+
+### Build from source
+
+From a checkout, use the installer for your platform. Both installers require
+Rust 1.89+, a C compiler and CMake.
+
+```sh
+# Linux and macOS
 sh scripts/install.sh
 ```
 
+```powershell
+# Windows (Visual Studio C++ Build Tools)
+./scripts/install.ps1
+```
+
 Already built? Add `-BinaryDir ./target/release` on Windows or
-`--binary-dir ./target/release` on Unix. Downloaded portable bundles use the same
-scripts without a compiler and verify their SHA-256 checksums. The
-`Portable bundles` workflow prepares Windows/Linux/macOS artifacts; these are
-not yet published releases. See [installation and troubleshooting](docs/installation.md).
+`--binary-dir ./target/release` on Unix. See
+[installation and troubleshooting](docs/installation.md).
 
 Chromium/Chrome is needed only for dynamic analysis. `CHROME` can point to its
 executable. Static/active HTTP scans work without it.
