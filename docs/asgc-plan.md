@@ -225,6 +225,74 @@ refusé et jamais cliqué (donc jamais soumis), et apparaît dans
 `refused_interactions`. Les 6 autres tests réels existants, dont celui du
 §4.2, passent toujours sans changement d'assertion.
 
+### 4.4 Browser Engine — rôles ARIA de widgets (`webrev-browser/src/dynamic.rs`)
+
+**Fait** : `INTERACTIVE_SELECTOR` couvre maintenant aussi `role=checkbox`,
+`role=switch`, `role=menuitem`, `role=tab`, `role=option` — les
+bibliothèques de composants custom (React/MUI/Radix-style) construisent
+très souvent ces widgets sur un `<div>`/`<span>` avec un handler de clic
+plutôt que sur un contrôle natif, et ils étaient jusqu'ici invisibles au
+moteur actif malgré un comportement applicatif identique à un `<button>`.
+La machinerie `describe_script`/`CLICK_ATTRIBUTED_SCRIPT`/
+`MARK_PENDING_SEEN_SCRIPT` est générique (basée sur les attributs et le
+texte, pas sur le tag), donc inchangée.
+
+**Explicitement exclu** : `role=link` — censé se comporter comme un
+`<a>` (navigation complète dans la plupart des implémentations), un
+profil de risque différent du reste du sélecteur. Toujours pas de
+sélecteur `[onclick]` générique (cf. §4.2 — décision séparée).
+
+Vérifié avec un vrai Chromium : nouveau test
+`aria_widget_roles_are_clicked_or_refused_like_buttons` — un
+`div[role=checkbox]` est cliqué exactement une fois, un
+`div[role=menuitem]` étiqueté "Delete item" est refusé et jamais cliqué,
+et apparaît dans `refused_interactions`. Les 7 autres tests réels
+existants passent toujours sans changement d'assertion.
+
+### 4.5 Browser Engine — `<select>` (`webrev-browser/src/dynamic.rs`)
+
+**Fait** : le moteur actif n'interagissait jamais avec les `<select>`,
+pourtant un vecteur très courant d'appels API déclenchés côté app
+(filtres, pagination, facettes de recherche). Nouvelle machinerie
+parallèle à celle des clics, avec le même contrat `data-webrev-seen` +
+`window.__webrev_pending` mais une action différente : au lieu de cliquer,
+on choisit une option et on déclenche `change` (cliquer un `<select>` ne
+fait qu'ouvrir/fermer le menu natif dans un vrai navigateur, inutile à
+automatiser via CDP).
+
+Décision de conception sur le refus — à deux niveaux, pas un seul :
+1. Le texte identifiant du `<select>` lui-même (id/name/aria-label/title)
+   passe par `interaction_refusal`, exactement comme un contrôle cliqué —
+   un `<select name="delete-confirmation">` est refusé en bloc, quelles que
+   soient ses options.
+2. Chaque option est vérifiée séparément via `destructive_keyword` sur son
+   propre texte. Un `<select>` avec à la fois une option "All" et une
+   option "Delete all users" n'est **pas** refusé en entier : on choisit la
+   première option non sélectionnée et non destructrice ("All"), jamais
+   "Delete all users". Si aucune option sûre n'existe (toutes
+   destructrices, ou une seule option), le `<select>` est marqué vu sans
+   déclencher `change` — ce n'est pas enregistré comme un refus (rien
+   n'a été tenté puis bloqué, il n'y avait simplement rien d'utile à
+   faire), contrairement au cas 1.
+
+Budget : réutilise `MAX_CLICKS_PER_PASS` comme plafond par passe plutôt
+qu'une constante dédiée — pas de preuve qu'une page avec des dizaines de
+`<select>` ET de contrôles cliquables existe dans les cibles réelles
+scannées à ce jour pour justifier un budget séparé.
+
+**Explicitement hors scope** : `<select multiple>`, groupes
+`<input type=radio>`/`<input type=checkbox>` — chacun a une sémantique de
+sélection différente et mérite sa propre décision, pas une généralisation
+de ce code.
+
+Vérifié avec un vrai Chromium : deux nouveaux tests —
+`select_never_switches_to_a_destructive_looking_option` (un `<select>`
+avec une option "All" et une option "Delete all users" ne choisit jamais
+la seconde) et `select_change_fires_exactly_once_across_the_whole_dwell`
+(un `<select>` à deux options sûres ne déclenche `change` qu'une fois sur
+tout le dwell, pas à chaque passe). Les 8 autres tests réels existants
+passent toujours sans changement d'assertion.
+
 ## 5. Ce qu'on rejette ou qu'on bloque derrière une mesure (important)
 
 ### 5.1 Fingerprinting multicouche (SimHash/MinHash/LSH) — **rejeté tant que non justifié**
